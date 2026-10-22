@@ -1,3 +1,14 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Export artifacts
+export/
+*.apk
+*.aab
+
+# Local Godot binary used to run headless checks. Not part of the game.
+tools/godot/
+
+# Screenshot output from verification runs.
+build/
