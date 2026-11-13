@@ -64,6 +64,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
+[node name="PreviewButton" type="Button" parent="Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 64)
+layout_mode = 2
+text = "Anims"
+
 [node name="SpeedButton" type="Button" parent="Row"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(136, 64)

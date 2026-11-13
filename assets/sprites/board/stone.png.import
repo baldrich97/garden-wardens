@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://5q35lt0onuho"
-path="res://.godot/imported/fly.png-adf9922aaf548f5d43da2cf0b7ac3dc5.ctex"
+uid="uid://cxr7gojbbrl3k"
+path="res://.godot/imported/stone.png-61565b0db201e24894144b1d496ca22b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/vermin/fly.png"
-dest_files=["res://.godot/imported/fly.png-adf9922aaf548f5d43da2cf0b7ac3dc5.ctex"]
+source_file="res://assets/sprites/board/stone.png"
+dest_files=["res://.godot/imported/stone.png-61565b0db201e24894144b1d496ca22b.ctex"]
 
 [params]
 

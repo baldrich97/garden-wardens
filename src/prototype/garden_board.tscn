@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/prototype/garden_board.gd" id="1_script"]
 [ext_resource type="Script" path="res://src/prototype/lawn_view.gd" id="2_lawn"]
@@ -6,7 +6,8 @@
 [ext_resource type="PackedScene" path="res://src/ui/bottom_bar.tscn" id="4_bottom"]
 [ext_resource type="Texture2D" path="res://assets/sprites/board/background.png" id="5_bg"]
 [ext_resource type="Texture2D" path="res://assets/sprites/board/grass.png" id="6_grass"]
-[ext_resource type="Texture2D" path="res://assets/sprites/board/dirt.png" id="7_dirt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/board/stone.png" id="7_stone"]
+[ext_resource type="Texture2D" path="res://assets/sprites/board/sand.png" id="8_sand"]
 
 [node name="GardenBoard" type="Control"]
 layout_mode = 3
@@ -28,6 +29,7 @@ mouse_filter = 2
 color = Color(0.906, 0.957, 0.984, 1)
 
 [node name="Background" type="TextureRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -75,7 +77,8 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_lawn")
 grass_texture = ExtResource("6_grass")
-dirt_texture = ExtResource("7_dirt")
+stone_texture = ExtResource("7_stone")
+sand_texture = ExtResource("8_sand")
 
 [node name="BottomBar" parent="SafeMargin/Layout" instance=ExtResource("4_bottom")]
 unique_name_in_owner = true

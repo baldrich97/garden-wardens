@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5nqyc60hoys1"
-path="res://.godot/imported/ladybug.png-9537d71b4cb703a3c414b02f4b215b1b.ctex"
+uid="uid://cml1dtgfnveie"
+path="res://.godot/imported/sand.png-10d1820b90928d92b5230d3d62551527.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/vermin/ladybug.png"
-dest_files=["res://.godot/imported/ladybug.png-9537d71b4cb703a3c414b02f4b215b1b.ctex"]
+source_file="res://assets/sprites/board/sand.png"
+dest_files=["res://.godot/imported/sand.png-10d1820b90928d92b5230d3d62551527.ctex"]
 
 [params]
 

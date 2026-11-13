@@ -1,26 +1,19 @@
-## The 5 by 9 lawn. Tiles stay square and the grid stays centered.
+## The lawn. Five lanes and twelve columns. Tiles stay square.
 class_name LawnView
 extends Control
 
-const COLUMNS := 9
+const COLUMNS := 12
 const ROWS := 5
 
-## Cells that use the dirt tile so the board is not one flat texture.
-const PATH_CELLS: Array[Vector2i] = [
-	Vector2i(4, 0),
-	Vector2i(4, 1),
-	Vector2i(4, 2),
-	Vector2i(4, 3),
-	Vector2i(4, 4),
-	Vector2i(3, 4),
-	Vector2i(5, 4),
-]
+## Empty space kept above the tiles so a sky droplet is visible before it lands.
+const SKY_ROWS := 0.85
 
 signal cell_pressed(cell: Vector2i)
 signal cell_hovered(cell: Vector2i)
 
 @export var grass_texture: Texture2D
-@export var dirt_texture: Texture2D
+@export var stone_texture: Texture2D
+@export var sand_texture: Texture2D
 
 var _tiles: Array[TextureRect] = []
 var _cursor: ColorRect
@@ -45,6 +38,10 @@ func _ready() -> void:
 
 func tile_count() -> int:
 	return _tiles.size()
+
+
+func column_count() -> int:
+	return COLUMNS
 
 
 func cell_size_px() -> float:
@@ -77,13 +74,13 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _build_tiles() -> void:
-	if grass_texture == null or dirt_texture == null:
-		push_error("LawnView is missing a grass or dirt texture.")
+	if grass_texture == null or stone_texture == null or sand_texture == null:
+		push_error("LawnView is missing a soil texture.")
 		return
 	for row in ROWS:
 		for column in COLUMNS:
 			var tile := TextureRect.new()
-			tile.texture = dirt_texture if _is_path(column, row) else grass_texture
+			tile.texture = _texture_for(column, row)
 			tile.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			tile.stretch_mode = TextureRect.STRETCH_SCALE
 			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -96,9 +93,12 @@ func _build_tiles() -> void:
 func _layout() -> void:
 	if size.x < 8.0 or size.y < 8.0:
 		return
-	_cell = minf(size.x / float(COLUMNS), size.y / float(ROWS))
-	var board_size := Vector2(_cell * COLUMNS, _cell * ROWS)
-	_origin = (size - board_size) * 0.5
+	var rows_with_sky := float(ROWS) + SKY_ROWS
+	_cell = minf(size.x / float(COLUMNS), size.y / rows_with_sky)
+	var board_size := Vector2(_cell * COLUMNS, _cell * float(ROWS))
+	var sky := _cell * SKY_ROWS
+	var spare_y := size.y - sky - board_size.y
+	_origin = Vector2((size.x - board_size.x) * 0.5, sky + maxf(0.0, spare_y) * 0.5)
 	for tile in _tiles:
 		var column := int(tile.get_meta("column"))
 		var row := int(tile.get_meta("row"))
@@ -119,5 +119,11 @@ func _place_cursor() -> void:
 	_cursor.color = Color(0.45, 0.9, 0.35, 0.4) if _aim_allowed else Color(0.9, 0.28, 0.22, 0.42)
 
 
-func _is_path(column: int, row: int) -> bool:
-	return Vector2i(column, row) in PATH_CELLS
+func _texture_for(column: int, row: int) -> Texture2D:
+	match SoilMap.kind_at(column, row, COLUMNS):
+		SoilMap.Kind.STONY:
+			return stone_texture
+		SoilMap.Kind.SANDY:
+			return sand_texture
+		_:
+			return grass_texture
