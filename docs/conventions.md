@@ -1,15 +1,15 @@
 # Conventions
 
-Garden Wardens is a 2D lane-defense game made with Godot 4.6 and GDScript. The current scene is a short playable match: place Wardens, spend water, and stop one wave of Vermin.
+Garden Wardens is a 2D lane-defense game made with Godot 4.6 and GDScript. The current scene is a seven-level lawn: place Wardens, spend water, and stop each level's Vermin.
 
 ## Vocabulary
 
 - **Wardens** are the living plants that defend the garden.
-- **Vermin** are the corrupted creatures that cross the lawn. The first cast is insects.
+- **Vermin** are the corrupted creatures that cross the lawn. The playable cast is Fly, Bee, Ladybug, Snail, and Grub.
 - **Blight** is the corruption that affects the Vermin. It is story language, not a system yet.
 - **Water** is the placement resource.
 
-Campaign progression, roguelite runs, drafting, soil, abilities, synergies, and runes are future ideas. Do not add placeholder scripts for them.
+Campaign progression, roguelite runs, drafting, abilities, synergies, and runes are future ideas. Do not add placeholder scripts for them. Soil kinds for the current lawn live in `src/rules/soil_map.gd`.
 
 ## Code
 
@@ -17,18 +17,19 @@ Campaign progression, roguelite runs, drafting, soil, abilities, synergies, and 
 - Give a `class_name` to a node other scenes reuse.
 - Start each script with a `##` summary. Document public methods the same way.
 - Keep a scene and its script in the same folder.
-- Placement, water, cooldowns, and row targeting live in `src/rules/` so tests can run them without the lawn.
-- Demo costs and the wave live in `src/rules/unit_catalog.gd`. The board in `src/prototype/garden_board.gd` ticks the match.
+- Placement, water, cooldowns, soil, and row targeting live in `src/rules/` so tests can run them without the lawn.
+- Demo costs and the seven levels live in `src/rules/unit_catalog.gd` and `src/rules/level_catalog.gd`. The board in `src/prototype/garden_board.gd` ticks the match.
 - Do not add an autoload until two scenes need the same long-lived service.
 
 ## Art
 
 - External art has to be free to use in a commercial game. Prefer CC0.
 - Record every pack in `docs/ASSET_SOURCES.md`, including the license text that shipped with the files.
-- Do not generate raster images with AI, and do not buy asset packs.
+- Do not generate raster images with AI, and do not buy asset packs. Only exception: the four labeled non-ship backdrop drafts recorded in `docs/ASSET_SOURCES.md`.
 - The New Platformer Pack is the visual source. Do not mix in older Kenney packs or pixel art.
 - Sprites use linear filtering and one shared scale.
 - If a role has no sprite, show a labeled placeholder. Do not substitute a humanoid or an unrelated icon.
+- Template/basic placeholder art is sanctioned policy until a dedicated art pass; keep them labeled.
 
 ## Input and layout
 
