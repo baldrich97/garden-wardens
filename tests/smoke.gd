@@ -33,19 +33,44 @@ func _check(board: Node) -> PackedStringArray:
 	_check_texts(board, failures)
 	_check_cards(board, failures)
 	_check_textures(board, failures)
+	var roster := board.find_child("WaveRoster", true, false) as WaveRoster
+	if roster == null or not roster.visible or roster.card_count() != _wave_types():
+		failures.append("wave roster did not show one card per vermin type")
+	var grid := board.find_child("RosterGrid", true, false) as GridContainer
+	if grid == null or grid.columns != 2:
+		failures.append("wave roster was not two columns")
+	var start := board.find_child("StartButton", true, false) as Button
+	if start == null or start.text != "Start":
+		failures.append("Start button missing before the wave")
 	var lawn := board.find_child("Lawn", true, false) as LawnView
-	if lawn == null or lawn.tile_count() != 45:
-		failures.append("expected 45 lawn tiles")
+	if lawn == null or lawn.column_count() != LawnView.COLUMNS or lawn.tile_count() != LawnView.COLUMNS * LawnView.ROWS:
+		failures.append("lawn was not 5 by 12")
+	var backdrop := board.find_child("BackdropButton", true, false) as Button
+	if backdrop == null or backdrop.text.is_empty():
+		failures.append("backdrop button missing")
 	var ability := board.find_child("AbilityButton", true, false) as Button
 	if ability == null or not ability.disabled:
 		failures.append("Ability button should stay disabled")
 	return failures
 
 
+func _wave_types() -> int:
+	var kinds: Array[int] = []
+	for entry in LevelCatalog.current().wave:
+		var kind := int(entry.y)
+		if not kinds.has(kind):
+			kinds.append(kind)
+	return kinds.size()
+
+
+func _wave_count() -> int:
+	return LevelCatalog.current().wave.size()
+
+
 func _check_texts(node: Node, failures: PackedStringArray) -> void:
 	var texts: PackedStringArray = []
 	_collect_text(node, texts)
-	for required in ["Garden Wardens", "Dew Dropper", "Needle Spitter", "Bark Block", "No sprite in this pack", "150", "Wave 1", "Vermin 6", "Ability", "Remove", "Speed", "Pause"]:
+	for required in ["Garden Wardens", "Dew Dropper", "Needle Spitter", "Bark Block", "200", "Level 1", "Vermin %d" % _wave_count(), "Ability", "Remove", "Speed", "Pause", "Anims"]:
 		if not _has_text(texts, required):
 			failures.append("missing text: %s" % required)
 
