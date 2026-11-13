@@ -40,6 +40,19 @@ func remove(column: int, row: int) -> void:
 		_cells[_index(column, row)] = 0
 
 
+## Grows or shrinks the grid. Occupants that still fit stay on their cells.
+func resize(columns: int, rows: int) -> void:
+	var next: Array[int] = []
+	next.resize(columns * rows)
+	next.fill(0)
+	for row in mini(_rows, rows):
+		for column in mini(_columns, columns):
+			next[row * columns + column] = _cells[_index(column, row)]
+	_columns = columns
+	_rows = rows
+	_cells = next
+
+
 ## Returns the cell under a lawn-local point, or (-1, -1) when the point misses the grid.
 static func cell_at(local_position: Vector2, origin: Vector2, cell_size: float, columns: int, rows: int) -> Vector2i:
 	if cell_size <= 0.0:
