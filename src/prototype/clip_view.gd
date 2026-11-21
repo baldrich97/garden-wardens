@@ -2,11 +2,17 @@
 class_name ClipView
 extends Node2D
 
+## Damage-state suffixes that can end a clip name (`idle_66` -> `idle`).
+const STATE_SUFFIXES: Array[String] = ["100", "66", "33"]
+
 var _sprite: AnimatedSprite2D
 var _anim := ""
 var _time := 0.0
 var _squash := 0.0
 var _flash := 0.0
+## Extra motion (idle bob, chew lean, squash, flash) is on by default. The
+## anim preview turns it off so the drawings show exactly as authored.
+var _motion := true
 
 
 ## Replaces the current clip. Safe to call more than once.
@@ -25,7 +31,13 @@ func setup(frames: SpriteFrames) -> void:
 	_sprite.sprite_frames = frames
 	_sprite.centered = true
 	add_child(_sprite)
-	play("idle")
+	# Legacy clips ship a bare "idle"; the new clips name it `idle_100` and
+	# friends, so fall back to whatever the clip carries first.
+	var names := frames.get_animation_names()
+	if names.has("idle"):
+		play("idle")
+	elif not names.is_empty():
+		play(names[0])
 
 
 ## Changes clip only when the name changes, so a looping walk is not restarted.
@@ -36,6 +48,40 @@ func play(anim_name: String) -> void:
 		return
 	_anim = anim_name
 	_sprite.play(anim_name)
+
+
+## Resumes playback of the current animation from its held frame.
+func resume() -> void:
+	if _sprite == null or _anim.is_empty():
+		return
+	_sprite.play(_anim)
+
+
+## Stops and hides the current clip (used when a unit slot has no clips).
+func clear() -> void:
+	if _sprite != null:
+		_sprite.stop()
+		_sprite.visible = false
+	_anim = ""
+	_squash = 0.0
+	_flash = 0.0
+
+
+## Toggles the temporary motion (idle bob, chew lean) on or off.
+func set_motion_enabled(enabled: bool) -> void:
+	_motion = enabled
+
+
+## The sprite driving the current clip, for reading frame state or stepping.
+func sprite() -> AnimatedSprite2D:
+	return _sprite
+
+
+## Frame count of the current animation, or 0 when nothing is selected.
+func frame_count() -> int:
+	if _sprite == null or _anim.is_empty():
+		return 0
+	return _sprite.sprite_frames.get_frame_count(_anim)
 
 
 func pulse() -> void:
@@ -63,8 +109,17 @@ func tick(delta: float, bounds: Vector2) -> void:
 	_fit(bounds)
 
 
+## Animation name without a damage-state suffix, so `idle_66` still reads as
+## idle and the temporary motion still applies to the damaged states.
+func _anim_base() -> String:
+	var index := _anim.rfind("_")
+	if index > 0 and _anim.substr(index + 1) in STATE_SUFFIXES:
+		return _anim.left(index)
+	return _anim
+
+
 func _fit(bounds: Vector2) -> void:
-	if _sprite == null or bounds.x <= 1.0 or bounds.y <= 1.0:
+	if _sprite == null or bounds.x <= 1.0 or bounds.y <= 1.0 or _anim.is_empty():
 		return
 	var texture := _sprite.sprite_frames.get_frame_texture(_anim, 0)
 	if texture == null:
@@ -74,9 +129,10 @@ func _fit(bounds: Vector2) -> void:
 	var lean := 0.0
 	var stretch_x := 1.0
 	var stretch_y := 1.0
-	if _anim == "idle":
+	var base := _anim_base()
+	if _motion and base == "idle":
 		bob = sin(_time * 5.0) * bounds.y * 0.06
-	elif _anim == "chew":
+	elif _motion and base == "chew":
 		lean = -0.28
 	if _squash > 0.0:
 		stretch_x = 1.0 + 0.22 * _squash
