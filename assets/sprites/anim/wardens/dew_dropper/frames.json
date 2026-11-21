@@ -1,0 +1,522 @@
+{
+ "unit": "Dew Dropper (warden)",
+ "kind": "warden",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  500,
+  762
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": true,
+   "description": "Idle: the locked idle phase (frames 1-8) shot on twos (each drawing held 2 frames) with paper boil on the plant; pot static.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/dew_dropper_idle_100_01.png",
+      "idle/100/dew_dropper_idle_100_02.png",
+      "idle/100/dew_dropper_idle_100_03.png",
+      "idle/100/dew_dropper_idle_100_04.png",
+      "idle/100/dew_dropper_idle_100_05.png",
+      "idle/100/dew_dropper_idle_100_06.png",
+      "idle/100/dew_dropper_idle_100_07.png",
+      "idle/100/dew_dropper_idle_100_08.png"
+     ],
+     "strip": "idle/dew_dropper_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/dew_dropper_idle_66_01.png",
+      "idle/66/dew_dropper_idle_66_02.png",
+      "idle/66/dew_dropper_idle_66_03.png",
+      "idle/66/dew_dropper_idle_66_04.png",
+      "idle/66/dew_dropper_idle_66_05.png",
+      "idle/66/dew_dropper_idle_66_06.png",
+      "idle/66/dew_dropper_idle_66_07.png",
+      "idle/66/dew_dropper_idle_66_08.png"
+     ],
+     "strip": "idle/dew_dropper_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/dew_dropper_idle_33_01.png",
+      "idle/33/dew_dropper_idle_33_02.png",
+      "idle/33/dew_dropper_idle_33_03.png",
+      "idle/33/dew_dropper_idle_33_04.png",
+      "idle/33/dew_dropper_idle_33_05.png",
+      "idle/33/dew_dropper_idle_33_06.png",
+      "idle/33/dew_dropper_idle_33_07.png",
+      "idle/33/dew_dropper_idle_33_08.png"
+     ],
+     "strip": "idle/dew_dropper_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/dew_dropper_idle_contact.png"
+  },
+  "action": {
+   "frame_count": 51,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 5100,
+   "loop": true,
+   "description": "Produce: the locked 54-frame loop re-timed to 10 fps (fill, form, drop lands on the head, startle, settle) - quick in-betweens drop out, holds become held drawings; paper boil on the plant only. v3: the startle squash and stretch drawings are each held 2 frames, so the surprised face stays on screen 10 frames (no 1-frame faces).",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/dew_dropper_action_100_01.png",
+      "action/100/dew_dropper_action_100_02.png",
+      "action/100/dew_dropper_action_100_03.png",
+      "action/100/dew_dropper_action_100_04.png",
+      "action/100/dew_dropper_action_100_05.png",
+      "action/100/dew_dropper_action_100_06.png",
+      "action/100/dew_dropper_action_100_07.png",
+      "action/100/dew_dropper_action_100_08.png",
+      "action/100/dew_dropper_action_100_09.png",
+      "action/100/dew_dropper_action_100_10.png",
+      "action/100/dew_dropper_action_100_11.png",
+      "action/100/dew_dropper_action_100_12.png",
+      "action/100/dew_dropper_action_100_13.png",
+      "action/100/dew_dropper_action_100_14.png",
+      "action/100/dew_dropper_action_100_15.png",
+      "action/100/dew_dropper_action_100_16.png",
+      "action/100/dew_dropper_action_100_17.png",
+      "action/100/dew_dropper_action_100_18.png",
+      "action/100/dew_dropper_action_100_19.png",
+      "action/100/dew_dropper_action_100_20.png",
+      "action/100/dew_dropper_action_100_21.png",
+      "action/100/dew_dropper_action_100_22.png",
+      "action/100/dew_dropper_action_100_23.png",
+      "action/100/dew_dropper_action_100_24.png",
+      "action/100/dew_dropper_action_100_25.png",
+      "action/100/dew_dropper_action_100_26.png",
+      "action/100/dew_dropper_action_100_27.png",
+      "action/100/dew_dropper_action_100_28.png",
+      "action/100/dew_dropper_action_100_29.png",
+      "action/100/dew_dropper_action_100_30.png",
+      "action/100/dew_dropper_action_100_31.png",
+      "action/100/dew_dropper_action_100_32.png",
+      "action/100/dew_dropper_action_100_33.png",
+      "action/100/dew_dropper_action_100_34.png",
+      "action/100/dew_dropper_action_100_35.png",
+      "action/100/dew_dropper_action_100_36.png",
+      "action/100/dew_dropper_action_100_37.png",
+      "action/100/dew_dropper_action_100_38.png",
+      "action/100/dew_dropper_action_100_39.png",
+      "action/100/dew_dropper_action_100_40.png",
+      "action/100/dew_dropper_action_100_41.png",
+      "action/100/dew_dropper_action_100_42.png",
+      "action/100/dew_dropper_action_100_43.png",
+      "action/100/dew_dropper_action_100_44.png",
+      "action/100/dew_dropper_action_100_45.png",
+      "action/100/dew_dropper_action_100_46.png",
+      "action/100/dew_dropper_action_100_47.png",
+      "action/100/dew_dropper_action_100_48.png",
+      "action/100/dew_dropper_action_100_49.png",
+      "action/100/dew_dropper_action_100_50.png",
+      "action/100/dew_dropper_action_100_51.png"
+     ],
+     "strip": "action/dew_dropper_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/dew_dropper_action_66_01.png",
+      "action/66/dew_dropper_action_66_02.png",
+      "action/66/dew_dropper_action_66_03.png",
+      "action/66/dew_dropper_action_66_04.png",
+      "action/66/dew_dropper_action_66_05.png",
+      "action/66/dew_dropper_action_66_06.png",
+      "action/66/dew_dropper_action_66_07.png",
+      "action/66/dew_dropper_action_66_08.png",
+      "action/66/dew_dropper_action_66_09.png",
+      "action/66/dew_dropper_action_66_10.png",
+      "action/66/dew_dropper_action_66_11.png",
+      "action/66/dew_dropper_action_66_12.png",
+      "action/66/dew_dropper_action_66_13.png",
+      "action/66/dew_dropper_action_66_14.png",
+      "action/66/dew_dropper_action_66_15.png",
+      "action/66/dew_dropper_action_66_16.png",
+      "action/66/dew_dropper_action_66_17.png",
+      "action/66/dew_dropper_action_66_18.png",
+      "action/66/dew_dropper_action_66_19.png",
+      "action/66/dew_dropper_action_66_20.png",
+      "action/66/dew_dropper_action_66_21.png",
+      "action/66/dew_dropper_action_66_22.png",
+      "action/66/dew_dropper_action_66_23.png",
+      "action/66/dew_dropper_action_66_24.png",
+      "action/66/dew_dropper_action_66_25.png",
+      "action/66/dew_dropper_action_66_26.png",
+      "action/66/dew_dropper_action_66_27.png",
+      "action/66/dew_dropper_action_66_28.png",
+      "action/66/dew_dropper_action_66_29.png",
+      "action/66/dew_dropper_action_66_30.png",
+      "action/66/dew_dropper_action_66_31.png",
+      "action/66/dew_dropper_action_66_32.png",
+      "action/66/dew_dropper_action_66_33.png",
+      "action/66/dew_dropper_action_66_34.png",
+      "action/66/dew_dropper_action_66_35.png",
+      "action/66/dew_dropper_action_66_36.png",
+      "action/66/dew_dropper_action_66_37.png",
+      "action/66/dew_dropper_action_66_38.png",
+      "action/66/dew_dropper_action_66_39.png",
+      "action/66/dew_dropper_action_66_40.png",
+      "action/66/dew_dropper_action_66_41.png",
+      "action/66/dew_dropper_action_66_42.png",
+      "action/66/dew_dropper_action_66_43.png",
+      "action/66/dew_dropper_action_66_44.png",
+      "action/66/dew_dropper_action_66_45.png",
+      "action/66/dew_dropper_action_66_46.png",
+      "action/66/dew_dropper_action_66_47.png",
+      "action/66/dew_dropper_action_66_48.png",
+      "action/66/dew_dropper_action_66_49.png",
+      "action/66/dew_dropper_action_66_50.png",
+      "action/66/dew_dropper_action_66_51.png"
+     ],
+     "strip": "action/dew_dropper_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/dew_dropper_action_33_01.png",
+      "action/33/dew_dropper_action_33_02.png",
+      "action/33/dew_dropper_action_33_03.png",
+      "action/33/dew_dropper_action_33_04.png",
+      "action/33/dew_dropper_action_33_05.png",
+      "action/33/dew_dropper_action_33_06.png",
+      "action/33/dew_dropper_action_33_07.png",
+      "action/33/dew_dropper_action_33_08.png",
+      "action/33/dew_dropper_action_33_09.png",
+      "action/33/dew_dropper_action_33_10.png",
+      "action/33/dew_dropper_action_33_11.png",
+      "action/33/dew_dropper_action_33_12.png",
+      "action/33/dew_dropper_action_33_13.png",
+      "action/33/dew_dropper_action_33_14.png",
+      "action/33/dew_dropper_action_33_15.png",
+      "action/33/dew_dropper_action_33_16.png",
+      "action/33/dew_dropper_action_33_17.png",
+      "action/33/dew_dropper_action_33_18.png",
+      "action/33/dew_dropper_action_33_19.png",
+      "action/33/dew_dropper_action_33_20.png",
+      "action/33/dew_dropper_action_33_21.png",
+      "action/33/dew_dropper_action_33_22.png",
+      "action/33/dew_dropper_action_33_23.png",
+      "action/33/dew_dropper_action_33_24.png",
+      "action/33/dew_dropper_action_33_25.png",
+      "action/33/dew_dropper_action_33_26.png",
+      "action/33/dew_dropper_action_33_27.png",
+      "action/33/dew_dropper_action_33_28.png",
+      "action/33/dew_dropper_action_33_29.png",
+      "action/33/dew_dropper_action_33_30.png",
+      "action/33/dew_dropper_action_33_31.png",
+      "action/33/dew_dropper_action_33_32.png",
+      "action/33/dew_dropper_action_33_33.png",
+      "action/33/dew_dropper_action_33_34.png",
+      "action/33/dew_dropper_action_33_35.png",
+      "action/33/dew_dropper_action_33_36.png",
+      "action/33/dew_dropper_action_33_37.png",
+      "action/33/dew_dropper_action_33_38.png",
+      "action/33/dew_dropper_action_33_39.png",
+      "action/33/dew_dropper_action_33_40.png",
+      "action/33/dew_dropper_action_33_41.png",
+      "action/33/dew_dropper_action_33_42.png",
+      "action/33/dew_dropper_action_33_43.png",
+      "action/33/dew_dropper_action_33_44.png",
+      "action/33/dew_dropper_action_33_45.png",
+      "action/33/dew_dropper_action_33_46.png",
+      "action/33/dew_dropper_action_33_47.png",
+      "action/33/dew_dropper_action_33_48.png",
+      "action/33/dew_dropper_action_33_49.png",
+      "action/33/dew_dropper_action_33_50.png",
+      "action/33/dew_dropper_action_33_51.png"
+     ],
+     "strip": "action/dew_dropper_action_33_strip.png"
+    }
+   },
+   "drop_lands_on_head": {
+    "frame": 36,
+    "pos_px": [
+     262.0,
+     255.0
+    ]
+   },
+   "collectible_spawn": {
+    "frame": 40,
+    "pos_px": [
+     268.0,
+     241.0
+    ],
+    "sprite": "fx/dew_droplet.png",
+    "note": "frames come from frames_nodrop: the popped droplet is the game's own collectible node"
+   },
+   "source_frames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    38,
+    38,
+    39,
+    39,
+    41,
+    42,
+    44,
+    45,
+    46,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54
+   ],
+   "contact_sheet": "action/dew_dropper_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Short flinch away from the hit (hits come from the right): upper body leans left 8 deg and squashes (held 2 frames), springs back past rest, settles. Pot/ground pixels never move.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/dew_dropper_hurt_100_01.png",
+      "hurt/100/dew_dropper_hurt_100_02.png",
+      "hurt/100/dew_dropper_hurt_100_03.png",
+      "hurt/100/dew_dropper_hurt_100_04.png",
+      "hurt/100/dew_dropper_hurt_100_05.png"
+     ],
+     "strip": "hurt/dew_dropper_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/dew_dropper_hurt_66_01.png",
+      "hurt/66/dew_dropper_hurt_66_02.png",
+      "hurt/66/dew_dropper_hurt_66_03.png",
+      "hurt/66/dew_dropper_hurt_66_04.png",
+      "hurt/66/dew_dropper_hurt_66_05.png"
+     ],
+     "strip": "hurt/dew_dropper_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/dew_dropper_hurt_33_01.png",
+      "hurt/33/dew_dropper_hurt_33_02.png",
+      "hurt/33/dew_dropper_hurt_33_03.png",
+      "hurt/33/dew_dropper_hurt_33_04.png",
+      "hurt/33/dew_dropper_hurt_33_05.png"
+     ],
+     "strip": "hurt/dew_dropper_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/dew_dropper_hurt_contact.png"
+  },
+  "place": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Placed like a sticker being pressed onto the tile: comes in 12% big and 34 px high, presses down flat with a squash, springs up a touch, settles exactly on the idle pose (frames 7-8 = idle frame 1).",
+   "states": {
+    "100": {
+     "frames": [
+      "place/100/dew_dropper_place_100_01.png",
+      "place/100/dew_dropper_place_100_02.png",
+      "place/100/dew_dropper_place_100_03.png",
+      "place/100/dew_dropper_place_100_04.png",
+      "place/100/dew_dropper_place_100_05.png",
+      "place/100/dew_dropper_place_100_06.png",
+      "place/100/dew_dropper_place_100_07.png",
+      "place/100/dew_dropper_place_100_08.png"
+     ],
+     "strip": "place/dew_dropper_place_100_strip.png"
+    }
+   },
+   "contact_sheet": "place/dew_dropper_place_contact.png"
+  },
+  "death": {
+   "frame_count": 11,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1100,
+   "loop": false,
+   "description": "From the 33% art: wilts back and forth, the flower card folds back on its pot-rim hinge in 3 held steps (foreshortening and darkening), then the whole sticker scrunches into a paper wad (FX A8 tinted blue) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/dew_dropper_death_33_01.png",
+      "death/33/dew_dropper_death_33_02.png",
+      "death/33/dew_dropper_death_33_03.png",
+      "death/33/dew_dropper_death_33_04.png",
+      "death/33/dew_dropper_death_33_05.png",
+      "death/33/dew_dropper_death_33_06.png",
+      "death/33/dew_dropper_death_33_07.png",
+      "death/33/dew_dropper_death_33_08.png",
+      "death/33/dew_dropper_death_33_09.png",
+      "death/33/dew_dropper_death_33_10.png",
+      "death/33/dew_dropper_death_33_11.png"
+     ],
+     "strip": "death/dew_dropper_death_33_strip.png"
+    }
+   },
+   "poof_frame": 11,
+   "poof_center_px": [
+    253.5,
+    639.0
+   ],
+   "ball_diameter_px": 209.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame play fx/poof centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/dew_dropper_death_contact.png"
+  }
+ },
+ "faces": "right (wardens face the incoming vermin)",
+ "anchor": {
+  "pot_or_ground_lock_row_px": 475,
+  "body_pivot_px": [
+   245.0,
+   472.0
+  ],
+  "ground_point_px": [
+   240.0,
+   726.0
+  ],
+  "note": "Every pixel row at or below pot_or_ground_lock_row_px is identical in all idle/action/hurt frames and states (checked: max diff 0)."
+ },
+ "source_canvas_offset_px": [
+  50,
+  120
+ ],
+ "source": "/workspace/gw/final_touchup/dew_dropper (frames_nodrop) - locked frames, re-timed; originals untouched",
+ "damage": "Interior paper damage only (outline unchanged, lines up with every locked frame): 66% creases on the petals/leaves, a torn-off top layer patch, a scuffed edge, a tape strip; 33% adds deeper creases, big torn patches, masking tape, grime and a crack in the pot. Face never damaged.",
+ "notes": "Faces right. Droplet collectible and splash are separate sprites.",
+ "effects": {
+  "droplet": "fx/dew_droplet.png",
+  "splash": "fx/dew_splash.png"
+ }
+}

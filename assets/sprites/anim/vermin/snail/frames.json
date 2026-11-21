@@ -1,0 +1,375 @@
+{
+ "unit": "Snail (vermin)",
+ "kind": "vermin",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  550,
+  506
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": true,
+   "description": "Idle: slow held breath, the eye-stalks tick side to side in turn (3 frames each), shell boils on its brad.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/snail_idle_100_01.png",
+      "idle/100/snail_idle_100_02.png",
+      "idle/100/snail_idle_100_03.png",
+      "idle/100/snail_idle_100_04.png",
+      "idle/100/snail_idle_100_05.png",
+      "idle/100/snail_idle_100_06.png",
+      "idle/100/snail_idle_100_07.png",
+      "idle/100/snail_idle_100_08.png"
+     ],
+     "strip": "idle/snail_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/snail_idle_66_01.png",
+      "idle/66/snail_idle_66_02.png",
+      "idle/66/snail_idle_66_03.png",
+      "idle/66/snail_idle_66_04.png",
+      "idle/66/snail_idle_66_05.png",
+      "idle/66/snail_idle_66_06.png",
+      "idle/66/snail_idle_66_07.png",
+      "idle/66/snail_idle_66_08.png"
+     ],
+     "strip": "idle/snail_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/snail_idle_33_01.png",
+      "idle/33/snail_idle_33_02.png",
+      "idle/33/snail_idle_33_03.png",
+      "idle/33/snail_idle_33_04.png",
+      "idle/33/snail_idle_33_05.png",
+      "idle/33/snail_idle_33_06.png",
+      "idle/33/snail_idle_33_07.png",
+      "idle/33/snail_idle_33_08.png"
+     ],
+     "strip": "idle/snail_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/snail_idle_contact.png"
+  },
+  "move": {
+   "frame_count": 8,
+   "durations_ms": [
+    110,
+    110,
+    110,
+    110,
+    110,
+    110,
+    110,
+    110
+   ],
+   "total_ms": 880,
+   "loop": true,
+   "description": "Crawl: accordion stretch - the foot stretches long and flat, then bunches into paper folds from the front back; 8 held frames at 110 ms. No legs, so nothing can run in reverse; the front always leads.",
+   "states": {
+    "100": {
+     "frames": [
+      "move/100/snail_move_100_01.png",
+      "move/100/snail_move_100_02.png",
+      "move/100/snail_move_100_03.png",
+      "move/100/snail_move_100_04.png",
+      "move/100/snail_move_100_05.png",
+      "move/100/snail_move_100_06.png",
+      "move/100/snail_move_100_07.png",
+      "move/100/snail_move_100_08.png"
+     ],
+     "strip": "move/snail_move_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "move/66/snail_move_66_01.png",
+      "move/66/snail_move_66_02.png",
+      "move/66/snail_move_66_03.png",
+      "move/66/snail_move_66_04.png",
+      "move/66/snail_move_66_05.png",
+      "move/66/snail_move_66_06.png",
+      "move/66/snail_move_66_07.png",
+      "move/66/snail_move_66_08.png"
+     ],
+     "strip": "move/snail_move_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "move/33/snail_move_33_01.png",
+      "move/33/snail_move_33_02.png",
+      "move/33/snail_move_33_03.png",
+      "move/33/snail_move_33_04.png",
+      "move/33/snail_move_33_05.png",
+      "move/33/snail_move_33_06.png",
+      "move/33/snail_move_33_07.png",
+      "move/33/snail_move_33_08.png"
+     ],
+     "strip": "move/snail_move_33_strip.png"
+    }
+   },
+   "movement_per_loop_px": 24,
+   "movement_note": "move the sprite left ~24 px per 0.88 s loop",
+   "contact_sheet": "move/snail_move_contact.png"
+  },
+  "action": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Chew: head lunges with hard mouth swaps, open 3 / closed 3, stalks dip, paper boil.",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/snail_action_100_01.png",
+      "action/100/snail_action_100_02.png",
+      "action/100/snail_action_100_03.png",
+      "action/100/snail_action_100_04.png",
+      "action/100/snail_action_100_05.png",
+      "action/100/snail_action_100_06.png",
+      "action/100/snail_action_100_07.png",
+      "action/100/snail_action_100_08.png",
+      "action/100/snail_action_100_09.png",
+      "action/100/snail_action_100_10.png",
+      "action/100/snail_action_100_11.png",
+      "action/100/snail_action_100_12.png"
+     ],
+     "strip": "action/snail_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/snail_action_66_01.png",
+      "action/66/snail_action_66_02.png",
+      "action/66/snail_action_66_03.png",
+      "action/66/snail_action_66_04.png",
+      "action/66/snail_action_66_05.png",
+      "action/66/snail_action_66_06.png",
+      "action/66/snail_action_66_07.png",
+      "action/66/snail_action_66_08.png",
+      "action/66/snail_action_66_09.png",
+      "action/66/snail_action_66_10.png",
+      "action/66/snail_action_66_11.png",
+      "action/66/snail_action_66_12.png"
+     ],
+     "strip": "action/snail_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/snail_action_33_01.png",
+      "action/33/snail_action_33_02.png",
+      "action/33/snail_action_33_03.png",
+      "action/33/snail_action_33_04.png",
+      "action/33/snail_action_33_05.png",
+      "action/33/snail_action_33_06.png",
+      "action/33/snail_action_33_07.png",
+      "action/33/snail_action_33_08.png",
+      "action/33/snail_action_33_09.png",
+      "action/33/snail_action_33_10.png",
+      "action/33/snail_action_33_11.png",
+      "action/33/snail_action_33_12.png"
+     ],
+     "strip": "action/snail_action_33_strip.png"
+    }
+   },
+   "contact_sheet": "action/snail_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Knock-back flinch: snaps back 15 px, leans back 9 deg with a squash (held), springs past rest, settles. 5 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/snail_hurt_100_01.png",
+      "hurt/100/snail_hurt_100_02.png",
+      "hurt/100/snail_hurt_100_03.png",
+      "hurt/100/snail_hurt_100_04.png",
+      "hurt/100/snail_hurt_100_05.png"
+     ],
+     "strip": "hurt/snail_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/snail_hurt_66_01.png",
+      "hurt/66/snail_hurt_66_02.png",
+      "hurt/66/snail_hurt_66_03.png",
+      "hurt/66/snail_hurt_66_04.png",
+      "hurt/66/snail_hurt_66_05.png"
+     ],
+     "strip": "hurt/snail_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/snail_hurt_33_01.png",
+      "hurt/33/snail_hurt_33_02.png",
+      "hurt/33/snail_hurt_33_03.png",
+      "hurt/33/snail_hurt_33_04.png",
+      "hurt/33/snail_hurt_33_05.png"
+     ],
+     "strip": "hurt/snail_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/snail_hurt_contact.png"
+  },
+  "spawn": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Pop-up card: stands up from flat on its foot line while sliding in 34 px from the right, overshoots tall, settles. 8 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "spawn/100/snail_spawn_100_01.png",
+      "spawn/100/snail_spawn_100_02.png",
+      "spawn/100/snail_spawn_100_03.png",
+      "spawn/100/snail_spawn_100_04.png",
+      "spawn/100/snail_spawn_100_05.png",
+      "spawn/100/snail_spawn_100_06.png",
+      "spawn/100/snail_spawn_100_07.png",
+      "spawn/100/snail_spawn_100_08.png"
+     ],
+     "strip": "spawn/snail_spawn_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "spawn/66/snail_spawn_66_01.png",
+      "spawn/66/snail_spawn_66_02.png",
+      "spawn/66/snail_spawn_66_03.png",
+      "spawn/66/snail_spawn_66_04.png",
+      "spawn/66/snail_spawn_66_05.png",
+      "spawn/66/snail_spawn_66_06.png",
+      "spawn/66/snail_spawn_66_07.png",
+      "spawn/66/snail_spawn_66_08.png"
+     ],
+     "strip": "spawn/snail_spawn_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "spawn/33/snail_spawn_33_01.png",
+      "spawn/33/snail_spawn_33_02.png",
+      "spawn/33/snail_spawn_33_03.png",
+      "spawn/33/snail_spawn_33_04.png",
+      "spawn/33/snail_spawn_33_05.png",
+      "spawn/33/snail_spawn_33_06.png",
+      "spawn/33/snail_spawn_33_07.png",
+      "spawn/33/snail_spawn_33_08.png"
+     ],
+     "strip": "spawn/snail_spawn_33_strip.png"
+    }
+   },
+   "contact_sheet": "spawn/snail_spawn_contact.png"
+  },
+  "death": {
+   "frame_count": 10,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1000,
+   "loop": false,
+   "description": "From the 33% art: recoil, folds flat backwards in 3 held steps, scrunches into a paper wad (FX A8 ball tinted shell-orange) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/snail_death_33_01.png",
+      "death/33/snail_death_33_02.png",
+      "death/33/snail_death_33_03.png",
+      "death/33/snail_death_33_04.png",
+      "death/33/snail_death_33_05.png",
+      "death/33/snail_death_33_06.png",
+      "death/33/snail_death_33_07.png",
+      "death/33/snail_death_33_08.png",
+      "death/33/snail_death_33_09.png",
+      "death/33/snail_death_33_10.png"
+     ],
+     "strip": "death/snail_death_33_strip.png"
+    }
+   },
+   "poof_frame": 10,
+   "poof_center_px": [
+    315.0,
+    342.0
+   ],
+   "ball_diameter_px": 178.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame, play fx/poof (separate sprite) centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/snail_death_contact.png"
+  }
+ },
+ "faces": "left",
+ "anchor": {
+  "ground_point_px": [
+   305.2,
+   414.9
+  ],
+  "body_center_px": [
+   305.2,
+   312.0
+  ],
+  "note": "ground_point = middle of the foot."
+ },
+ "rig_canvas_offset_px": [
+  30,
+  40
+ ],
+ "notes": "Faces left. Slime trail stays the separate FX A6 sprite (unchanged).",
+ "damage": "66%: creases, a small torn notch on the shell rim, frayed edge, a tape strip. 33%: deeper creases, a big tear with a crack, a missing chunk, masking-tape patches, a cracked-shell line, grime. Face and stalks never damaged."
+}

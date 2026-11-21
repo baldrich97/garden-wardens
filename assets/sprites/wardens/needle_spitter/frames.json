@@ -1,0 +1,87 @@
+{
+  "name": "needle_spitter_fire",
+  "frame_size": [
+    339,
+    339
+  ],
+  "frame_count": 19,
+  "strip": "needle_spitter_fire_strip.png",
+  "strip_layout": "horizontal, left to right, no padding",
+  "order": [
+    "frames/needle_spitter_fire_01.png",
+    "frames/needle_spitter_fire_02.png",
+    "frames/needle_spitter_fire_03.png",
+    "frames/needle_spitter_fire_04.png",
+    "frames/needle_spitter_fire_05.png",
+    "frames/needle_spitter_fire_06.png",
+    "frames/needle_spitter_fire_07.png",
+    "frames/needle_spitter_fire_08.png",
+    "frames/needle_spitter_fire_09.png",
+    "frames/needle_spitter_fire_10.png",
+    "frames/needle_spitter_fire_11.png",
+    "frames/needle_spitter_fire_12.png",
+    "frames/needle_spitter_fire_13.png",
+    "frames/needle_spitter_fire_14.png",
+    "frames/needle_spitter_fire_15.png",
+    "frames/needle_spitter_fire_16.png",
+    "frames/needle_spitter_fire_17.png",
+    "frames/needle_spitter_fire_18.png",
+    "frames/needle_spitter_fire_19.png"
+  ],
+  "durations_ms": [
+    420,
+    70,
+    70,
+    75,
+    80,
+    70,
+    70,
+    100,
+    50,
+    50,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    70
+  ],
+  "total_ms": 1605,
+  "loop": true,
+  "anchor_pivot_px": [
+    124.0,
+    240.0
+  ],
+  "anchor_note": "Pot rim centre; pot pixels are identical in every frame. Body lean pivots here.",
+  "pot_bottom_center_px": [
+    124.0,
+    323
+  ],
+  "idle_frame": 1,
+  "spine_spawn": {
+    "frame": 9,
+    "frame_index0": 8,
+    "snout_tip_px": [
+      258.3,
+      102.6
+    ],
+    "direction": [
+      1,
+      0
+    ],
+    "sprite": "needle_spine.png",
+    "sprite_size": [
+      72,
+      22
+    ],
+    "note": "Spawn the spine with its tail at snout_tip_px at the start of this frame, travelling right. In the preview it moved ~25 px then ~70 px further over the next 2 frames (~50 ms each)."
+  },
+  "smoke": "Baked into frames/ and the strip (frames 11-15). frames_nosmoke/ + smoke_overlay/ (same canvas, aligned) are provided if you want smoke as a separate layer.",
+  "source_canvas_offset": [
+    26,
+    19
+  ]
+}

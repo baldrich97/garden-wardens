@@ -1,0 +1,38 @@
+{
+ "name": "poof",
+ "source": "round3 FX A7 (crumpled-paper puff with stars), animated as a stop-motion pop: grows in, holds, shrinks away",
+ "fps": 10,
+ "frame_count": 8,
+ "durations_ms": [
+  100,
+  100,
+  100,
+  100,
+  100,
+  100,
+  100,
+  100
+ ],
+ "loop": false,
+ "frame_size": [
+  356,
+  337
+ ],
+ "pivot_px": [
+  178.0,
+  168.5
+ ],
+ "frames": [
+  "frames/poof_01.png",
+  "frames/poof_02.png",
+  "frames/poof_03.png",
+  "frames/poof_04.png",
+  "frames/poof_05.png",
+  "frames/poof_06.png",
+  "frames/poof_07.png",
+  "frames/poof_08.png"
+ ],
+ "strip": "poof_strip.png",
+ "use": "Every death ends on a crumpled paper ball; play this centred on the death's poof_center_px right after the last death frame, scaled to taste (ball_diameter_px is given), and remove the unit.",
+ "note": "The brief mentioned \"A6 poof\"; in the locked FX set A6 is the cellophane strip used for the snail slime trail, so the poof uses A7 (the crumpled-paper puff). Easy to swap."
+}
