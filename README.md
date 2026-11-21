@@ -26,4 +26,4 @@ That uses `GODOT_BIN` when it is set, otherwise `tools/godot/Godot_v4.6-stable_w
 
 ## Art
 
-Sprites are copied from Kenney's New Platformer Pack (CC0). The license, the file map, and the missing Dew Dropper sprite are recorded in [docs/ASSET_SOURCES.md](docs/ASSET_SOURCES.md). Style rules are in [docs/conventions.md](docs/conventions.md).
+Placeholder sprites are copied from Kenney's New Platformer Pack (CC0). Most final art is planned to be AI-generated and curated. The license, the file map, and the missing Dew Dropper sprite are recorded in [docs/ASSET_SOURCES.md](docs/ASSET_SOURCES.md). Style rules are in [docs/conventions.md](docs/conventions.md).

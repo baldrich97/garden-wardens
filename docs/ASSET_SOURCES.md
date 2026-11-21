@@ -28,7 +28,7 @@ Support by crediting 'Kenney' or 'www.kenney.nl' (this is not a requirement)
 
 Credit line for shipping builds: Kenney (www.kenney.nl).
 
-No AI images were generated for anything in the game except the four backdrop drafts below. No other packs were downloaded.
+AI-generated art is allowed as of 18 November 2026 (see `docs/conventions.md` §Art). Record each AI asset in the AI art section below. No other packs were downloaded.
 
 ## Backdrop drafts (AI-generated, non-ship)
 
@@ -44,6 +44,46 @@ The match can cycle five backgrounds. `assets/sprites/board/background.png` is s
 | Morning dew | `assets/sprites/board/backdrops/morning_dew.jpg` | AI draft, non-ship |
 | Late afternoon | `assets/sprites/board/backdrops/late_afternoon.jpg` | AI draft, non-ship |
 | Blight edge | `assets/sprites/board/backdrops/blight_edge.jpg` | AI draft, non-ship |
+
+## AI art
+
+Most art is expected to be AI-generated and curated. List each AI asset here once it is in `assets/`.
+
+| File | Replaces | Status |
+| --- | --- | --- |
+| `assets/sprites/wardens/needle_spitter/frames/needle_spitter_fire_01.png` to `_19.png` | `assets/sprites/wardens/cactus.png`, once wired in | Approved 18 November 2026 |
+| `assets/sprites/wardens/needle_spitter/needle_spitter_fire_strip.png` | `assets/sprites/wardens/cactus.png`, once wired in | Approved 18 November 2026 |
+| `assets/sprites/wardens/needle_spitter/needle_spitter_idle.png` | `assets/sprites/wardens/cactus.png`, once wired in | Approved 18 November 2026 |
+| `assets/sprites/wardens/needle_spitter/needle_spine.png` | Nothing. New projectile sprite. | Approved 18 November 2026 |
+| `assets/sprites/wardens/needle_spitter/frames_nosmoke/needle_spitter_fire_nosmoke_01.png` to `_19.png` | Nothing. Optional, used with the smoke overlay. | Approved 18 November 2026 |
+| `assets/sprites/wardens/needle_spitter/smoke_overlay/smoke_01.png` to `_19.png` | Nothing. Optional smoke layer. | Approved 18 November 2026 |
+| `assets/sprites/wardens/dew_dropper/frames/dew_dropper_01.png` to `_54.png` | `assets/sprites/wardens/bush.png`, once wired in | Approved 18 November 2026 |
+| `assets/sprites/wardens/dew_dropper/dew_dropper_strip.png` | `assets/sprites/wardens/bush.png`, once wired in | Approved 18 November 2026 |
+| `assets/sprites/wardens/dew_dropper/dew_dropper_idle.png` | `assets/sprites/wardens/bush.png`, once wired in | Approved 18 November 2026 |
+| `assets/sprites/wardens/dew_dropper/dew_droplet.png` | Nothing. New collectible droplet sprite. | Approved 18 November 2026 |
+| `assets/sprites/wardens/dew_dropper/dew_splash.png` | Nothing. New splash sprite. | Approved 18 November 2026 |
+| `assets/sprites/wardens/dew_dropper/frames_nodrop/dew_dropper_nodrop_01.png` to `_54.png` | Nothing. Optional, for use with the game's own collectible node. | Approved 18 November 2026 |
+| `assets/sprites/wardens/rain_catcher/frames/rain_catcher_01.png` to `_47.png` | Nothing. Rain Barrel has no sprite yet; the lawn shows a labeled color block. | Approved 18 November 2026 |
+| `assets/sprites/wardens/rain_catcher/rain_catcher_strip.png` | Nothing. Rain Barrel has no sprite yet. | Approved 18 November 2026 |
+| `assets/sprites/wardens/rain_catcher/rain_catcher_idle.png` | Nothing. Rain Barrel has no sprite yet. | Approved 18 November 2026 |
+| `assets/sprites/wardens/rain_catcher/rain_drop.png` | Nothing. New water drop sprite. | Approved 18 November 2026 |
+| `assets/sprites/wardens/seed_lobber/frames/seed_lobber_01.png` to `_43.png` | Nothing. Seed Lobber has no sprite yet; the lawn shows a labeled color block. | Approved 19 November 2026 |
+| `assets/sprites/wardens/seed_lobber/seed_lobber_strip.png` | Nothing. Seed Lobber has no sprite yet. | Approved 19 November 2026 |
+| `assets/sprites/wardens/seed_lobber/seed_lobber_idle.png` | Nothing. Seed Lobber has no sprite yet. | Approved 19 November 2026 |
+| `assets/sprites/wardens/seed_lobber/projectile/fluff_ball.png` | Nothing. New projectile sprite. | Approved 19 November 2026 |
+| `assets/sprites/wardens/seed_lobber/projectile/spin/fluff_ball_01.png` to `_08.png`, `projectile/fluff_ball_spin_strip.png` | Nothing. Optional projectile spin. | Approved 19 November 2026 |
+| `assets/sprites/wardens/seed_lobber/projectile/burst/seed_burst_01.png` to `_20.png`, `projectile/seed_burst_strip.png` | Nothing. New burst effect. | Approved 19 November 2026 |
+| `assets/sprites/wardens/seed_lobber/projectile/seed_single.png` | Nothing. New single seed sprite. | Approved 19 November 2026 |
+
+Needle Spitter: a papercraft die-cut sticker with a cardboard-tube snout and a pink flower. The frames are AI-generated keyframes plus procedural in-betweens, as a 19-frame fire loop on one shared 339×339 transparent canvas, with the pot locked in place. `assets/sprites/wardens/needle_spitter/frames.json` holds the per-frame timing, the pivot, and the frame and snout-tip position where the spine spawns. Nothing is wired into the game yet; `cactus.png` stays until it is.
+
+Dew Dropper: a papercraft die-cut sticker of a forget-me-not with a bowl-shaped leaf on a short stem. The frames are AI-generated keyframes plus procedural in-betweens, as a 54-frame produce loop (about 4.9 s) on one shared 400×622 transparent canvas, with the pot locked in place: the leaf fills and tips, a droplet lands on the head, the flower startles, and the droplet pops out. The stem is drawn in code. `frames/` keeps the popped droplet baked in; `frames_nodrop/` removes it from the spawn frame on. `assets/sprites/wardens/dew_dropper/frames.json` holds the per-frame timing, the head pivot, the leaf joint, the frame and position where the drop lands, and the frame and position where the collectible spawns. Nothing is wired into the game yet; `bush.png` stays until it is.
+
+Rain Catcher: a papercraft die-cut sticker of a hollow-topped tree stump with copper barrel bands, fishing with a twig rod, with a small red-spotted mushroom on the rim. The frames are AI-generated keyframes plus procedural in-betweens, as a 47-frame catch loop (3.85 s) on one shared 581×634 transparent canvas, with the ground locked in place: he winds up and casts, the line runs off the right edge, he hooks a water drop, yanks it up and flings it into his mouth, then gulps. The mushroom teeters back on the wind-up and forward on the fling with a startled face. The rod, line and hook are drawn in code; the fists move with the rod. The drop is baked into the frames, and `rain_drop.png` is the same drop on its own. `assets/sprites/wardens/rain_catcher/frames.json` holds the per-frame timing, the pivots, the cast-out, hooked and caught frames, the mouth position, and the rod tip and grip for each frame. The unit is still named Rain Barrel in code (`src/rules/unit_catalog.gd`). Renaming it to Rain Catcher is Brandon's call and has not been done. Nothing is wired into the game yet.
+
+Seed Lobber: a papercraft die-cut sticker of a potted dandelion Warden with a big white seed-puff head and a green face. The frames are AI-generated keyframes plus procedural in-betweens, as a 43-frame throw loop (3.68 s) on one shared 444×638 transparent canvas, with the pot locked in place: he cocks a fluff ball behind his head, throws it overhand with his eyes squeezed shut, then winces as he plucks a tuft from his own puff and it grows into the next ball. The stem and seeds are drawn in code. The ball leaves his hand on frame 23; the projectile spawns at (376.7, 287.0) on the frame canvas. The burst is a separate, non-looping 20-frame effect (1.33 s) on a 480×480 canvas centered on the landing point, with the damage frame at 3. The engine sets the burst scale so it covers the 3 by 3 area; the seeds in it are cosmetic and do not show which tiles the rules hit. `assets/sprites/wardens/seed_lobber/frames.json` holds the per-frame timing, the pivots, the release frame, the spawn point, the ball position for each frame, and the projectile and burst timing. Nothing is wired into the game yet.
+
+Paper-texture pass (19 November 2026): every frame, strip and idle still of the four Wardens above got a subtle paper finish: paper fibers, newsprint strips on the pots and stems, and a strip of tape on the pot. The pass is heavier on Dew Dropper and Seed Lobber and light on Needle Spitter and Rain Catcher (no tape on Rain Catcher). Seed Lobber's fluff ball and its spin frames have fibers only. The needle spine, the drops and splash, the smoke and the seed burst are unchanged. Alpha, outlines, the white border, frame sizes, pivots and timing are unchanged, so every `frames.json` stays valid.
 
 ## Sprites in use
 

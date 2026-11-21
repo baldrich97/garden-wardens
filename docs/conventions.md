@@ -25,8 +25,8 @@ Campaign progression, roguelite runs, drafting, abilities, synergies, and runes 
 
 - External art has to be free to use in a commercial game. Prefer CC0.
 - Record every pack in `docs/ASSET_SOURCES.md`, including the license text that shipped with the files.
-- Do not generate raster images with AI, and do not buy asset packs. Only exception: the four labeled non-ship backdrop drafts recorded in `docs/ASSET_SOURCES.md`.
-- The New Platformer Pack is the visual source. Do not mix in older Kenney packs or pixel art.
+- AI-generated or AI-assisted images are allowed, and most of the art is expected to be made this way and curated by the creator. Record every AI asset in `docs/ASSET_SOURCES.md` with its status (draft or approved). Do not buy asset packs.
+- The New Platformer Pack is the current placeholder style, not the target. A new, similarly simple art direction is being chosen; once the creator settles it, new art follows that direction instead. Until then, do not mix in older Kenney packs or pixel art.
 - Sprites use linear filtering and one shared scale.
 - If a role has no sprite, show a labeled placeholder. Do not substitute a humanoid or an unrelated icon.
 - Template/basic placeholder art is sanctioned policy until a dedicated art pass; keep them labeled.

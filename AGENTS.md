@@ -40,11 +40,13 @@ When documents disagree, trust in this order:
 - Typed GDScript, tabs, `##` doc summaries — full list in docs/conventions.md §Code.
 - Game logic stays in `src/rules/` so headless tests can run it without the lawn scene.
 - No autoload until two scenes need the same long-lived service.
-- External art is CC0-or-labeled-placeholder only; every pack recorded in
+- External art is CC0, AI-generated, or labeled placeholder; every pack and every AI asset is recorded in
   docs/ASSET_SOURCES.md with its license text.
-- The four backdrop JPEG drafts are AI-generated, labeled, **non-ship** — they exist only
-  to feel out composition and must be regenerated from scratch before any ship claim.
-  No other AI raster images.
+- AI-generated and AI-assisted art is allowed and is expected to make up most of the art.
+  Record each AI asset in docs/ASSET_SOURCES.md (file, what it replaces, status: draft or
+  approved). The creator curates and approves the final style; until then AI art is a draft.
+- The four backdrop JPEG drafts remain labeled **non-ship** drafts until the creator approves
+  them or they are replaced.
 
 ## VCS safety
 
