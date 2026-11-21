@@ -15,6 +15,7 @@ func _init() -> void:
 	_backdrops(failures)
 	_wave(failures)
 	_roster_rules(failures)
+	_anim_clips(failures)
 	if failures.is_empty():
 		print("RULES_OK")
 		quit(0)
@@ -312,3 +313,143 @@ func _clips(failures: PackedStringArray) -> void:
 		for anim_name in UnitClips.vermin_animations():
 			if not frames.has_animation(anim_name) or frames.get_frame_count(anim_name) < 1:
 				failures.append("vermin %d missing %s" % [kind, anim_name])
+
+
+func _anim_clips(failures: PackedStringArray) -> void:
+	_anim_manifests(failures)
+	_anim_loader(failures)
+
+
+func _anim_manifests(failures: PackedStringArray) -> void:
+	for folder in AnimLibrary.WARDEN_FOLDERS + AnimLibrary.VERMIN_FOLDERS:
+		var manifest := AnimLibrary.manifest_for_folder(folder)
+		var animations: Variant = manifest.get("animations")
+		if not (animations is Dictionary) or animations.is_empty():
+			failures.append("%s has no parsable frames.json animations" % folder)
+			continue
+		for anim_name in animations:
+			if not (animations[anim_name] is Dictionary):
+				failures.append("%s %s is not a dict" % [folder, anim_name])
+				continue
+			var anim: Dictionary = animations[anim_name]
+			var frame_count := int(anim.get("frame_count", 0))
+			var durations: Variant = anim.get("durations_ms")
+			if frame_count < 1 or not (durations is Array) or durations.size() != frame_count:
+				failures.append("%s %s durations do not match frame_count" % [folder, anim_name])
+				continue
+			if not (anim.get("loop") is bool):
+				failures.append("%s %s loop flag is not a bool" % [folder, anim_name])
+			var states: Variant = anim.get("states")
+			if not (states is Dictionary) or states.is_empty():
+				failures.append("%s %s has no damage states" % [folder, anim_name])
+				continue
+			for state_key in states:
+				var state_dict: Variant = states[state_key]
+				var paths: Variant = state_dict.get("frames") if state_dict is Dictionary else null
+				if not (paths is Array) or paths.size() != frame_count:
+					failures.append("%s %s state %s is not aligned index-for-index" % [folder, anim_name, state_key])
+					continue
+				for path in paths:
+					if not FileAccess.file_exists(folder + "/" + String(path)):
+						failures.append("%s %s state %s references missing frame %s" % [folder, anim_name, state_key, path])
+	var poof := AnimLibrary.manifest_for_folder(AnimLibrary.POOF_FOLDER)
+	var poof_frames: Variant = poof.get("frames")
+	var poof_durations: Variant = poof.get("durations_ms")
+	if not (poof_frames is Array) or poof_frames.is_empty():
+		failures.append("poof manifest has no frames")
+	elif not (poof_durations is Array) or poof_durations.size() != poof_frames.size():
+		failures.append("poof durations do not match its frame count")
+	else:
+		for path in poof_frames:
+			if not FileAccess.file_exists(AnimLibrary.POOF_FOLDER + "/" + String(path)):
+				failures.append("poof references missing frame %s" % path)
+		if not (poof.get("pivot_px") is Array) or poof.get("pivot_px").size() != 2:
+			failures.append("poof has no pivot_px")
+
+
+func _anim_loader(failures: PackedStringArray) -> void:
+	if AnimLibrary.state_for_hp(1.0) != "100" or AnimLibrary.state_for_hp(0.67) != "100":
+		failures.append("state_for_hp kept a healthy ratio out of 100")
+	if AnimLibrary.state_for_hp(0.66) != "66" or AnimLibrary.state_for_hp(0.34) != "66":
+		failures.append("state_for_hp kept a hurt ratio out of 66")
+	if AnimLibrary.state_for_hp(0.33) != "33" or AnimLibrary.state_for_hp(0.0) != "33":
+		failures.append("state_for_hp kept a dying ratio out of 33")
+	if AnimLibrary.clip_for_folder(AnimLibrary.ROOT + "/wardens/not_a_real_unit") != null:
+		failures.append("a missing unit folder built a clip instead of failing clean")
+	if AnimLibrary.warden(UnitCatalog.Warden.BARK) == null or AnimLibrary.vermin(UnitCatalog.Vermin.FLY) == null:
+		failures.append("warden() or vermin() returned null")
+	var bark_folder := AnimLibrary.warden_folder(UnitCatalog.Warden.BARK)
+	var bark := AnimLibrary.clip_for_folder(bark_folder)
+	if bark == null:
+		failures.append("Bark Block clips did not build from frames.json")
+	else:
+		_bark_states(failures, bark)
+		_anim_swap(failures, bark)
+	var fly := AnimLibrary.clip_for_folder(AnimLibrary.vermin_folder(UnitCatalog.Vermin.FLY))
+	if fly == null or not fly.has_animation("move_100"):
+		failures.append("Fly clips did not build from frames.json")
+	var snail_folder := AnimLibrary.vermin_folder(UnitCatalog.Vermin.SNAIL)
+	var snail := AnimLibrary.clip_for_folder(snail_folder)
+	var snail_move: Dictionary = AnimLibrary.manifest_for_folder(snail_folder).get("animations", {}).get("move", {})
+	var snail_durations: Variant = snail_move.get("durations_ms")
+	if snail == null or not snail.has_animation("move_100") or not (snail_durations is Array) \
+			or snail_durations.is_empty() \
+			or not is_equal_approx(snail.get_frame_duration("move_100", 0), float(snail_durations[0]) / 1000.0):
+		failures.append("Snail move did not keep its authored per-frame holds")
+	var poof_clips := AnimLibrary.poof()
+	if poof_clips == null or poof_clips.get_frame_count(AnimLibrary.POOF_ANIM) < 1:
+		failures.append("poof clips did not build")
+	elif poof_clips.get_animation_loop(AnimLibrary.POOF_ANIM):
+		failures.append("poof should not loop")
+	if AnimLibrary.poof_pivot() == Vector2.INF:
+		failures.append("poof pivot was not exposed")
+
+
+func _bark_states(failures: PackedStringArray, bark: SpriteFrames) -> void:
+	var manifest := AnimLibrary.manifest_for_folder(AnimLibrary.warden_folder(UnitCatalog.Warden.BARK))
+	var animations: Dictionary = manifest.get("animations", {})
+	var idle: Dictionary = animations.get("idle", {})
+	var idle_frames := int(idle.get("frame_count", 0))
+	for state in AnimLibrary.DAMAGE_STATES:
+		var clip_name := "idle_" + state
+		if not bark.has_animation(clip_name) or bark.get_frame_count(clip_name) != idle_frames:
+			failures.append("Bark Block is missing %s" % clip_name)
+			continue
+		var durations: Array = idle.get("durations_ms", [])
+		if durations.is_empty() or not is_equal_approx(bark.get_frame_duration(clip_name, 0), float(durations[0]) / 1000.0):
+			failures.append("Bark Block %s ignores authored frame durations" % clip_name)
+		if bark.get_animation_loop(clip_name) != bool(idle.get("loop", false)):
+			failures.append("Bark Block %s ignores the loop flag" % clip_name)
+	if not bark.has_animation("place_100") or bark.has_animation("place_66"):
+		failures.append("Bark Block place states are wrong")
+	if not bark.has_animation("death_33") or bark.has_animation("death_100"):
+		failures.append("Bark Block death states are wrong")
+	if AnimLibrary.animation_name(bark, "place", "66") != "place_100":
+		failures.append("animation_name missed the place fallback")
+	if AnimLibrary.animation_name(bark, "death", "100") != "death_33":
+		failures.append("animation_name missed the death fallback")
+	if AnimLibrary.animation_name(UnitClips.warden(UnitCatalog.Warden.BARK), "idle", "100") != "idle":
+		failures.append("animation_name missed the legacy bare-name fallback")
+
+
+func _anim_swap(failures: PackedStringArray, bark: SpriteFrames) -> void:
+	var sprite := AnimatedSprite2D.new()
+	sprite.sprite_frames = bark
+	sprite.play("idle_100")
+	sprite.frame = 4
+	if not AnimLibrary.swap_keep_frame(sprite, "idle_66"):
+		failures.append("damage-state swap was refused")
+	elif sprite.animation != &"idle_66" or sprite.frame != 4 or not sprite.is_playing():
+		failures.append("damage-state swap lost the frame index or playback")
+	sprite.frame = bark.get_frame_count("idle_66") - 1
+	if not AnimLibrary.swap_keep_frame(sprite, "hurt_100") or sprite.frame != 4:
+		failures.append("a swap into a shorter animation did not clamp the frame")
+	if AnimLibrary.swap_keep_frame(sprite, "idle_99"):
+		failures.append("a swap to a missing animation was accepted")
+	sprite.stop()
+	# Godot's stop() resets the frame to 0 itself, so a stopped sprite's swap
+	# must switch the animation, keep whatever frame the engine settled on, and
+	# not start playback.
+	if not AnimLibrary.swap_keep_frame(sprite, "place_100") or sprite.animation != &"place_100" or sprite.is_playing():
+		failures.append("a swap on a stopped sprite did not hold its place")
+	sprite.free()
