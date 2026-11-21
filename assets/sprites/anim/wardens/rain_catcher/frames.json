@@ -1,0 +1,673 @@
+{
+ "unit": "Rain Catcher (warden)",
+ "kind": "warden",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  681,
+  774
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Idle: the locked idle phase (frames 1-12) shot on twos with paper boil on the stump; grass/ground static.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/rain_catcher_idle_100_01.png",
+      "idle/100/rain_catcher_idle_100_02.png",
+      "idle/100/rain_catcher_idle_100_03.png",
+      "idle/100/rain_catcher_idle_100_04.png",
+      "idle/100/rain_catcher_idle_100_05.png",
+      "idle/100/rain_catcher_idle_100_06.png",
+      "idle/100/rain_catcher_idle_100_07.png",
+      "idle/100/rain_catcher_idle_100_08.png",
+      "idle/100/rain_catcher_idle_100_09.png",
+      "idle/100/rain_catcher_idle_100_10.png",
+      "idle/100/rain_catcher_idle_100_11.png",
+      "idle/100/rain_catcher_idle_100_12.png"
+     ],
+     "strip": "idle/rain_catcher_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/rain_catcher_idle_66_01.png",
+      "idle/66/rain_catcher_idle_66_02.png",
+      "idle/66/rain_catcher_idle_66_03.png",
+      "idle/66/rain_catcher_idle_66_04.png",
+      "idle/66/rain_catcher_idle_66_05.png",
+      "idle/66/rain_catcher_idle_66_06.png",
+      "idle/66/rain_catcher_idle_66_07.png",
+      "idle/66/rain_catcher_idle_66_08.png",
+      "idle/66/rain_catcher_idle_66_09.png",
+      "idle/66/rain_catcher_idle_66_10.png",
+      "idle/66/rain_catcher_idle_66_11.png",
+      "idle/66/rain_catcher_idle_66_12.png"
+     ],
+     "strip": "idle/rain_catcher_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/rain_catcher_idle_33_01.png",
+      "idle/33/rain_catcher_idle_33_02.png",
+      "idle/33/rain_catcher_idle_33_03.png",
+      "idle/33/rain_catcher_idle_33_04.png",
+      "idle/33/rain_catcher_idle_33_05.png",
+      "idle/33/rain_catcher_idle_33_06.png",
+      "idle/33/rain_catcher_idle_33_07.png",
+      "idle/33/rain_catcher_idle_33_08.png",
+      "idle/33/rain_catcher_idle_33_09.png",
+      "idle/33/rain_catcher_idle_33_10.png",
+      "idle/33/rain_catcher_idle_33_11.png",
+      "idle/33/rain_catcher_idle_33_12.png"
+     ],
+     "strip": "idle/rain_catcher_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/rain_catcher_idle_contact.png"
+  },
+  "action": {
+   "frame_count": 44,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 4400,
+   "loop": true,
+   "description": "Catch: the locked 47-frame cast/hook/yank/gulp loop re-timed to 10 fps; holds become held drawings; paper boil on the stump only. v3: the gulp drawings are held (wide gulp 2+2 frames, the shocked face 3, the open-mouth 3), so no face shows for fewer than 3 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/rain_catcher_action_100_01.png",
+      "action/100/rain_catcher_action_100_02.png",
+      "action/100/rain_catcher_action_100_03.png",
+      "action/100/rain_catcher_action_100_04.png",
+      "action/100/rain_catcher_action_100_05.png",
+      "action/100/rain_catcher_action_100_06.png",
+      "action/100/rain_catcher_action_100_07.png",
+      "action/100/rain_catcher_action_100_08.png",
+      "action/100/rain_catcher_action_100_09.png",
+      "action/100/rain_catcher_action_100_10.png",
+      "action/100/rain_catcher_action_100_11.png",
+      "action/100/rain_catcher_action_100_12.png",
+      "action/100/rain_catcher_action_100_13.png",
+      "action/100/rain_catcher_action_100_14.png",
+      "action/100/rain_catcher_action_100_15.png",
+      "action/100/rain_catcher_action_100_16.png",
+      "action/100/rain_catcher_action_100_17.png",
+      "action/100/rain_catcher_action_100_18.png",
+      "action/100/rain_catcher_action_100_19.png",
+      "action/100/rain_catcher_action_100_20.png",
+      "action/100/rain_catcher_action_100_21.png",
+      "action/100/rain_catcher_action_100_22.png",
+      "action/100/rain_catcher_action_100_23.png",
+      "action/100/rain_catcher_action_100_24.png",
+      "action/100/rain_catcher_action_100_25.png",
+      "action/100/rain_catcher_action_100_26.png",
+      "action/100/rain_catcher_action_100_27.png",
+      "action/100/rain_catcher_action_100_28.png",
+      "action/100/rain_catcher_action_100_29.png",
+      "action/100/rain_catcher_action_100_30.png",
+      "action/100/rain_catcher_action_100_31.png",
+      "action/100/rain_catcher_action_100_32.png",
+      "action/100/rain_catcher_action_100_33.png",
+      "action/100/rain_catcher_action_100_34.png",
+      "action/100/rain_catcher_action_100_35.png",
+      "action/100/rain_catcher_action_100_36.png",
+      "action/100/rain_catcher_action_100_37.png",
+      "action/100/rain_catcher_action_100_38.png",
+      "action/100/rain_catcher_action_100_39.png",
+      "action/100/rain_catcher_action_100_40.png",
+      "action/100/rain_catcher_action_100_41.png",
+      "action/100/rain_catcher_action_100_42.png",
+      "action/100/rain_catcher_action_100_43.png",
+      "action/100/rain_catcher_action_100_44.png"
+     ],
+     "strip": "action/rain_catcher_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/rain_catcher_action_66_01.png",
+      "action/66/rain_catcher_action_66_02.png",
+      "action/66/rain_catcher_action_66_03.png",
+      "action/66/rain_catcher_action_66_04.png",
+      "action/66/rain_catcher_action_66_05.png",
+      "action/66/rain_catcher_action_66_06.png",
+      "action/66/rain_catcher_action_66_07.png",
+      "action/66/rain_catcher_action_66_08.png",
+      "action/66/rain_catcher_action_66_09.png",
+      "action/66/rain_catcher_action_66_10.png",
+      "action/66/rain_catcher_action_66_11.png",
+      "action/66/rain_catcher_action_66_12.png",
+      "action/66/rain_catcher_action_66_13.png",
+      "action/66/rain_catcher_action_66_14.png",
+      "action/66/rain_catcher_action_66_15.png",
+      "action/66/rain_catcher_action_66_16.png",
+      "action/66/rain_catcher_action_66_17.png",
+      "action/66/rain_catcher_action_66_18.png",
+      "action/66/rain_catcher_action_66_19.png",
+      "action/66/rain_catcher_action_66_20.png",
+      "action/66/rain_catcher_action_66_21.png",
+      "action/66/rain_catcher_action_66_22.png",
+      "action/66/rain_catcher_action_66_23.png",
+      "action/66/rain_catcher_action_66_24.png",
+      "action/66/rain_catcher_action_66_25.png",
+      "action/66/rain_catcher_action_66_26.png",
+      "action/66/rain_catcher_action_66_27.png",
+      "action/66/rain_catcher_action_66_28.png",
+      "action/66/rain_catcher_action_66_29.png",
+      "action/66/rain_catcher_action_66_30.png",
+      "action/66/rain_catcher_action_66_31.png",
+      "action/66/rain_catcher_action_66_32.png",
+      "action/66/rain_catcher_action_66_33.png",
+      "action/66/rain_catcher_action_66_34.png",
+      "action/66/rain_catcher_action_66_35.png",
+      "action/66/rain_catcher_action_66_36.png",
+      "action/66/rain_catcher_action_66_37.png",
+      "action/66/rain_catcher_action_66_38.png",
+      "action/66/rain_catcher_action_66_39.png",
+      "action/66/rain_catcher_action_66_40.png",
+      "action/66/rain_catcher_action_66_41.png",
+      "action/66/rain_catcher_action_66_42.png",
+      "action/66/rain_catcher_action_66_43.png",
+      "action/66/rain_catcher_action_66_44.png"
+     ],
+     "strip": "action/rain_catcher_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/rain_catcher_action_33_01.png",
+      "action/33/rain_catcher_action_33_02.png",
+      "action/33/rain_catcher_action_33_03.png",
+      "action/33/rain_catcher_action_33_04.png",
+      "action/33/rain_catcher_action_33_05.png",
+      "action/33/rain_catcher_action_33_06.png",
+      "action/33/rain_catcher_action_33_07.png",
+      "action/33/rain_catcher_action_33_08.png",
+      "action/33/rain_catcher_action_33_09.png",
+      "action/33/rain_catcher_action_33_10.png",
+      "action/33/rain_catcher_action_33_11.png",
+      "action/33/rain_catcher_action_33_12.png",
+      "action/33/rain_catcher_action_33_13.png",
+      "action/33/rain_catcher_action_33_14.png",
+      "action/33/rain_catcher_action_33_15.png",
+      "action/33/rain_catcher_action_33_16.png",
+      "action/33/rain_catcher_action_33_17.png",
+      "action/33/rain_catcher_action_33_18.png",
+      "action/33/rain_catcher_action_33_19.png",
+      "action/33/rain_catcher_action_33_20.png",
+      "action/33/rain_catcher_action_33_21.png",
+      "action/33/rain_catcher_action_33_22.png",
+      "action/33/rain_catcher_action_33_23.png",
+      "action/33/rain_catcher_action_33_24.png",
+      "action/33/rain_catcher_action_33_25.png",
+      "action/33/rain_catcher_action_33_26.png",
+      "action/33/rain_catcher_action_33_27.png",
+      "action/33/rain_catcher_action_33_28.png",
+      "action/33/rain_catcher_action_33_29.png",
+      "action/33/rain_catcher_action_33_30.png",
+      "action/33/rain_catcher_action_33_31.png",
+      "action/33/rain_catcher_action_33_32.png",
+      "action/33/rain_catcher_action_33_33.png",
+      "action/33/rain_catcher_action_33_34.png",
+      "action/33/rain_catcher_action_33_35.png",
+      "action/33/rain_catcher_action_33_36.png",
+      "action/33/rain_catcher_action_33_37.png",
+      "action/33/rain_catcher_action_33_38.png",
+      "action/33/rain_catcher_action_33_39.png",
+      "action/33/rain_catcher_action_33_40.png",
+      "action/33/rain_catcher_action_33_41.png",
+      "action/33/rain_catcher_action_33_42.png",
+      "action/33/rain_catcher_action_33_43.png",
+      "action/33/rain_catcher_action_33_44.png"
+     ],
+     "strip": "action/rain_catcher_action_33_strip.png"
+    }
+   },
+   "line_cast_out_frame": 19,
+   "hooked_frame": 23,
+   "drop_caught_frame": 33,
+   "gulp_frames": [
+    36,
+    37
+   ],
+   "rod_tip_px": [
+    [
+     468.5,
+     262.4
+    ],
+    [
+     471.0,
+     262.1
+    ],
+    [
+     472.8,
+     261.9
+    ],
+    [
+     473.4,
+     261.8
+    ],
+    [
+     472.8,
+     261.9
+    ],
+    [
+     471.0,
+     262.1
+    ],
+    [
+     468.5,
+     262.4
+    ],
+    [
+     466.0,
+     262.7
+    ],
+    [
+     464.1,
+     262.9
+    ],
+    [
+     463.4,
+     263.0
+    ],
+    [
+     464.1,
+     262.9
+    ],
+    [
+     466.0,
+     262.7
+    ],
+    [
+     474.9,
+     251.2
+    ],
+    [
+     369.8,
+     178.4
+    ],
+    [
+     286.7,
+     173.9
+    ],
+    [
+     227.4,
+     186.0
+    ],
+    [
+     206.1,
+     188.1
+    ],
+    [
+     206.1,
+     188.1
+    ],
+    [
+     604.6,
+     351.1
+    ],
+    [
+     537.6,
+     294.1
+    ],
+    [
+     511.5,
+     280.7
+    ],
+    [
+     495.6,
+     273.6
+    ],
+    [
+     570.9,
+     333.4
+    ],
+    [
+     588.9,
+     355.7
+    ],
+    [
+     535.8,
+     288.9
+    ],
+    [
+     255.2,
+     198.0
+    ],
+    [
+     255.2,
+     198.0
+    ],
+    [
+     249.8,
+     206.1
+    ],
+    [
+     249.8,
+     206.1
+    ],
+    [
+     410.3,
+     204.9
+    ],
+    [
+     410.3,
+     204.9
+    ],
+    [
+     410.3,
+     204.9
+    ],
+    [
+     533.3,
+     291.1
+    ],
+    [
+     533.3,
+     291.1
+    ],
+    [
+     533.3,
+     291.1
+    ],
+    [
+     556.5,
+     313.6
+    ],
+    [
+     499.4,
+     274.7
+    ],
+    [
+     476.7,
+     266.0
+    ],
+    [
+     470.6,
+     263.6
+    ],
+    [
+     461.6,
+     261.1
+    ],
+    [
+     468.1,
+     262.9
+    ],
+    [
+     468.0,
+     262.4
+    ],
+    [
+     469.6,
+     262.8
+    ],
+    [
+     468.9,
+     262.5
+    ]
+   ],
+   "drop_sprite": "fx/rain_drop.png",
+   "source_frames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    19,
+    19,
+    21,
+    23,
+    24,
+    25,
+    27,
+    28,
+    29,
+    31,
+    31,
+    32,
+    32,
+    34,
+    34,
+    34,
+    36,
+    36,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46
+   ],
+   "note": "The fishing line and the caught drop are baked into the frames as before (line leaves the frame on the right while cast).",
+   "contact_sheet": "action/rain_catcher_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Short flinch away from the hit (hits come from the right): upper body leans left 8 deg and squashes (held 2 frames), springs back past rest, settles. Pot/ground pixels never move.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/rain_catcher_hurt_100_01.png",
+      "hurt/100/rain_catcher_hurt_100_02.png",
+      "hurt/100/rain_catcher_hurt_100_03.png",
+      "hurt/100/rain_catcher_hurt_100_04.png",
+      "hurt/100/rain_catcher_hurt_100_05.png"
+     ],
+     "strip": "hurt/rain_catcher_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/rain_catcher_hurt_66_01.png",
+      "hurt/66/rain_catcher_hurt_66_02.png",
+      "hurt/66/rain_catcher_hurt_66_03.png",
+      "hurt/66/rain_catcher_hurt_66_04.png",
+      "hurt/66/rain_catcher_hurt_66_05.png"
+     ],
+     "strip": "hurt/rain_catcher_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/rain_catcher_hurt_33_01.png",
+      "hurt/33/rain_catcher_hurt_33_02.png",
+      "hurt/33/rain_catcher_hurt_33_03.png",
+      "hurt/33/rain_catcher_hurt_33_04.png",
+      "hurt/33/rain_catcher_hurt_33_05.png"
+     ],
+     "strip": "hurt/rain_catcher_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/rain_catcher_hurt_contact.png"
+  },
+  "place": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Placed like a sticker being pressed onto the tile: comes in 12% big and 34 px high, presses down flat with a squash, springs up a touch, settles exactly on the idle pose (frames 7-8 = idle frame 1).",
+   "states": {
+    "100": {
+     "frames": [
+      "place/100/rain_catcher_place_100_01.png",
+      "place/100/rain_catcher_place_100_02.png",
+      "place/100/rain_catcher_place_100_03.png",
+      "place/100/rain_catcher_place_100_04.png",
+      "place/100/rain_catcher_place_100_05.png",
+      "place/100/rain_catcher_place_100_06.png",
+      "place/100/rain_catcher_place_100_07.png",
+      "place/100/rain_catcher_place_100_08.png"
+     ],
+     "strip": "place/rain_catcher_place_100_strip.png"
+    }
+   },
+   "contact_sheet": "place/rain_catcher_place_contact.png"
+  },
+  "death": {
+   "frame_count": 11,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1100,
+   "loop": false,
+   "description": "From the 33% art: wobbles, the stump card folds back on its ground hinge in 3 held steps (foreshortening and darkening), then the whole sticker scrunches into a paper wad (FX A8 tinted bark brown) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/rain_catcher_death_33_01.png",
+      "death/33/rain_catcher_death_33_02.png",
+      "death/33/rain_catcher_death_33_03.png",
+      "death/33/rain_catcher_death_33_04.png",
+      "death/33/rain_catcher_death_33_05.png",
+      "death/33/rain_catcher_death_33_06.png",
+      "death/33/rain_catcher_death_33_07.png",
+      "death/33/rain_catcher_death_33_08.png",
+      "death/33/rain_catcher_death_33_09.png",
+      "death/33/rain_catcher_death_33_10.png",
+      "death/33/rain_catcher_death_33_11.png"
+     ],
+     "strip": "death/rain_catcher_death_33_strip.png"
+    }
+   },
+   "poof_frame": 11,
+   "poof_center_px": [
+    323.5,
+    691.5
+   ],
+   "ball_diameter_px": 131.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame play fx/poof centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/rain_catcher_death_contact.png"
+  }
+ },
+ "faces": "right (wardens face the incoming vermin)",
+ "anchor": {
+  "pot_or_ground_lock_row_px": 712,
+  "body_pivot_px": [
+   281.0,
+   689.0
+  ],
+  "ground_point_px": [
+   281.0,
+   738.0
+  ],
+  "note": "Every pixel row at or below pot_or_ground_lock_row_px is identical in all idle/action/hurt frames and states (checked: max diff 0)."
+ },
+ "source_canvas_offset_px": [
+  50,
+  120
+ ],
+ "source": "/workspace/gw/final_touchup/rain_catcher (frames) - locked frames, re-timed; originals untouched",
+ "damage": "Interior paper damage only: 66% creases on the bark, a torn-off top layer patch, a scuffed edge, a tape strip; 33% adds deeper creases, big torn patches, masking tape, grime and a crack in the ground tuft. Both faces never damaged.",
+ "notes": "Faces right. Rain drop is a separate sprite.",
+ "effects": {
+  "drop": "fx/rain_drop.png"
+ }
+}

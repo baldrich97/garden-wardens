@@ -1,0 +1,524 @@
+{
+ "unit": "Bee (vermin)",
+ "kind": "vermin",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  557,
+  880
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Hover in place: slow held bob (5 px), hinged cardstock wings flip between 2 poses, paper boil.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/bee_idle_100_01.png",
+      "idle/100/bee_idle_100_02.png",
+      "idle/100/bee_idle_100_03.png",
+      "idle/100/bee_idle_100_04.png",
+      "idle/100/bee_idle_100_05.png",
+      "idle/100/bee_idle_100_06.png",
+      "idle/100/bee_idle_100_07.png",
+      "idle/100/bee_idle_100_08.png",
+      "idle/100/bee_idle_100_09.png",
+      "idle/100/bee_idle_100_10.png",
+      "idle/100/bee_idle_100_11.png",
+      "idle/100/bee_idle_100_12.png"
+     ],
+     "strip": "idle/bee_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/bee_idle_66_01.png",
+      "idle/66/bee_idle_66_02.png",
+      "idle/66/bee_idle_66_03.png",
+      "idle/66/bee_idle_66_04.png",
+      "idle/66/bee_idle_66_05.png",
+      "idle/66/bee_idle_66_06.png",
+      "idle/66/bee_idle_66_07.png",
+      "idle/66/bee_idle_66_08.png",
+      "idle/66/bee_idle_66_09.png",
+      "idle/66/bee_idle_66_10.png",
+      "idle/66/bee_idle_66_11.png",
+      "idle/66/bee_idle_66_12.png"
+     ],
+     "strip": "idle/bee_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/bee_idle_33_01.png",
+      "idle/33/bee_idle_33_02.png",
+      "idle/33/bee_idle_33_03.png",
+      "idle/33/bee_idle_33_04.png",
+      "idle/33/bee_idle_33_05.png",
+      "idle/33/bee_idle_33_06.png",
+      "idle/33/bee_idle_33_07.png",
+      "idle/33/bee_idle_33_08.png",
+      "idle/33/bee_idle_33_09.png",
+      "idle/33/bee_idle_33_10.png",
+      "idle/33/bee_idle_33_11.png",
+      "idle/33/bee_idle_33_12.png"
+     ],
+     "strip": "idle/bee_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/bee_idle_contact.png"
+  },
+  "move": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Fly: flies straight, bobbing in held steps (18 px range), 2 hinged wing poses, paper boil.",
+   "states": {
+    "100": {
+     "frames": [
+      "move/100/bee_move_100_01.png",
+      "move/100/bee_move_100_02.png",
+      "move/100/bee_move_100_03.png",
+      "move/100/bee_move_100_04.png",
+      "move/100/bee_move_100_05.png",
+      "move/100/bee_move_100_06.png",
+      "move/100/bee_move_100_07.png",
+      "move/100/bee_move_100_08.png",
+      "move/100/bee_move_100_09.png",
+      "move/100/bee_move_100_10.png",
+      "move/100/bee_move_100_11.png",
+      "move/100/bee_move_100_12.png"
+     ],
+     "strip": "move/bee_move_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "move/66/bee_move_66_01.png",
+      "move/66/bee_move_66_02.png",
+      "move/66/bee_move_66_03.png",
+      "move/66/bee_move_66_04.png",
+      "move/66/bee_move_66_05.png",
+      "move/66/bee_move_66_06.png",
+      "move/66/bee_move_66_07.png",
+      "move/66/bee_move_66_08.png",
+      "move/66/bee_move_66_09.png",
+      "move/66/bee_move_66_10.png",
+      "move/66/bee_move_66_11.png",
+      "move/66/bee_move_66_12.png"
+     ],
+     "strip": "move/bee_move_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "move/33/bee_move_33_01.png",
+      "move/33/bee_move_33_02.png",
+      "move/33/bee_move_33_03.png",
+      "move/33/bee_move_33_04.png",
+      "move/33/bee_move_33_05.png",
+      "move/33/bee_move_33_06.png",
+      "move/33/bee_move_33_07.png",
+      "move/33/bee_move_33_08.png",
+      "move/33/bee_move_33_09.png",
+      "move/33/bee_move_33_10.png",
+      "move/33/bee_move_33_11.png",
+      "move/33/bee_move_33_12.png"
+     ],
+     "strip": "move/bee_move_33_strip.png"
+    }
+   },
+   "movement_per_loop_px": null,
+   "movement_note": "free speed",
+   "contact_sheet": "move/bee_move_contact.png"
+  },
+  "action": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Chew while hovering: open 3 / closed 3 hard mouth swaps with a head lunge.",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/bee_action_100_01.png",
+      "action/100/bee_action_100_02.png",
+      "action/100/bee_action_100_03.png",
+      "action/100/bee_action_100_04.png",
+      "action/100/bee_action_100_05.png",
+      "action/100/bee_action_100_06.png",
+      "action/100/bee_action_100_07.png",
+      "action/100/bee_action_100_08.png",
+      "action/100/bee_action_100_09.png",
+      "action/100/bee_action_100_10.png",
+      "action/100/bee_action_100_11.png",
+      "action/100/bee_action_100_12.png"
+     ],
+     "strip": "action/bee_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/bee_action_66_01.png",
+      "action/66/bee_action_66_02.png",
+      "action/66/bee_action_66_03.png",
+      "action/66/bee_action_66_04.png",
+      "action/66/bee_action_66_05.png",
+      "action/66/bee_action_66_06.png",
+      "action/66/bee_action_66_07.png",
+      "action/66/bee_action_66_08.png",
+      "action/66/bee_action_66_09.png",
+      "action/66/bee_action_66_10.png",
+      "action/66/bee_action_66_11.png",
+      "action/66/bee_action_66_12.png"
+     ],
+     "strip": "action/bee_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/bee_action_33_01.png",
+      "action/33/bee_action_33_02.png",
+      "action/33/bee_action_33_03.png",
+      "action/33/bee_action_33_04.png",
+      "action/33/bee_action_33_05.png",
+      "action/33/bee_action_33_06.png",
+      "action/33/bee_action_33_07.png",
+      "action/33/bee_action_33_08.png",
+      "action/33/bee_action_33_09.png",
+      "action/33/bee_action_33_10.png",
+      "action/33/bee_action_33_11.png",
+      "action/33/bee_action_33_12.png"
+     ],
+     "strip": "action/bee_action_33_strip.png"
+    }
+   },
+   "contact_sheet": "action/bee_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Knocked back in the air: snaps back 15 px and up 8 px, tips back 9 deg with a squash (held), springs past rest, settles. 5 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/bee_hurt_100_01.png",
+      "hurt/100/bee_hurt_100_02.png",
+      "hurt/100/bee_hurt_100_03.png",
+      "hurt/100/bee_hurt_100_04.png",
+      "hurt/100/bee_hurt_100_05.png"
+     ],
+     "strip": "hurt/bee_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/bee_hurt_66_01.png",
+      "hurt/66/bee_hurt_66_02.png",
+      "hurt/66/bee_hurt_66_03.png",
+      "hurt/66/bee_hurt_66_04.png",
+      "hurt/66/bee_hurt_66_05.png"
+     ],
+     "strip": "hurt/bee_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/bee_hurt_33_01.png",
+      "hurt/33/bee_hurt_33_02.png",
+      "hurt/33/bee_hurt_33_03.png",
+      "hurt/33/bee_hurt_33_04.png",
+      "hurt/33/bee_hurt_33_05.png"
+     ],
+     "strip": "hurt/bee_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/bee_hurt_contact.png"
+  },
+  "spawn": {
+   "frame_count": 9,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 900,
+   "loop": false,
+   "description": "Puppet drop: lowered in from above on a brown cardstock stick (wings flapping), dips and bounces, then the stick pulls away upward. 9 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "spawn/100/bee_spawn_100_01.png",
+      "spawn/100/bee_spawn_100_02.png",
+      "spawn/100/bee_spawn_100_03.png",
+      "spawn/100/bee_spawn_100_04.png",
+      "spawn/100/bee_spawn_100_05.png",
+      "spawn/100/bee_spawn_100_06.png",
+      "spawn/100/bee_spawn_100_07.png",
+      "spawn/100/bee_spawn_100_08.png",
+      "spawn/100/bee_spawn_100_09.png"
+     ],
+     "strip": "spawn/bee_spawn_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "spawn/66/bee_spawn_66_01.png",
+      "spawn/66/bee_spawn_66_02.png",
+      "spawn/66/bee_spawn_66_03.png",
+      "spawn/66/bee_spawn_66_04.png",
+      "spawn/66/bee_spawn_66_05.png",
+      "spawn/66/bee_spawn_66_06.png",
+      "spawn/66/bee_spawn_66_07.png",
+      "spawn/66/bee_spawn_66_08.png",
+      "spawn/66/bee_spawn_66_09.png"
+     ],
+     "strip": "spawn/bee_spawn_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "spawn/33/bee_spawn_33_01.png",
+      "spawn/33/bee_spawn_33_02.png",
+      "spawn/33/bee_spawn_33_03.png",
+      "spawn/33/bee_spawn_33_04.png",
+      "spawn/33/bee_spawn_33_05.png",
+      "spawn/33/bee_spawn_33_06.png",
+      "spawn/33/bee_spawn_33_07.png",
+      "spawn/33/bee_spawn_33_08.png",
+      "spawn/33/bee_spawn_33_09.png"
+     ],
+     "strip": "spawn/bee_spawn_33_strip.png"
+    }
+   },
+   "contact_sheet": "spawn/bee_spawn_contact.png"
+  },
+  "death": {
+   "frame_count": 10,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1000,
+   "loop": false,
+   "description": "From the 33% art: recoil, wings stop and it nose-dives 40 px in 3 held steps, scrunches into a paper wad (FX A8 ball tinted yellow) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/bee_death_33_01.png",
+      "death/33/bee_death_33_02.png",
+      "death/33/bee_death_33_03.png",
+      "death/33/bee_death_33_04.png",
+      "death/33/bee_death_33_05.png",
+      "death/33/bee_death_33_06.png",
+      "death/33/bee_death_33_07.png",
+      "death/33/bee_death_33_08.png",
+      "death/33/bee_death_33_09.png",
+      "death/33/bee_death_33_10.png"
+     ],
+     "strip": "death/bee_death_33_strip.png"
+    }
+   },
+   "poof_frame": 10,
+   "poof_center_px": [
+    269.5,
+    620.0
+   ],
+   "ball_diameter_px": 275.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame, play fx/poof (separate sprite) centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/bee_death_contact.png"
+  },
+  "rise": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Lane change up (pose P3): nose tips up to 20 deg in held steps and levels out; in place, the game tweens the lane move.",
+   "states": {
+    "100": {
+     "frames": [
+      "rise/100/bee_rise_100_01.png",
+      "rise/100/bee_rise_100_02.png",
+      "rise/100/bee_rise_100_03.png",
+      "rise/100/bee_rise_100_04.png",
+      "rise/100/bee_rise_100_05.png",
+      "rise/100/bee_rise_100_06.png",
+      "rise/100/bee_rise_100_07.png",
+      "rise/100/bee_rise_100_08.png"
+     ],
+     "strip": "rise/bee_rise_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "rise/66/bee_rise_66_01.png",
+      "rise/66/bee_rise_66_02.png",
+      "rise/66/bee_rise_66_03.png",
+      "rise/66/bee_rise_66_04.png",
+      "rise/66/bee_rise_66_05.png",
+      "rise/66/bee_rise_66_06.png",
+      "rise/66/bee_rise_66_07.png",
+      "rise/66/bee_rise_66_08.png"
+     ],
+     "strip": "rise/bee_rise_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "rise/33/bee_rise_33_01.png",
+      "rise/33/bee_rise_33_02.png",
+      "rise/33/bee_rise_33_03.png",
+      "rise/33/bee_rise_33_04.png",
+      "rise/33/bee_rise_33_05.png",
+      "rise/33/bee_rise_33_06.png",
+      "rise/33/bee_rise_33_07.png",
+      "rise/33/bee_rise_33_08.png"
+     ],
+     "strip": "rise/bee_rise_33_strip.png"
+    }
+   },
+   "contact_sheet": "rise/bee_rise_contact.png"
+  },
+  "drop": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Lane change down (pose P4): nose tips down to 20 deg and levels out; in place.",
+   "states": {
+    "100": {
+     "frames": [
+      "drop/100/bee_drop_100_01.png",
+      "drop/100/bee_drop_100_02.png",
+      "drop/100/bee_drop_100_03.png",
+      "drop/100/bee_drop_100_04.png",
+      "drop/100/bee_drop_100_05.png",
+      "drop/100/bee_drop_100_06.png",
+      "drop/100/bee_drop_100_07.png",
+      "drop/100/bee_drop_100_08.png"
+     ],
+     "strip": "drop/bee_drop_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "drop/66/bee_drop_66_01.png",
+      "drop/66/bee_drop_66_02.png",
+      "drop/66/bee_drop_66_03.png",
+      "drop/66/bee_drop_66_04.png",
+      "drop/66/bee_drop_66_05.png",
+      "drop/66/bee_drop_66_06.png",
+      "drop/66/bee_drop_66_07.png",
+      "drop/66/bee_drop_66_08.png"
+     ],
+     "strip": "drop/bee_drop_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "drop/33/bee_drop_33_01.png",
+      "drop/33/bee_drop_33_02.png",
+      "drop/33/bee_drop_33_03.png",
+      "drop/33/bee_drop_33_04.png",
+      "drop/33/bee_drop_33_05.png",
+      "drop/33/bee_drop_33_06.png",
+      "drop/33/bee_drop_33_07.png",
+      "drop/33/bee_drop_33_08.png"
+     ],
+     "strip": "drop/bee_drop_33_strip.png"
+    }
+   },
+   "contact_sheet": "drop/bee_drop_contact.png"
+  }
+ },
+ "faces": "left",
+ "anchor": {
+  "ground_point_px": null,
+  "body_center_px": [
+   300.0,
+   580.0
+  ],
+  "note": "body_center = hover pivot. Top 190 px of the canvas is head-room for the stick drop."
+ },
+ "rig_canvas_offset_px": [
+  30,
+  190
+ ],
+ "notes": "Faces left. All loops in place. rise/drop are extra (P3/P4 picks).",
+ "damage": "66%: creases, small wing notch, frayed edge, a tape strip. 33%: deeper creases, a big wing tear with a crack, a missing chunk, masking-tape patches, grime. Face never damaged."
+}

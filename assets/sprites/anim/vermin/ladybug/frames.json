@@ -1,0 +1,655 @@
+{
+ "unit": "Ladybug (vermin)",
+ "kind": "vermin",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  546,
+  562
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": true,
+   "description": "Standing breath in held steps (2 frames per drawing), body sinks 2.5 px on the inhale, paper boil.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/ladybug_idle_100_01.png",
+      "idle/100/ladybug_idle_100_02.png",
+      "idle/100/ladybug_idle_100_03.png",
+      "idle/100/ladybug_idle_100_04.png",
+      "idle/100/ladybug_idle_100_05.png",
+      "idle/100/ladybug_idle_100_06.png",
+      "idle/100/ladybug_idle_100_07.png",
+      "idle/100/ladybug_idle_100_08.png"
+     ],
+     "strip": "idle/ladybug_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/ladybug_idle_66_01.png",
+      "idle/66/ladybug_idle_66_02.png",
+      "idle/66/ladybug_idle_66_03.png",
+      "idle/66/ladybug_idle_66_04.png",
+      "idle/66/ladybug_idle_66_05.png",
+      "idle/66/ladybug_idle_66_06.png",
+      "idle/66/ladybug_idle_66_07.png",
+      "idle/66/ladybug_idle_66_08.png"
+     ],
+     "strip": "idle/ladybug_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/ladybug_idle_33_01.png",
+      "idle/33/ladybug_idle_33_02.png",
+      "idle/33/ladybug_idle_33_03.png",
+      "idle/33/ladybug_idle_33_04.png",
+      "idle/33/ladybug_idle_33_05.png",
+      "idle/33/ladybug_idle_33_06.png",
+      "idle/33/ladybug_idle_33_07.png",
+      "idle/33/ladybug_idle_33_08.png"
+     ],
+     "strip": "idle/ladybug_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/ladybug_idle_contact.png"
+  },
+  "move": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": true,
+   "description": "Walk (fixed direction): alternating tripod at 10 fps; each foot lifts only while swinging forward (left) and slides back along the ground while planted, so it pushes the ground away; body bobs and rocks 1.8 deg.",
+   "states": {
+    "100": {
+     "frames": [
+      "move/100/ladybug_move_100_01.png",
+      "move/100/ladybug_move_100_02.png",
+      "move/100/ladybug_move_100_03.png",
+      "move/100/ladybug_move_100_04.png",
+      "move/100/ladybug_move_100_05.png",
+      "move/100/ladybug_move_100_06.png",
+      "move/100/ladybug_move_100_07.png",
+      "move/100/ladybug_move_100_08.png"
+     ],
+     "strip": "move/ladybug_move_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "move/66/ladybug_move_66_01.png",
+      "move/66/ladybug_move_66_02.png",
+      "move/66/ladybug_move_66_03.png",
+      "move/66/ladybug_move_66_04.png",
+      "move/66/ladybug_move_66_05.png",
+      "move/66/ladybug_move_66_06.png",
+      "move/66/ladybug_move_66_07.png",
+      "move/66/ladybug_move_66_08.png"
+     ],
+     "strip": "move/ladybug_move_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "move/33/ladybug_move_33_01.png",
+      "move/33/ladybug_move_33_02.png",
+      "move/33/ladybug_move_33_03.png",
+      "move/33/ladybug_move_33_04.png",
+      "move/33/ladybug_move_33_05.png",
+      "move/33/ladybug_move_33_06.png",
+      "move/33/ladybug_move_33_07.png",
+      "move/33/ladybug_move_33_08.png"
+     ],
+     "strip": "move/ladybug_move_33_strip.png"
+    }
+   },
+   "movement_per_loop_px": 48.0,
+   "movement_note": "planted feet slide 2xA=24 px back per half cycle; move the sprite left ~48 px per 0.8 s loop (60 px/s) for no foot slip",
+   "contact_sheet": "move/ladybug_move_contact.png"
+  },
+  "action": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Chew: hard mouth swap open 3 / closed 3 frames, head rocks forward on the bite, paper boil.",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/ladybug_action_100_01.png",
+      "action/100/ladybug_action_100_02.png",
+      "action/100/ladybug_action_100_03.png",
+      "action/100/ladybug_action_100_04.png",
+      "action/100/ladybug_action_100_05.png",
+      "action/100/ladybug_action_100_06.png",
+      "action/100/ladybug_action_100_07.png",
+      "action/100/ladybug_action_100_08.png",
+      "action/100/ladybug_action_100_09.png",
+      "action/100/ladybug_action_100_10.png",
+      "action/100/ladybug_action_100_11.png",
+      "action/100/ladybug_action_100_12.png"
+     ],
+     "strip": "action/ladybug_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/ladybug_action_66_01.png",
+      "action/66/ladybug_action_66_02.png",
+      "action/66/ladybug_action_66_03.png",
+      "action/66/ladybug_action_66_04.png",
+      "action/66/ladybug_action_66_05.png",
+      "action/66/ladybug_action_66_06.png",
+      "action/66/ladybug_action_66_07.png",
+      "action/66/ladybug_action_66_08.png",
+      "action/66/ladybug_action_66_09.png",
+      "action/66/ladybug_action_66_10.png",
+      "action/66/ladybug_action_66_11.png",
+      "action/66/ladybug_action_66_12.png"
+     ],
+     "strip": "action/ladybug_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/ladybug_action_33_01.png",
+      "action/33/ladybug_action_33_02.png",
+      "action/33/ladybug_action_33_03.png",
+      "action/33/ladybug_action_33_04.png",
+      "action/33/ladybug_action_33_05.png",
+      "action/33/ladybug_action_33_06.png",
+      "action/33/ladybug_action_33_07.png",
+      "action/33/ladybug_action_33_08.png",
+      "action/33/ladybug_action_33_09.png",
+      "action/33/ladybug_action_33_10.png",
+      "action/33/ladybug_action_33_11.png",
+      "action/33/ladybug_action_33_12.png"
+     ],
+     "strip": "action/ladybug_action_33_strip.png"
+    }
+   },
+   "contact_sheet": "action/ladybug_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Knock-back flinch: snaps back 15 px and leans back 9 deg with a squash (held 2 frames), springs past rest and settles. 5 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/ladybug_hurt_100_01.png",
+      "hurt/100/ladybug_hurt_100_02.png",
+      "hurt/100/ladybug_hurt_100_03.png",
+      "hurt/100/ladybug_hurt_100_04.png",
+      "hurt/100/ladybug_hurt_100_05.png"
+     ],
+     "strip": "hurt/ladybug_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/ladybug_hurt_66_01.png",
+      "hurt/66/ladybug_hurt_66_02.png",
+      "hurt/66/ladybug_hurt_66_03.png",
+      "hurt/66/ladybug_hurt_66_04.png",
+      "hurt/66/ladybug_hurt_66_05.png"
+     ],
+     "strip": "hurt/ladybug_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/ladybug_hurt_33_01.png",
+      "hurt/33/ladybug_hurt_33_02.png",
+      "hurt/33/ladybug_hurt_33_03.png",
+      "hurt/33/ladybug_hurt_33_04.png",
+      "hurt/33/ladybug_hurt_33_05.png"
+     ],
+     "strip": "hurt/ladybug_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/ladybug_hurt_contact.png"
+  },
+  "spawn": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Pop-up card: stands up from flat on its foot line while sliding in 34 px from the right, overshoots tall, settles. 8 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "spawn/100/ladybug_spawn_100_01.png",
+      "spawn/100/ladybug_spawn_100_02.png",
+      "spawn/100/ladybug_spawn_100_03.png",
+      "spawn/100/ladybug_spawn_100_04.png",
+      "spawn/100/ladybug_spawn_100_05.png",
+      "spawn/100/ladybug_spawn_100_06.png",
+      "spawn/100/ladybug_spawn_100_07.png",
+      "spawn/100/ladybug_spawn_100_08.png"
+     ],
+     "strip": "spawn/ladybug_spawn_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "spawn/66/ladybug_spawn_66_01.png",
+      "spawn/66/ladybug_spawn_66_02.png",
+      "spawn/66/ladybug_spawn_66_03.png",
+      "spawn/66/ladybug_spawn_66_04.png",
+      "spawn/66/ladybug_spawn_66_05.png",
+      "spawn/66/ladybug_spawn_66_06.png",
+      "spawn/66/ladybug_spawn_66_07.png",
+      "spawn/66/ladybug_spawn_66_08.png"
+     ],
+     "strip": "spawn/ladybug_spawn_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "spawn/33/ladybug_spawn_33_01.png",
+      "spawn/33/ladybug_spawn_33_02.png",
+      "spawn/33/ladybug_spawn_33_03.png",
+      "spawn/33/ladybug_spawn_33_04.png",
+      "spawn/33/ladybug_spawn_33_05.png",
+      "spawn/33/ladybug_spawn_33_06.png",
+      "spawn/33/ladybug_spawn_33_07.png",
+      "spawn/33/ladybug_spawn_33_08.png"
+     ],
+     "strip": "spawn/ladybug_spawn_33_strip.png"
+    }
+   },
+   "contact_sheet": "spawn/ladybug_spawn_contact.png"
+  },
+  "death": {
+   "frame_count": 10,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1000,
+   "loop": false,
+   "description": "From the 33% art: recoil, folds flat backwards onto the ground in 3 held steps, scrunches into a paper ball (FX A8 tinted red) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/ladybug_death_33_01.png",
+      "death/33/ladybug_death_33_02.png",
+      "death/33/ladybug_death_33_03.png",
+      "death/33/ladybug_death_33_04.png",
+      "death/33/ladybug_death_33_05.png",
+      "death/33/ladybug_death_33_06.png",
+      "death/33/ladybug_death_33_07.png",
+      "death/33/ladybug_death_33_08.png",
+      "death/33/ladybug_death_33_09.png",
+      "death/33/ladybug_death_33_10.png"
+     ],
+     "strip": "death/ladybug_death_33_strip.png"
+    }
+   },
+   "poof_frame": 10,
+   "poof_center_px": [
+    295.5,
+    468.5
+   ],
+   "ball_diameter_px": 179.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame, play fx/poof (separate sprite) centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/ladybug_death_contact.png"
+  },
+  "flutter_takeoff": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Hop-over takeoff: crouches twice on the walking art (shell shut), then the shell snaps open on its paper hinge, the underwings buzz between 2 held poses every frame and it springs up nose-first, lifting 49 px in-canvas. Hand off to flutter_air.",
+   "states": {
+    "100": {
+     "frames": [
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_01.png",
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_02.png",
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_03.png",
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_04.png",
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_05.png",
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_06.png",
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_07.png",
+      "flutter_takeoff/100/ladybug_flutter_takeoff_100_08.png"
+     ],
+     "strip": "flutter_takeoff/ladybug_flutter_takeoff_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_01.png",
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_02.png",
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_03.png",
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_04.png",
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_05.png",
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_06.png",
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_07.png",
+      "flutter_takeoff/66/ladybug_flutter_takeoff_66_08.png"
+     ],
+     "strip": "flutter_takeoff/ladybug_flutter_takeoff_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_01.png",
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_02.png",
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_03.png",
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_04.png",
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_05.png",
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_06.png",
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_07.png",
+      "flutter_takeoff/33/ladybug_flutter_takeoff_33_08.png"
+     ],
+     "strip": "flutter_takeoff/ladybug_flutter_takeoff_33_strip.png"
+    }
+   },
+   "hop_over": {
+    "clears": "Stubborn Cone (blocker), about 1 tile tall",
+    "peak_height_tiles": 1.25,
+    "distance_tiles": 2.0,
+    "sequence": "flutter_takeoff (0.8 s) -> flutter_air looped x2 (1.2 s) -> flutter_land (0.8 s) = 2.8 s",
+    "game_motion": "The frames lift the bug only ~0.1 tile in-canvas; the game moves the sprite along the arc. Start the horizontal move on takeoff frame 4 and finish it on landing frame 5 (2.0 s of travel = 1 tile/s).",
+    "arc_formula": "t = 0..1 over the 2.0 s of travel; x = x0 - 2.0*tile*t (moving left); y_lift = 4*1.25*tile*t*(1-t) above the lane floor (peak 1.25 tiles at t=0.5, clears the 1-tile cone with a 0.25-tile margin).",
+    "in_canvas_lift_px": {
+     "takeoff": [
+      0,
+      0,
+      0,
+      8,
+      22,
+      36,
+      46,
+      49
+     ],
+     "air": [
+      52,
+      55,
+      58,
+      57,
+      54,
+      51
+     ],
+     "land": [
+      50,
+      40,
+      26,
+      10,
+      0,
+      3,
+      0,
+      0
+     ]
+    }
+   },
+   "contact_sheet": "flutter_takeoff/ladybug_flutter_takeoff_contact.png"
+  },
+  "flutter_air": {
+   "frame_count": 6,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 600,
+   "loop": true,
+   "description": "Airborne loop: shell held open, underwings buzz every frame (2 held poses), slow 7 px bob, slight nose-up. Loop while the game carries the sprite over the blocker.",
+   "states": {
+    "100": {
+     "frames": [
+      "flutter_air/100/ladybug_flutter_air_100_01.png",
+      "flutter_air/100/ladybug_flutter_air_100_02.png",
+      "flutter_air/100/ladybug_flutter_air_100_03.png",
+      "flutter_air/100/ladybug_flutter_air_100_04.png",
+      "flutter_air/100/ladybug_flutter_air_100_05.png",
+      "flutter_air/100/ladybug_flutter_air_100_06.png"
+     ],
+     "strip": "flutter_air/ladybug_flutter_air_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "flutter_air/66/ladybug_flutter_air_66_01.png",
+      "flutter_air/66/ladybug_flutter_air_66_02.png",
+      "flutter_air/66/ladybug_flutter_air_66_03.png",
+      "flutter_air/66/ladybug_flutter_air_66_04.png",
+      "flutter_air/66/ladybug_flutter_air_66_05.png",
+      "flutter_air/66/ladybug_flutter_air_66_06.png"
+     ],
+     "strip": "flutter_air/ladybug_flutter_air_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "flutter_air/33/ladybug_flutter_air_33_01.png",
+      "flutter_air/33/ladybug_flutter_air_33_02.png",
+      "flutter_air/33/ladybug_flutter_air_33_03.png",
+      "flutter_air/33/ladybug_flutter_air_33_04.png",
+      "flutter_air/33/ladybug_flutter_air_33_05.png",
+      "flutter_air/33/ladybug_flutter_air_33_06.png"
+     ],
+     "strip": "flutter_air/ladybug_flutter_air_33_strip.png"
+    }
+   },
+   "hop_over": {
+    "clears": "Stubborn Cone (blocker), about 1 tile tall",
+    "peak_height_tiles": 1.25,
+    "distance_tiles": 2.0,
+    "sequence": "flutter_takeoff (0.8 s) -> flutter_air looped x2 (1.2 s) -> flutter_land (0.8 s) = 2.8 s",
+    "game_motion": "The frames lift the bug only ~0.1 tile in-canvas; the game moves the sprite along the arc. Start the horizontal move on takeoff frame 4 and finish it on landing frame 5 (2.0 s of travel = 1 tile/s).",
+    "arc_formula": "t = 0..1 over the 2.0 s of travel; x = x0 - 2.0*tile*t (moving left); y_lift = 4*1.25*tile*t*(1-t) above the lane floor (peak 1.25 tiles at t=0.5, clears the 1-tile cone with a 0.25-tile margin).",
+    "in_canvas_lift_px": {
+     "takeoff": [
+      0,
+      0,
+      0,
+      8,
+      22,
+      36,
+      46,
+      49
+     ],
+     "air": [
+      52,
+      55,
+      58,
+      57,
+      54,
+      51
+     ],
+     "land": [
+      50,
+      40,
+      26,
+      10,
+      0,
+      3,
+      0,
+      0
+     ]
+    }
+   },
+   "contact_sheet": "flutter_air/ladybug_flutter_air_contact.png"
+  },
+  "flutter_land": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Landing: drops 50 px in-canvas nose-down, touches down with a squash, wings fold, the shell clicks shut back onto the walking art and settles on idle frame 1.",
+   "states": {
+    "100": {
+     "frames": [
+      "flutter_land/100/ladybug_flutter_land_100_01.png",
+      "flutter_land/100/ladybug_flutter_land_100_02.png",
+      "flutter_land/100/ladybug_flutter_land_100_03.png",
+      "flutter_land/100/ladybug_flutter_land_100_04.png",
+      "flutter_land/100/ladybug_flutter_land_100_05.png",
+      "flutter_land/100/ladybug_flutter_land_100_06.png",
+      "flutter_land/100/ladybug_flutter_land_100_07.png",
+      "flutter_land/100/ladybug_flutter_land_100_08.png"
+     ],
+     "strip": "flutter_land/ladybug_flutter_land_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "flutter_land/66/ladybug_flutter_land_66_01.png",
+      "flutter_land/66/ladybug_flutter_land_66_02.png",
+      "flutter_land/66/ladybug_flutter_land_66_03.png",
+      "flutter_land/66/ladybug_flutter_land_66_04.png",
+      "flutter_land/66/ladybug_flutter_land_66_05.png",
+      "flutter_land/66/ladybug_flutter_land_66_06.png",
+      "flutter_land/66/ladybug_flutter_land_66_07.png",
+      "flutter_land/66/ladybug_flutter_land_66_08.png"
+     ],
+     "strip": "flutter_land/ladybug_flutter_land_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "flutter_land/33/ladybug_flutter_land_33_01.png",
+      "flutter_land/33/ladybug_flutter_land_33_02.png",
+      "flutter_land/33/ladybug_flutter_land_33_03.png",
+      "flutter_land/33/ladybug_flutter_land_33_04.png",
+      "flutter_land/33/ladybug_flutter_land_33_05.png",
+      "flutter_land/33/ladybug_flutter_land_33_06.png",
+      "flutter_land/33/ladybug_flutter_land_33_07.png",
+      "flutter_land/33/ladybug_flutter_land_33_08.png"
+     ],
+     "strip": "flutter_land/ladybug_flutter_land_33_strip.png"
+    }
+   },
+   "hop_over": {
+    "clears": "Stubborn Cone (blocker), about 1 tile tall",
+    "peak_height_tiles": 1.25,
+    "distance_tiles": 2.0,
+    "sequence": "flutter_takeoff (0.8 s) -> flutter_air looped x2 (1.2 s) -> flutter_land (0.8 s) = 2.8 s",
+    "game_motion": "The frames lift the bug only ~0.1 tile in-canvas; the game moves the sprite along the arc. Start the horizontal move on takeoff frame 4 and finish it on landing frame 5 (2.0 s of travel = 1 tile/s).",
+    "arc_formula": "t = 0..1 over the 2.0 s of travel; x = x0 - 2.0*tile*t (moving left); y_lift = 4*1.25*tile*t*(1-t) above the lane floor (peak 1.25 tiles at t=0.5, clears the 1-tile cone with a 0.25-tile margin).",
+    "in_canvas_lift_px": {
+     "takeoff": [
+      0,
+      0,
+      0,
+      8,
+      22,
+      36,
+      46,
+      49
+     ],
+     "air": [
+      52,
+      55,
+      58,
+      57,
+      54,
+      51
+     ],
+     "land": [
+      50,
+      40,
+      26,
+      10,
+      0,
+      3,
+      0,
+      0
+     ]
+    }
+   },
+   "contact_sheet": "flutter_land/ladybug_flutter_land_contact.png"
+  }
+ },
+ "faces": "left",
+ "anchor": {
+  "ground_point_px": [
+   290.0,
+   535.0
+  ],
+  "body_center_px": [
+   290.0,
+   380.0
+  ],
+  "note": "ground_point = middle of the foot line; keep it on the lane floor."
+ },
+ "rig_canvas_offset_px": [
+  30,
+  40
+ ],
+ "notes": "Faces left. The game moves the sprite; all loops are in place.",
+ "damage": "66%: two creases, small torn notch on the shell edge, frayed corner, one tape strip. 33%: adds deeper creases, a big tear with a crack running in, a missing chunk, masking-tape patches over the tear, a cracked shell line and grime."
+}

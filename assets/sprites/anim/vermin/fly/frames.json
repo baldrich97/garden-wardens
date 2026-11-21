@@ -1,0 +1,424 @@
+{
+ "unit": "Fly (vermin)",
+ "kind": "vermin",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  527,
+  780
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Hover in place: slow held bob (5 px), the cardstock wing flips between 2 hinged poses every frame, paper boil.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/fly_idle_100_01.png",
+      "idle/100/fly_idle_100_02.png",
+      "idle/100/fly_idle_100_03.png",
+      "idle/100/fly_idle_100_04.png",
+      "idle/100/fly_idle_100_05.png",
+      "idle/100/fly_idle_100_06.png",
+      "idle/100/fly_idle_100_07.png",
+      "idle/100/fly_idle_100_08.png",
+      "idle/100/fly_idle_100_09.png",
+      "idle/100/fly_idle_100_10.png",
+      "idle/100/fly_idle_100_11.png",
+      "idle/100/fly_idle_100_12.png"
+     ],
+     "strip": "idle/fly_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/fly_idle_66_01.png",
+      "idle/66/fly_idle_66_02.png",
+      "idle/66/fly_idle_66_03.png",
+      "idle/66/fly_idle_66_04.png",
+      "idle/66/fly_idle_66_05.png",
+      "idle/66/fly_idle_66_06.png",
+      "idle/66/fly_idle_66_07.png",
+      "idle/66/fly_idle_66_08.png",
+      "idle/66/fly_idle_66_09.png",
+      "idle/66/fly_idle_66_10.png",
+      "idle/66/fly_idle_66_11.png",
+      "idle/66/fly_idle_66_12.png"
+     ],
+     "strip": "idle/fly_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/fly_idle_33_01.png",
+      "idle/33/fly_idle_33_02.png",
+      "idle/33/fly_idle_33_03.png",
+      "idle/33/fly_idle_33_04.png",
+      "idle/33/fly_idle_33_05.png",
+      "idle/33/fly_idle_33_06.png",
+      "idle/33/fly_idle_33_07.png",
+      "idle/33/fly_idle_33_08.png",
+      "idle/33/fly_idle_33_09.png",
+      "idle/33/fly_idle_33_10.png",
+      "idle/33/fly_idle_33_11.png",
+      "idle/33/fly_idle_33_12.png"
+     ],
+     "strip": "idle/fly_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/fly_idle_contact.png"
+  },
+  "move": {
+   "frame_count": 16,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1600,
+   "loop": true,
+   "description": "Fly: lazy figure-eight drift (14 x 9 px) in 16 held frames, 2 hinged wing poses, paper boil. In place; the game moves it left.",
+   "states": {
+    "100": {
+     "frames": [
+      "move/100/fly_move_100_01.png",
+      "move/100/fly_move_100_02.png",
+      "move/100/fly_move_100_03.png",
+      "move/100/fly_move_100_04.png",
+      "move/100/fly_move_100_05.png",
+      "move/100/fly_move_100_06.png",
+      "move/100/fly_move_100_07.png",
+      "move/100/fly_move_100_08.png",
+      "move/100/fly_move_100_09.png",
+      "move/100/fly_move_100_10.png",
+      "move/100/fly_move_100_11.png",
+      "move/100/fly_move_100_12.png",
+      "move/100/fly_move_100_13.png",
+      "move/100/fly_move_100_14.png",
+      "move/100/fly_move_100_15.png",
+      "move/100/fly_move_100_16.png"
+     ],
+     "strip": "move/fly_move_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "move/66/fly_move_66_01.png",
+      "move/66/fly_move_66_02.png",
+      "move/66/fly_move_66_03.png",
+      "move/66/fly_move_66_04.png",
+      "move/66/fly_move_66_05.png",
+      "move/66/fly_move_66_06.png",
+      "move/66/fly_move_66_07.png",
+      "move/66/fly_move_66_08.png",
+      "move/66/fly_move_66_09.png",
+      "move/66/fly_move_66_10.png",
+      "move/66/fly_move_66_11.png",
+      "move/66/fly_move_66_12.png",
+      "move/66/fly_move_66_13.png",
+      "move/66/fly_move_66_14.png",
+      "move/66/fly_move_66_15.png",
+      "move/66/fly_move_66_16.png"
+     ],
+     "strip": "move/fly_move_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "move/33/fly_move_33_01.png",
+      "move/33/fly_move_33_02.png",
+      "move/33/fly_move_33_03.png",
+      "move/33/fly_move_33_04.png",
+      "move/33/fly_move_33_05.png",
+      "move/33/fly_move_33_06.png",
+      "move/33/fly_move_33_07.png",
+      "move/33/fly_move_33_08.png",
+      "move/33/fly_move_33_09.png",
+      "move/33/fly_move_33_10.png",
+      "move/33/fly_move_33_11.png",
+      "move/33/fly_move_33_12.png",
+      "move/33/fly_move_33_13.png",
+      "move/33/fly_move_33_14.png",
+      "move/33/fly_move_33_15.png",
+      "move/33/fly_move_33_16.png"
+     ],
+     "strip": "move/fly_move_33_strip.png"
+    }
+   },
+   "movement_per_loop_px": null,
+   "movement_note": "free speed (no feet)",
+   "contact_sheet": "move/fly_move_contact.png"
+  },
+  "action": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Chew while hovering: head lunges forward-down with hard mouth swaps, open 3 / closed 3 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/fly_action_100_01.png",
+      "action/100/fly_action_100_02.png",
+      "action/100/fly_action_100_03.png",
+      "action/100/fly_action_100_04.png",
+      "action/100/fly_action_100_05.png",
+      "action/100/fly_action_100_06.png",
+      "action/100/fly_action_100_07.png",
+      "action/100/fly_action_100_08.png",
+      "action/100/fly_action_100_09.png",
+      "action/100/fly_action_100_10.png",
+      "action/100/fly_action_100_11.png",
+      "action/100/fly_action_100_12.png"
+     ],
+     "strip": "action/fly_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/fly_action_66_01.png",
+      "action/66/fly_action_66_02.png",
+      "action/66/fly_action_66_03.png",
+      "action/66/fly_action_66_04.png",
+      "action/66/fly_action_66_05.png",
+      "action/66/fly_action_66_06.png",
+      "action/66/fly_action_66_07.png",
+      "action/66/fly_action_66_08.png",
+      "action/66/fly_action_66_09.png",
+      "action/66/fly_action_66_10.png",
+      "action/66/fly_action_66_11.png",
+      "action/66/fly_action_66_12.png"
+     ],
+     "strip": "action/fly_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/fly_action_33_01.png",
+      "action/33/fly_action_33_02.png",
+      "action/33/fly_action_33_03.png",
+      "action/33/fly_action_33_04.png",
+      "action/33/fly_action_33_05.png",
+      "action/33/fly_action_33_06.png",
+      "action/33/fly_action_33_07.png",
+      "action/33/fly_action_33_08.png",
+      "action/33/fly_action_33_09.png",
+      "action/33/fly_action_33_10.png",
+      "action/33/fly_action_33_11.png",
+      "action/33/fly_action_33_12.png"
+     ],
+     "strip": "action/fly_action_33_strip.png"
+    }
+   },
+   "contact_sheet": "action/fly_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Knocked back in the air: snaps back 15 px and up 8 px, tips back 9 deg with a squash (held), springs past rest, settles. 5 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/fly_hurt_100_01.png",
+      "hurt/100/fly_hurt_100_02.png",
+      "hurt/100/fly_hurt_100_03.png",
+      "hurt/100/fly_hurt_100_04.png",
+      "hurt/100/fly_hurt_100_05.png"
+     ],
+     "strip": "hurt/fly_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/fly_hurt_66_01.png",
+      "hurt/66/fly_hurt_66_02.png",
+      "hurt/66/fly_hurt_66_03.png",
+      "hurt/66/fly_hurt_66_04.png",
+      "hurt/66/fly_hurt_66_05.png"
+     ],
+     "strip": "hurt/fly_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/fly_hurt_33_01.png",
+      "hurt/33/fly_hurt_33_02.png",
+      "hurt/33/fly_hurt_33_03.png",
+      "hurt/33/fly_hurt_33_04.png",
+      "hurt/33/fly_hurt_33_05.png"
+     ],
+     "strip": "hurt/fly_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/fly_hurt_contact.png"
+  },
+  "spawn": {
+   "frame_count": 9,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 900,
+   "loop": false,
+   "description": "Puppet drop: lowered in from above on a brown cardstock stick (wings flapping), dips past its spot and bounces, then the stick pulls away upward. 9 frames.",
+   "states": {
+    "100": {
+     "frames": [
+      "spawn/100/fly_spawn_100_01.png",
+      "spawn/100/fly_spawn_100_02.png",
+      "spawn/100/fly_spawn_100_03.png",
+      "spawn/100/fly_spawn_100_04.png",
+      "spawn/100/fly_spawn_100_05.png",
+      "spawn/100/fly_spawn_100_06.png",
+      "spawn/100/fly_spawn_100_07.png",
+      "spawn/100/fly_spawn_100_08.png",
+      "spawn/100/fly_spawn_100_09.png"
+     ],
+     "strip": "spawn/fly_spawn_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "spawn/66/fly_spawn_66_01.png",
+      "spawn/66/fly_spawn_66_02.png",
+      "spawn/66/fly_spawn_66_03.png",
+      "spawn/66/fly_spawn_66_04.png",
+      "spawn/66/fly_spawn_66_05.png",
+      "spawn/66/fly_spawn_66_06.png",
+      "spawn/66/fly_spawn_66_07.png",
+      "spawn/66/fly_spawn_66_08.png",
+      "spawn/66/fly_spawn_66_09.png"
+     ],
+     "strip": "spawn/fly_spawn_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "spawn/33/fly_spawn_33_01.png",
+      "spawn/33/fly_spawn_33_02.png",
+      "spawn/33/fly_spawn_33_03.png",
+      "spawn/33/fly_spawn_33_04.png",
+      "spawn/33/fly_spawn_33_05.png",
+      "spawn/33/fly_spawn_33_06.png",
+      "spawn/33/fly_spawn_33_07.png",
+      "spawn/33/fly_spawn_33_08.png",
+      "spawn/33/fly_spawn_33_09.png"
+     ],
+     "strip": "spawn/fly_spawn_33_strip.png"
+    }
+   },
+   "contact_sheet": "spawn/fly_spawn_contact.png"
+  },
+  "death": {
+   "frame_count": 10,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1000,
+   "loop": false,
+   "description": "From the 33% art: recoil, wings stop and it nose-dives 40 px in 3 held steps, scrunches into a paper wad (FX A8 ball tinted navy) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/fly_death_33_01.png",
+      "death/33/fly_death_33_02.png",
+      "death/33/fly_death_33_03.png",
+      "death/33/fly_death_33_04.png",
+      "death/33/fly_death_33_05.png",
+      "death/33/fly_death_33_06.png",
+      "death/33/fly_death_33_07.png",
+      "death/33/fly_death_33_08.png",
+      "death/33/fly_death_33_09.png",
+      "death/33/fly_death_33_10.png"
+     ],
+     "strip": "death/fly_death_33_strip.png"
+    }
+   },
+   "poof_frame": 10,
+   "poof_center_px": [
+    256.5,
+    597.5
+   ],
+   "ball_diameter_px": 249.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame, play fx/poof (separate sprite) centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/fly_death_contact.png"
+  }
+ },
+ "faces": "left",
+ "anchor": {
+  "ground_point_px": null,
+  "body_center_px": [
+   260.0,
+   550.0
+  ],
+  "note": "body_center = hover pivot. Top 190 px of the canvas is head-room for the stick drop."
+ },
+ "rig_canvas_offset_px": [
+  30,
+  190
+ ],
+ "notes": "Faces left. All loops in place.",
+ "damage": "66%: creases, a small notch torn in the wing, frayed edge, a tape strip. 33%: deeper creases, a big tear in the wing with a crack running in, a missing chunk, masking-tape patches, grime. Face never damaged."
+}

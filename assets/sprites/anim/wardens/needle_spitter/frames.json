@@ -1,0 +1,361 @@
+{
+ "unit": "Needle Spitter (warden)",
+ "kind": "warden",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  439,
+  479
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 12,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1200,
+   "loop": true,
+   "description": "Idle: held breath steps from the locked idle pose (frame 1), the cactus swells 1.2% and settles, paper boil; pot static.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/needle_spitter_idle_100_01.png",
+      "idle/100/needle_spitter_idle_100_02.png",
+      "idle/100/needle_spitter_idle_100_03.png",
+      "idle/100/needle_spitter_idle_100_04.png",
+      "idle/100/needle_spitter_idle_100_05.png",
+      "idle/100/needle_spitter_idle_100_06.png",
+      "idle/100/needle_spitter_idle_100_07.png",
+      "idle/100/needle_spitter_idle_100_08.png",
+      "idle/100/needle_spitter_idle_100_09.png",
+      "idle/100/needle_spitter_idle_100_10.png",
+      "idle/100/needle_spitter_idle_100_11.png",
+      "idle/100/needle_spitter_idle_100_12.png"
+     ],
+     "strip": "idle/needle_spitter_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/needle_spitter_idle_66_01.png",
+      "idle/66/needle_spitter_idle_66_02.png",
+      "idle/66/needle_spitter_idle_66_03.png",
+      "idle/66/needle_spitter_idle_66_04.png",
+      "idle/66/needle_spitter_idle_66_05.png",
+      "idle/66/needle_spitter_idle_66_06.png",
+      "idle/66/needle_spitter_idle_66_07.png",
+      "idle/66/needle_spitter_idle_66_08.png",
+      "idle/66/needle_spitter_idle_66_09.png",
+      "idle/66/needle_spitter_idle_66_10.png",
+      "idle/66/needle_spitter_idle_66_11.png",
+      "idle/66/needle_spitter_idle_66_12.png"
+     ],
+     "strip": "idle/needle_spitter_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/needle_spitter_idle_33_01.png",
+      "idle/33/needle_spitter_idle_33_02.png",
+      "idle/33/needle_spitter_idle_33_03.png",
+      "idle/33/needle_spitter_idle_33_04.png",
+      "idle/33/needle_spitter_idle_33_05.png",
+      "idle/33/needle_spitter_idle_33_06.png",
+      "idle/33/needle_spitter_idle_33_07.png",
+      "idle/33/needle_spitter_idle_33_08.png",
+      "idle/33/needle_spitter_idle_33_09.png",
+      "idle/33/needle_spitter_idle_33_10.png",
+      "idle/33/needle_spitter_idle_33_11.png",
+      "idle/33/needle_spitter_idle_33_12.png"
+     ],
+     "strip": "idle/needle_spitter_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/needle_spitter_idle_contact.png"
+  },
+  "action": {
+   "frame_count": 16,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1600,
+   "loop": true,
+   "description": "Fire: the locked 19-frame spit re-timed to 10 fps - the long wind-up pose becomes held drawings, quick frames drop out; paper boil on the body only. Smoke is a separate overlay.",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/needle_spitter_action_100_01.png",
+      "action/100/needle_spitter_action_100_02.png",
+      "action/100/needle_spitter_action_100_03.png",
+      "action/100/needle_spitter_action_100_04.png",
+      "action/100/needle_spitter_action_100_05.png",
+      "action/100/needle_spitter_action_100_06.png",
+      "action/100/needle_spitter_action_100_07.png",
+      "action/100/needle_spitter_action_100_08.png",
+      "action/100/needle_spitter_action_100_09.png",
+      "action/100/needle_spitter_action_100_10.png",
+      "action/100/needle_spitter_action_100_11.png",
+      "action/100/needle_spitter_action_100_12.png",
+      "action/100/needle_spitter_action_100_13.png",
+      "action/100/needle_spitter_action_100_14.png",
+      "action/100/needle_spitter_action_100_15.png",
+      "action/100/needle_spitter_action_100_16.png"
+     ],
+     "strip": "action/needle_spitter_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/needle_spitter_action_66_01.png",
+      "action/66/needle_spitter_action_66_02.png",
+      "action/66/needle_spitter_action_66_03.png",
+      "action/66/needle_spitter_action_66_04.png",
+      "action/66/needle_spitter_action_66_05.png",
+      "action/66/needle_spitter_action_66_06.png",
+      "action/66/needle_spitter_action_66_07.png",
+      "action/66/needle_spitter_action_66_08.png",
+      "action/66/needle_spitter_action_66_09.png",
+      "action/66/needle_spitter_action_66_10.png",
+      "action/66/needle_spitter_action_66_11.png",
+      "action/66/needle_spitter_action_66_12.png",
+      "action/66/needle_spitter_action_66_13.png",
+      "action/66/needle_spitter_action_66_14.png",
+      "action/66/needle_spitter_action_66_15.png",
+      "action/66/needle_spitter_action_66_16.png"
+     ],
+     "strip": "action/needle_spitter_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/needle_spitter_action_33_01.png",
+      "action/33/needle_spitter_action_33_02.png",
+      "action/33/needle_spitter_action_33_03.png",
+      "action/33/needle_spitter_action_33_04.png",
+      "action/33/needle_spitter_action_33_05.png",
+      "action/33/needle_spitter_action_33_06.png",
+      "action/33/needle_spitter_action_33_07.png",
+      "action/33/needle_spitter_action_33_08.png",
+      "action/33/needle_spitter_action_33_09.png",
+      "action/33/needle_spitter_action_33_10.png",
+      "action/33/needle_spitter_action_33_11.png",
+      "action/33/needle_spitter_action_33_12.png",
+      "action/33/needle_spitter_action_33_13.png",
+      "action/33/needle_spitter_action_33_14.png",
+      "action/33/needle_spitter_action_33_15.png",
+      "action/33/needle_spitter_action_33_16.png"
+     ],
+     "strip": "action/needle_spitter_action_33_strip.png"
+    }
+   },
+   "spine_spawn": {
+    "frame": 10,
+    "snout_tip_px": [
+     308.3,
+     222.6
+    ],
+    "direction": [
+     1,
+     0
+    ],
+    "sprite": "fx/needle_spine.png",
+    "note": "Spawn the spine at the start of this frame, tail at snout_tip_px, travelling right."
+   },
+   "smoke_overlay": "fx/smoke/smoke_NN.png - one overlay per action frame (same canvas, aligned), or empty where there is no smoke",
+   "source_frames": [
+    1,
+    1,
+    1,
+    1,
+    2,
+    3,
+    5,
+    6,
+    7,
+    9,
+    10,
+    12,
+    14,
+    15,
+    17,
+    19
+   ],
+   "contact_sheet": "action/needle_spitter_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Short flinch away from the hit (hits come from the right): upper body leans left 8 deg and squashes (held 2 frames), springs back past rest, settles. Pot/ground pixels never move.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/needle_spitter_hurt_100_01.png",
+      "hurt/100/needle_spitter_hurt_100_02.png",
+      "hurt/100/needle_spitter_hurt_100_03.png",
+      "hurt/100/needle_spitter_hurt_100_04.png",
+      "hurt/100/needle_spitter_hurt_100_05.png"
+     ],
+     "strip": "hurt/needle_spitter_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/needle_spitter_hurt_66_01.png",
+      "hurt/66/needle_spitter_hurt_66_02.png",
+      "hurt/66/needle_spitter_hurt_66_03.png",
+      "hurt/66/needle_spitter_hurt_66_04.png",
+      "hurt/66/needle_spitter_hurt_66_05.png"
+     ],
+     "strip": "hurt/needle_spitter_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/needle_spitter_hurt_33_01.png",
+      "hurt/33/needle_spitter_hurt_33_02.png",
+      "hurt/33/needle_spitter_hurt_33_03.png",
+      "hurt/33/needle_spitter_hurt_33_04.png",
+      "hurt/33/needle_spitter_hurt_33_05.png"
+     ],
+     "strip": "hurt/needle_spitter_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/needle_spitter_hurt_contact.png"
+  },
+  "place": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Placed like a sticker being pressed onto the tile: comes in 12% big and 34 px high, presses down flat with a squash, springs up a touch, settles exactly on the idle pose (frames 7-8 = idle frame 1).",
+   "states": {
+    "100": {
+     "frames": [
+      "place/100/needle_spitter_place_100_01.png",
+      "place/100/needle_spitter_place_100_02.png",
+      "place/100/needle_spitter_place_100_03.png",
+      "place/100/needle_spitter_place_100_04.png",
+      "place/100/needle_spitter_place_100_05.png",
+      "place/100/needle_spitter_place_100_06.png",
+      "place/100/needle_spitter_place_100_07.png",
+      "place/100/needle_spitter_place_100_08.png"
+     ],
+     "strip": "place/needle_spitter_place_100_strip.png"
+    }
+   },
+   "contact_sheet": "place/needle_spitter_place_contact.png"
+  },
+  "death": {
+   "frame_count": 11,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1100,
+   "loop": false,
+   "description": "From the 33% art: wilts back and forth, the cactus card folds back on its pot-rim hinge in 3 held steps (foreshortening and darkening as it tips away), then the whole sticker scrunches into a paper wad (FX A8 tinted green) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/needle_spitter_death_33_01.png",
+      "death/33/needle_spitter_death_33_02.png",
+      "death/33/needle_spitter_death_33_03.png",
+      "death/33/needle_spitter_death_33_04.png",
+      "death/33/needle_spitter_death_33_05.png",
+      "death/33/needle_spitter_death_33_06.png",
+      "death/33/needle_spitter_death_33_07.png",
+      "death/33/needle_spitter_death_33_08.png",
+      "death/33/needle_spitter_death_33_09.png",
+      "death/33/needle_spitter_death_33_10.png",
+      "death/33/needle_spitter_death_33_11.png"
+     ],
+     "strip": "death/needle_spitter_death_33_strip.png"
+    }
+   },
+   "poof_frame": 11,
+   "poof_center_px": [
+    191.5,
+    414.5
+   ],
+   "ball_diameter_px": 93.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame play fx/poof centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/needle_spitter_death_contact.png"
+  }
+ },
+ "faces": "right (wardens face the incoming vermin)",
+ "anchor": {
+  "pot_or_ground_lock_row_px": 386,
+  "body_pivot_px": [
+   174.0,
+   360.0
+  ],
+  "ground_point_px": [
+   174.0,
+   443.0
+  ],
+  "note": "Every pixel row at or below pot_or_ground_lock_row_px is identical in all idle/action/hurt frames and states (checked: max diff 0)."
+ },
+ "source_canvas_offset_px": [
+  50,
+  120
+ ],
+ "source": "/workspace/gw/final_touchup/needle_spitter (frames_nosmoke) - locked frames, re-timed; originals untouched",
+ "damage": "Interior paper damage only (the outline never changes, so it lines up with every locked frame): 66% creases, a torn-off top layer patch, a scuffed edge, a tape strip; 33% adds deeper creases, big torn patches showing the paper core, masking-tape patches, a crack line, grime. Damage rides the moving parts via optical flow from frame 1.",
+ "notes": "Faces right. Spine and smoke are separate sprites.",
+ "effects": {
+  "spine": "fx/needle_spine.png",
+  "smoke": "fx/smoke/"
+ }
+}

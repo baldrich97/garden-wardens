@@ -1,0 +1,333 @@
+{
+ "unit": "Stubborn Cone (warden, blocker)",
+ "kind": "warden",
+ "style": "stop-motion papercraft (10 fps, held drawings, per-frame paper boil, hinged cardstock parts)",
+ "fps": 10,
+ "canvas_px": [
+  587,
+  780
+ ],
+ "states": {
+  "100": "full health",
+  "66": "66 % health",
+  "33": "33 % health"
+ },
+ "animations": {
+  "idle": {
+   "frame_count": 20,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 2000,
+   "loop": true,
+   "description": "Idle: held breath steps with paper boil, one sharp sprig flick (frames 6-10) and one slow paper-eyelid blink (closed frames 14-16). Feet/ground static.",
+   "states": {
+    "100": {
+     "frames": [
+      "idle/100/stubborn_cone_idle_100_01.png",
+      "idle/100/stubborn_cone_idle_100_02.png",
+      "idle/100/stubborn_cone_idle_100_03.png",
+      "idle/100/stubborn_cone_idle_100_04.png",
+      "idle/100/stubborn_cone_idle_100_05.png",
+      "idle/100/stubborn_cone_idle_100_06.png",
+      "idle/100/stubborn_cone_idle_100_07.png",
+      "idle/100/stubborn_cone_idle_100_08.png",
+      "idle/100/stubborn_cone_idle_100_09.png",
+      "idle/100/stubborn_cone_idle_100_10.png",
+      "idle/100/stubborn_cone_idle_100_11.png",
+      "idle/100/stubborn_cone_idle_100_12.png",
+      "idle/100/stubborn_cone_idle_100_13.png",
+      "idle/100/stubborn_cone_idle_100_14.png",
+      "idle/100/stubborn_cone_idle_100_15.png",
+      "idle/100/stubborn_cone_idle_100_16.png",
+      "idle/100/stubborn_cone_idle_100_17.png",
+      "idle/100/stubborn_cone_idle_100_18.png",
+      "idle/100/stubborn_cone_idle_100_19.png",
+      "idle/100/stubborn_cone_idle_100_20.png"
+     ],
+     "strip": "idle/stubborn_cone_idle_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "idle/66/stubborn_cone_idle_66_01.png",
+      "idle/66/stubborn_cone_idle_66_02.png",
+      "idle/66/stubborn_cone_idle_66_03.png",
+      "idle/66/stubborn_cone_idle_66_04.png",
+      "idle/66/stubborn_cone_idle_66_05.png",
+      "idle/66/stubborn_cone_idle_66_06.png",
+      "idle/66/stubborn_cone_idle_66_07.png",
+      "idle/66/stubborn_cone_idle_66_08.png",
+      "idle/66/stubborn_cone_idle_66_09.png",
+      "idle/66/stubborn_cone_idle_66_10.png",
+      "idle/66/stubborn_cone_idle_66_11.png",
+      "idle/66/stubborn_cone_idle_66_12.png",
+      "idle/66/stubborn_cone_idle_66_13.png",
+      "idle/66/stubborn_cone_idle_66_14.png",
+      "idle/66/stubborn_cone_idle_66_15.png",
+      "idle/66/stubborn_cone_idle_66_16.png",
+      "idle/66/stubborn_cone_idle_66_17.png",
+      "idle/66/stubborn_cone_idle_66_18.png",
+      "idle/66/stubborn_cone_idle_66_19.png",
+      "idle/66/stubborn_cone_idle_66_20.png"
+     ],
+     "strip": "idle/stubborn_cone_idle_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "idle/33/stubborn_cone_idle_33_01.png",
+      "idle/33/stubborn_cone_idle_33_02.png",
+      "idle/33/stubborn_cone_idle_33_03.png",
+      "idle/33/stubborn_cone_idle_33_04.png",
+      "idle/33/stubborn_cone_idle_33_05.png",
+      "idle/33/stubborn_cone_idle_33_06.png",
+      "idle/33/stubborn_cone_idle_33_07.png",
+      "idle/33/stubborn_cone_idle_33_08.png",
+      "idle/33/stubborn_cone_idle_33_09.png",
+      "idle/33/stubborn_cone_idle_33_10.png",
+      "idle/33/stubborn_cone_idle_33_11.png",
+      "idle/33/stubborn_cone_idle_33_12.png",
+      "idle/33/stubborn_cone_idle_33_13.png",
+      "idle/33/stubborn_cone_idle_33_14.png",
+      "idle/33/stubborn_cone_idle_33_15.png",
+      "idle/33/stubborn_cone_idle_33_16.png",
+      "idle/33/stubborn_cone_idle_33_17.png",
+      "idle/33/stubborn_cone_idle_33_18.png",
+      "idle/33/stubborn_cone_idle_33_19.png",
+      "idle/33/stubborn_cone_idle_33_20.png"
+     ],
+     "strip": "idle/stubborn_cone_idle_33_strip.png"
+    }
+   },
+   "contact_sheet": "idle/stubborn_cone_idle_contact.png"
+  },
+  "action": {
+   "frame_count": 10,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1000,
+   "loop": false,
+   "description": "Brace/flex when bitten: sets its shoulders and squashes 6% leaning into the biter, eyes squeezed shut for 3 frames, then puffs up tall and pushes back, sprig whips, settles. Play when a vermin bites (it is a blocker, no attack).",
+   "states": {
+    "100": {
+     "frames": [
+      "action/100/stubborn_cone_action_100_01.png",
+      "action/100/stubborn_cone_action_100_02.png",
+      "action/100/stubborn_cone_action_100_03.png",
+      "action/100/stubborn_cone_action_100_04.png",
+      "action/100/stubborn_cone_action_100_05.png",
+      "action/100/stubborn_cone_action_100_06.png",
+      "action/100/stubborn_cone_action_100_07.png",
+      "action/100/stubborn_cone_action_100_08.png",
+      "action/100/stubborn_cone_action_100_09.png",
+      "action/100/stubborn_cone_action_100_10.png"
+     ],
+     "strip": "action/stubborn_cone_action_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "action/66/stubborn_cone_action_66_01.png",
+      "action/66/stubborn_cone_action_66_02.png",
+      "action/66/stubborn_cone_action_66_03.png",
+      "action/66/stubborn_cone_action_66_04.png",
+      "action/66/stubborn_cone_action_66_05.png",
+      "action/66/stubborn_cone_action_66_06.png",
+      "action/66/stubborn_cone_action_66_07.png",
+      "action/66/stubborn_cone_action_66_08.png",
+      "action/66/stubborn_cone_action_66_09.png",
+      "action/66/stubborn_cone_action_66_10.png"
+     ],
+     "strip": "action/stubborn_cone_action_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "action/33/stubborn_cone_action_33_01.png",
+      "action/33/stubborn_cone_action_33_02.png",
+      "action/33/stubborn_cone_action_33_03.png",
+      "action/33/stubborn_cone_action_33_04.png",
+      "action/33/stubborn_cone_action_33_05.png",
+      "action/33/stubborn_cone_action_33_06.png",
+      "action/33/stubborn_cone_action_33_07.png",
+      "action/33/stubborn_cone_action_33_08.png",
+      "action/33/stubborn_cone_action_33_09.png",
+      "action/33/stubborn_cone_action_33_10.png"
+     ],
+     "strip": "action/stubborn_cone_action_33_strip.png"
+    }
+   },
+   "contact_sheet": "action/stubborn_cone_action_contact.png"
+  },
+  "hurt": {
+   "frame_count": 5,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 500,
+   "loop": false,
+   "description": "Short flinch away from the hit: body leans left 8 deg and squashes (held 2 frames), springs back past rest, settles. Feet never move.",
+   "states": {
+    "100": {
+     "frames": [
+      "hurt/100/stubborn_cone_hurt_100_01.png",
+      "hurt/100/stubborn_cone_hurt_100_02.png",
+      "hurt/100/stubborn_cone_hurt_100_03.png",
+      "hurt/100/stubborn_cone_hurt_100_04.png",
+      "hurt/100/stubborn_cone_hurt_100_05.png"
+     ],
+     "strip": "hurt/stubborn_cone_hurt_100_strip.png"
+    },
+    "66": {
+     "frames": [
+      "hurt/66/stubborn_cone_hurt_66_01.png",
+      "hurt/66/stubborn_cone_hurt_66_02.png",
+      "hurt/66/stubborn_cone_hurt_66_03.png",
+      "hurt/66/stubborn_cone_hurt_66_04.png",
+      "hurt/66/stubborn_cone_hurt_66_05.png"
+     ],
+     "strip": "hurt/stubborn_cone_hurt_66_strip.png"
+    },
+    "33": {
+     "frames": [
+      "hurt/33/stubborn_cone_hurt_33_01.png",
+      "hurt/33/stubborn_cone_hurt_33_02.png",
+      "hurt/33/stubborn_cone_hurt_33_03.png",
+      "hurt/33/stubborn_cone_hurt_33_04.png",
+      "hurt/33/stubborn_cone_hurt_33_05.png"
+     ],
+     "strip": "hurt/stubborn_cone_hurt_33_strip.png"
+    }
+   },
+   "contact_sheet": "hurt/stubborn_cone_hurt_contact.png"
+  },
+  "place": {
+   "frame_count": 8,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 800,
+   "loop": false,
+   "description": "Placed like a sticker pressed onto the tile: comes in 12% big and 34 px high, presses flat with a squash, springs, settles exactly on idle frame 1.",
+   "states": {
+    "100": {
+     "frames": [
+      "place/100/stubborn_cone_place_100_01.png",
+      "place/100/stubborn_cone_place_100_02.png",
+      "place/100/stubborn_cone_place_100_03.png",
+      "place/100/stubborn_cone_place_100_04.png",
+      "place/100/stubborn_cone_place_100_05.png",
+      "place/100/stubborn_cone_place_100_06.png",
+      "place/100/stubborn_cone_place_100_07.png",
+      "place/100/stubborn_cone_place_100_08.png"
+     ],
+     "strip": "place/stubborn_cone_place_100_strip.png"
+    }
+   },
+   "contact_sheet": "place/stubborn_cone_place_contact.png"
+  },
+  "death": {
+   "frame_count": 11,
+   "durations_ms": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+   ],
+   "total_ms": 1100,
+   "loop": false,
+   "description": "From the 33% art: wobbles, the cone card folds back on its feet hinge in 3 held steps (foreshortening and darkening), then the whole sticker scrunches into a paper wad (FX A8 tinted pine-cone brown) that bounces once; then the poof effect takes over.",
+   "states": {
+    "33": {
+     "frames": [
+      "death/33/stubborn_cone_death_33_01.png",
+      "death/33/stubborn_cone_death_33_02.png",
+      "death/33/stubborn_cone_death_33_03.png",
+      "death/33/stubborn_cone_death_33_04.png",
+      "death/33/stubborn_cone_death_33_05.png",
+      "death/33/stubborn_cone_death_33_06.png",
+      "death/33/stubborn_cone_death_33_07.png",
+      "death/33/stubborn_cone_death_33_08.png",
+      "death/33/stubborn_cone_death_33_09.png",
+      "death/33/stubborn_cone_death_33_10.png",
+      "death/33/stubborn_cone_death_33_11.png"
+     ],
+     "strip": "death/stubborn_cone_death_33_strip.png"
+    }
+   },
+   "poof_frame": 11,
+   "poof_center_px": [
+    302.5,
+    700.5
+   ],
+   "ball_diameter_px": 135.0,
+   "starts_from_state": "33",
+   "handoff": "After the last frame play fx/poof centred on poof_center_px and remove the unit.",
+   "contact_sheet": "death/stubborn_cone_death_contact.png"
+  }
+ },
+ "faces": "right",
+ "anchor": {
+  "ground_lock_row_px": 696,
+  "body_pivot_px": [
+   295.0,
+   688.0
+  ],
+  "ground_point_px": [
+   295.0,
+   700.0
+  ],
+  "note": "Feet/ground rows are identical in all idle/action/hurt frames and states (max diff 0)."
+ },
+ "rig_canvas_offset_px": [
+  50,
+  120
+ ],
+ "source": "round3 cone take 3 rig (anim/cone) - originals untouched",
+ "damage": "66%: creases across the scales, a small torn notch, frayed edge, a tape strip. 33%: deeper creases, a big tear with a crack, a missing chunk, masking-tape patches, a crack line, grime. Face, sprig and feet never damaged.",
+ "notes": "Blocker warden. The pine sprig is its own hinged layer."
+}

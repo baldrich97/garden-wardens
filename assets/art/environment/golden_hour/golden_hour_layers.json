@@ -1,0 +1,37 @@
+{
+ "canvas": [
+  1280,
+  720
+ ],
+ "sun_centre_px": [
+  270,
+  95.0
+ ],
+ "ray_pivot_px": [
+  249.0,
+  116.0
+ ],
+ "ray_length": "full (runs off every edge)",
+ "wheel_size": 2600,
+ "wheel_pivot": [
+  1300,
+  1300
+ ],
+ "draw_order": [
+  "sky_base",
+  "rays_shadow_wheel (wheel pivot on ray_pivot_px, then offset +6,+10 px screen-space; same rotation)",
+  "rays_wheel (wheel pivot on ray_pivot_px)",
+  "both wheels x rays_fade_mask (screen space)",
+  "foreground",
+  "sun_shadow",
+  "sun_sprite / sun_layer_fullframe"
+ ],
+ "rotation_deg_per_s": 1.25,
+ "ray_spacing_deg": 20.0,
+ "pattern_period_rays": 3,
+ "seamless_every_deg": 60.0,
+ "sun_sprite_topleft": [
+  187,
+  14
+ ]
+}
