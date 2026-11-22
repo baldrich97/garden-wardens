@@ -12,7 +12,8 @@ const SEED_PACKETS := [
 	preload("res://assets/art/ui/seed_packets/seed_packet_rain_catcher.png"),
 	preload("res://assets/art/ui/seed_packets/seed_packet_seed_lobber.png"),
 ]
-const _BACKDROP_SAVE := "user://backdrop.cfg"
+const _PORCH_TEXTURE: Texture2D = preload("res://assets/art/environment/board/player_end_porch.png")
+const _VERMIN_END_TEXTURE: Texture2D = preload("res://assets/art/environment/board/vermin_end_compost_eyes.png")
 const DRAG_SLOP := 18.0
 ## Cells of snail travel between slime puddles (presentation only).
 const TRAIL_SPACING := 0.22
@@ -46,6 +47,7 @@ var _paused := false
 var _breached := false
 var _result := MatchOutcome.Result.ONGOING
 var _hint: PanelContainer
+var _seed_panel: PanelContainer
 var _result_layer: Control
 var _drops: Array[WaterDrop] = []
 var _next_sky := 0.0
@@ -54,6 +56,11 @@ var _roster: WaveRoster
 var _play_shot := ""
 var _fall_shot := ""
 var _backdrop := 0
+var _match_seed: MatchSeed
+var _seed_label: Label
+var _end_porch: TextureRect
+var _end_vermin: TextureRect
+var _golden_hour: GoldenHourBackdrop
 var _started := false
 var _press_card := -1
 var _press_pos := Vector2.ZERO
@@ -74,6 +81,7 @@ var _snail_last: Dictionary = {}
 
 func _ready() -> void:
 	_level = LevelCatalog.current()
+	_match_seed = _read_match_seed()
 	_wallet = WaterWallet.new(_level.water)
 	_bind_slot_keys()
 	_apply_content_scale()
@@ -98,11 +106,13 @@ func _ready() -> void:
 	_build_hud_extras()
 	_build_trail()
 	_build_ghost()
+	_build_board_ends()
+	_build_seed_label()
 	_schedule_sky()
 	_present_cards()
 	_bind_tooltips()
 	_refresh_hud()
-	_load_backdrop()
+	use_backdrop(BackdropCatalog.pick_index(_match_seed.value))
 	_read_shot_args()
 
 
@@ -619,6 +629,78 @@ func _layout_actors() -> void:
 		if is_instance_valid(drop):
 			_place_box(drop, origin, cell, drop.column_pos, drop.row_pos, 0.63)
 	_place_hint()
+	_layout_board_ends()
+
+
+## Builds the porch and the compost eyes that flank the lawn. Drawn under the
+## UI: they sit over the backdrop, behind every actor.
+func _build_board_ends() -> void:
+	_end_porch = _make_board_end("PlayerEnd", _PORCH_TEXTURE)
+	_end_vermin = _make_board_end("VerminEnd", _VERMIN_END_TEXTURE)
+	add_child(_end_porch)
+	add_child(_end_vermin)
+	move_child(_end_porch, 2)
+	move_child(_end_vermin, 3)
+
+
+func _make_board_end(node_name: String, texture: Texture2D) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.name = node_name
+	rect.texture = texture
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
+
+
+## Stands both ends on the bottom row line, tight to the grid edges with a
+## finger's gap. The art is taller-than-wide against the five lanes, but the
+## gutters at 1280x720 cannot host that width, so an end that would run off
+## the screen edge or under the wave panel shrinks to fit and stays complete.
+func _layout_board_ends() -> void:
+	if _end_porch == null or _end_vermin == null:
+		return
+	var cell := _lawn.cell_size_px()
+	if cell <= 0.0:
+		return
+	# The board root covers the viewport from (0,0), so canvas coords are local here.
+	var origin := _lawn.global_position + _lawn.grid_origin()
+	var height := cell * float(LawnView.ROWS)
+	var bottom := origin.y + height
+	var lawn_right := _lawn.global_position.x + _lawn.size.x
+	_size_board_end(_end_porch, height, maxf(origin.x - 10.0, 24.0))
+	_end_porch.position = Vector2(origin.x - 6.0 - _end_porch.size.x, bottom - _end_porch.size.y)
+	_size_board_end(_end_vermin, height, maxf(lawn_right - origin.x - cell * float(_lawn.column_count()) - 10.0, 24.0))
+	_end_vermin.position = Vector2(origin.x + cell * float(_lawn.column_count()) + 6.0, bottom - _end_vermin.size.y)
+
+
+func _size_board_end(rect: TextureRect, lane_height: float, max_width: float) -> void:
+	var aspect := rect.texture.get_size().x / rect.texture.get_size().y
+	var width := minf(lane_height * aspect, max_width)
+	rect.size = Vector2(width, width / aspect)
+
+
+## A small watermark naming the visual seed and look, so a match can be
+## replayed with --seed N.
+func _build_seed_label() -> void:
+	_seed_panel = PanelContainer.new()
+	_seed_panel.name = "SeedLabel"
+	_seed_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_seed_panel.z_index = 7
+	_seed_panel.add_theme_stylebox_override("panel", FlatStyle.panel(Color(FlatStyle.PANEL, 0.55), FlatStyle.INK, 10, 2))
+	_seed_label = Label.new()
+	_seed_label.add_theme_color_override("font_color", FlatStyle.CREAM)
+	_seed_label.add_theme_font_size_override("font_size", 12)
+	_seed_panel.add_child(_seed_label)
+	_lawn.add_child(_seed_panel)
+	_seed_panel.position = Vector2(4.0, 2.0)
+	_refresh_seed_label()
+
+
+func _refresh_seed_label() -> void:
+	if _seed_label == null or _match_seed == null:
+		return
+	_seed_label.text = "Seed %d, %s" % [_match_seed.value, BackdropCatalog.NAMES[_backdrop]]
 
 
 func _place_box(node: Control, origin: Vector2, cell: float, column_pos: float, row_pos: float, scale: float) -> void:
@@ -785,7 +867,8 @@ func _open_preview() -> void:
 	get_tree().change_scene_to_file("res://src/prototype/anim_preview.tscn")
 
 
-## Shows one of the comparison backdrops. The button cycles them and the choice is remembered.
+## Shows one of the looks. A match opens on the look its seed picked; the
+## button cycles them for the rest of the match.
 func use_backdrop(index: int) -> void:
 	_backdrop = posmod(index, BackdropCatalog.count())
 	_apply_backdrop()
@@ -793,20 +876,6 @@ func use_backdrop(index: int) -> void:
 
 func _cycle_backdrop() -> void:
 	use_backdrop(_backdrop + 1)
-	_save_backdrop()
-
-
-func _load_backdrop() -> void:
-	var config := ConfigFile.new()
-	if config.load(_BACKDROP_SAVE) == OK:
-		_backdrop = int(config.get_value("view", "backdrop", 0))
-	use_backdrop(_backdrop)
-
-
-func _save_backdrop() -> void:
-	var config := ConfigFile.new()
-	config.set_value("view", "backdrop", _backdrop)
-	config.save(_BACKDROP_SAVE)
 
 
 func _apply_backdrop() -> void:
@@ -814,6 +883,32 @@ func _apply_backdrop() -> void:
 	if texture != null:
 		_background.texture = texture
 	_bottom.set_backdrop_name(BackdropCatalog.NAMES[_backdrop])
+	_refresh_seed_label()
+
+
+## The value this match's look was picked from. Shown on the debug label.
+func visual_seed() -> int:
+	return _match_seed.value
+
+
+## Forces the Golden Hour layered backdrop on or off. AW-7's showcase toggle
+## calls this; ordinary matches leave it alone.
+func use_golden_hour(enabled: bool) -> void:
+	if enabled and _golden_hour == null:
+		_golden_hour = GoldenHourBackdrop.compose(self)
+		move_child(_golden_hour, 2)
+	elif not enabled and _golden_hour != null:
+		_golden_hour.queue_free()
+		_golden_hour = null
+
+
+## The match's visual dice cup. --seed N on the command line replays a look.
+func _read_match_seed() -> MatchSeed:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--seed")
+	if index >= 0 and index + 1 < args.size() and args[index + 1].is_valid_int():
+		return MatchSeed.with_value(int(args[index + 1]))
+	return MatchSeed.rolled()
 
 
 func _set_removing(active: bool) -> void:
@@ -1023,7 +1118,7 @@ func _bind_tooltips() -> void:
 	GameTooltip.attach(_top.find_child("SpeedButton", true, false) as Control, "Run the wave at double time.", _tip)
 	GameTooltip.attach(_top.find_child("PauseButton", true, false) as Control, "Freeze the match.", _tip)
 	GameTooltip.attach(_top.find_child("PreviewButton", true, false) as Control, "Preview each unit's idle, attack, and walk clips.", _tip)
-	GameTooltip.attach(_bottom.find_child("BackdropButton", true, false) as Control, "Show the next backdrop. Hills, Flat garden, Morning dew, Late afternoon, then Blight edge.", _tip)
+	GameTooltip.attach(_bottom.find_child("BackdropButton", true, false) as Control, "Show the next backdrop. The match opens on the look its seed picked: Main, Sunny, Overcast, or Dusk.", _tip)
 	GameTooltip.attach(_roster.find_child("StartButton", true, false) as Control, "Start the wave. Vermin stay off the lawn until then.", _tip)
 	GameTooltip.attach(_top.find_child("WaterLabel", true, false) as Control, "Water spent to plant Wardens. Collect droplets to earn more.", _tip)
 	GameTooltip.attach(_top.find_child("WaveLabel", true, false) as Control, "Level %d, %s." % [LevelCatalog.number(), _level.title], _tip)
