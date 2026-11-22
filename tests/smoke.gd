@@ -48,6 +48,23 @@ func _check(board: Node) -> PackedStringArray:
 	var backdrop := board.find_child("BackdropButton", true, false) as Button
 	if backdrop == null or backdrop.text.is_empty():
 		failures.append("backdrop button missing")
+	var board_script := board as GardenBoard
+	if board_script == null:
+		failures.append("board was not a GardenBoard")
+	var porch := board.find_child("PlayerEnd", true, false) as TextureRect
+	if porch == null or porch.texture == null:
+		failures.append("porch missing from the player end")
+	var eyes := board.find_child("VerminEnd", true, false) as TextureRect
+	if eyes == null or eyes.texture == null:
+		failures.append("compost eyes missing from the vermin end")
+	var seed_text := ""
+	var seed_panel := board.find_child("SeedLabel", true, false)
+	if seed_panel != null:
+		for child in seed_panel.get_children():
+			if child is Label:
+				seed_text = (child as Label).text
+	if board_script != null and not seed_text.contains("Seed %d" % board_script.visual_seed()):
+		failures.append("debug label did not show the visual seed")
 	var ability := board.find_child("AbilityButton", true, false) as Button
 	if ability == null or not ability.disabled:
 		failures.append("Ability button should stay disabled")

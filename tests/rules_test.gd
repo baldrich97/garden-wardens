@@ -17,6 +17,8 @@ func _init() -> void:
 	_roster_rules(failures)
 	_anim_clips(failures)
 	_flutter(failures)
+	_match_seed(failures)
+	_golden_hour(failures)
 	if failures.is_empty():
 		print("RULES_OK")
 		quit(0)
@@ -178,11 +180,20 @@ func _sky(failures: PackedStringArray) -> void:
 
 
 func _backdrops(failures: PackedStringArray) -> void:
-	if BackdropCatalog.count() != 5 or BackdropCatalog.NAMES.size() != BackdropCatalog.PATHS.size():
-		failures.append("backdrop list was not the five test paintings")
+	if BackdropCatalog.count() != 4 or BackdropCatalog.NAMES.size() != BackdropCatalog.PATHS.size():
+		failures.append("backdrop list was not the main scene plus three moods")
 	for index in BackdropCatalog.count():
 		if BackdropCatalog.texture_at(index) == null:
 			failures.append("backdrop %s did not load" % BackdropCatalog.NAMES[index])
+	if BackdropCatalog.pick_index(12345) != BackdropCatalog.pick_index(12345):
+		failures.append("the same seed picked a different backdrop")
+	if BackdropCatalog.pick_index(0) < 0 or BackdropCatalog.pick_index(0) >= BackdropCatalog.count():
+		failures.append("a seeded pick left the backdrop list")
+	var seen: Dictionary[int, bool] = {}
+	for probe in 64:
+		seen[BackdropCatalog.pick_index(probe * 99991)] = true
+	if seen.size() < 2:
+		failures.append("64 seeds all picked the same backdrop")
 
 
 func _wave(failures: PackedStringArray) -> void:
@@ -487,3 +498,34 @@ func _anim_swap(failures: PackedStringArray, bark: SpriteFrames) -> void:
 	if not AnimLibrary.swap_keep_frame(sprite, "place_100") or sprite.animation != &"place_100" or sprite.is_playing():
 		failures.append("a swap on a stopped sprite did not hold its place")
 	sprite.free()
+
+
+func _match_seed(failures: PackedStringArray) -> void:
+	var cup := MatchSeed.with_value(4242)
+	if cup.value != 4242:
+		failures.append("the dice cup lost its rolled value")
+	var first: Array[int] = []
+	var second: Array[int] = []
+	var a := MatchSeed.with_value(4242).rng("backdrop")
+	var b := MatchSeed.with_value(4242).rng("backdrop")
+	for draw in 8:
+		first.append(a.randi())
+		second.append(b.randi())
+	if first != second:
+		failures.append("the same seed and channel drew different numbers")
+	var other := MatchSeed.with_value(4242).rng("mood")
+	if other.randi_range(0, 999999) == first[0] % 1000000:
+		failures.append("two channels shared a stream")
+
+
+func _golden_hour(failures: PackedStringArray) -> void:
+	var spec: Variant = JSON.parse_string(FileAccess.get_file_as_string(GoldenHourBackdrop.SPEC_PATH))
+	if spec == null or not spec is Dictionary:
+		failures.append("golden hour layer spec did not parse")
+		return
+	for key in ["canvas", "ray_pivot_px", "wheel_size", "rotation_deg_per_s", "sun_sprite_topleft"]:
+		if not spec.has(key):
+			failures.append("golden hour spec lost %s" % key)
+	for key in GoldenHourBackdrop.LAYER_PATHS:
+		if load(GoldenHourBackdrop.LAYER_PATHS[key]) as Texture2D == null:
+			failures.append("golden hour layer %s did not load" % key)
