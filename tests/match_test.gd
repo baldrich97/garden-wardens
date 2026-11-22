@@ -1,11 +1,14 @@
 extends SceneTree
 
-## Places a Needle Spitter, lets it hit a Fly, and checks a breach on a second board.
+## Places a Needle Spitter, lets it hit a Fly, checks a breach on a second
+## board, the drag/rain/seed/grub paths on a third, and the Ladybug's
+## flutter hop over a Stubborn Cone on a fourth.
 
 var _phase := 0
 var _fight: GardenBoard
 var _breach: GardenBoard
 var _extra: GardenBoard
+var _hop: GardenBoard
 
 
 func _process(_delta: float) -> bool:
@@ -29,12 +32,20 @@ func _process(_delta: float) -> bool:
 		_extra = _make_board()
 		_phase = 3
 		return false
-	var failures := _check_extra(_extra)
-	if failures.is_empty():
+	if _phase == 3:
+		var extra_failures := _check_extra(_extra)
+		if not extra_failures.is_empty():
+			_fail(extra_failures)
+			return true
+		_hop = _make_board()
+		_phase = 4
+		return false
+	var hop_failures := _check_hop(_hop)
+	if hop_failures.is_empty():
 		print("MATCH_OK")
 		quit(0)
 		return true
-	_fail(failures)
+	_fail(hop_failures)
 	return true
 
 
@@ -129,6 +140,50 @@ func _check_extra(board: GardenBoard) -> PackedStringArray:
 	board.advance(3.2)
 	if board.vermin_of_kind(UnitCatalog.Vermin.GRUB) < 1:
 		failures.append("a dead fly did not leave a grub")
+	return failures
+
+
+## A Ladybug takes off at the cone's right edge, arcs over it without ever
+## chewing it, and lands two cells toward the house; it chews a Dew Dropper
+## like any other Warden, and a Fly still chews a Stubborn Cone down.
+func _check_hop(board: GardenBoard) -> PackedStringArray:
+	var failures: PackedStringArray = []
+	if not board.try_place(UnitCatalog.Warden.BARK, 3, 4):
+		failures.append("stubborn cone refused a tile")
+		return failures
+	var cone_hp := board.warden_hp_at(3, 4)
+	if cone_hp != UnitCatalog.WARDEN_HP[UnitCatalog.Warden.BARK]:
+		failures.append("cone started at %s hp" % cone_hp)
+	board.spawn_vermin(UnitCatalog.Vermin.LADYBUG, 4, 4.6)
+	board.start_wave()
+	# 4.0 s at 0.15 cells/s walks the ladybug onto the cone's edge; the next
+	# step sees the blocker and takes off instead of chewing.
+	board.advance(4.0)
+	board.advance(0.1)
+	board.advance(1.4)
+	var mid := board.vermin_column_in_row(4)
+	if mid < 2.9 or mid > 3.1:
+		failures.append("ladybug 1.4 s into the hop sat at %s, expected over the cone" % mid)
+	board.advance(1.0)
+	board.advance(0.5)
+	if absf(board.vermin_column_in_row(4) - 2.0) > 0.01:
+		failures.append("ladybug landed at %s, expected two cells short of takeoff" % board.vermin_column_in_row(4))
+	if board.warden_hp_at(3, 4) != cone_hp:
+		failures.append("the hopped Stubborn Cone lost HP to the hop")
+	# The BARK cooldown has run out by now; a Fly chews a cone as always,
+	# and the landed ladybug chews a Dew Dropper as always.
+	if not board.try_place(UnitCatalog.Warden.BARK, 3, 0):
+		failures.append("stubborn cone refused a tile after its cooldown")
+	if not board.try_place(UnitCatalog.Warden.DEW, 1, 4):
+		failures.append("dew dropper refused a tile")
+	var fly_cone_hp := board.warden_hp_at(3, 0)
+	var dew_hp := board.warden_hp_at(1, 4)
+	board.spawn_vermin(UnitCatalog.Vermin.FLY, 0, 4.0)
+	board.advance(1.0)
+	if board.warden_hp_at(3, 0) >= fly_cone_hp:
+		failures.append("a fly stopped chewing a Stubborn Cone")
+	if board.warden_hp_at(1, 4) >= dew_hp:
+		failures.append("a ladybug stopped chewing a non-blocker Warden")
 	return failures
 
 

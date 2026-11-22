@@ -16,6 +16,7 @@ func _init() -> void:
 	_wave(failures)
 	_roster_rules(failures)
 	_anim_clips(failures)
+	_flutter(failures)
 	if failures.is_empty():
 		print("RULES_OK")
 		quit(0)
@@ -313,6 +314,39 @@ func _clips(failures: PackedStringArray) -> void:
 		for anim_name in UnitClips.vermin_animations():
 			if not frames.has_animation(anim_name) or frames.get_frame_count(anim_name) < 1:
 				failures.append("vermin %d missing %s" % [kind, anim_name])
+
+
+func _flutter(failures: PackedStringArray) -> void:
+	if not FlutterHop.can_hop(UnitCatalog.Vermin.LADYBUG, UnitCatalog.Warden.BARK):
+		failures.append("a ladybug refused to hop a Stubborn Cone")
+	for warden in UnitCatalog.Warden.size():
+		if warden != UnitCatalog.Warden.BARK and FlutterHop.can_hop(UnitCatalog.Vermin.LADYBUG, warden):
+			failures.append("a ladybug hops Warden %d instead of chewing it" % warden)
+	for vermin in UnitCatalog.Vermin.size():
+		if vermin != UnitCatalog.Vermin.LADYBUG and FlutterHop.can_hop(vermin, UnitCatalog.Warden.BARK):
+			failures.append("%s was allowed to hop a Stubborn Cone" % UnitCatalog.VERMIN_NAMES[vermin])
+	if not is_zero_approx(FlutterHop.travel(0.2)) or FlutterHop.travel(FlutterHop.TRAVEL_START) > 0.001:
+		failures.append("the hop slid before takeoff frame 4")
+	if not is_equal_approx(FlutterHop.travel(1.4), 0.5):
+		failures.append("the hop midpoint was not half travelled")
+	if not is_equal_approx(FlutterHop.travel(FlutterHop.TRAVEL_END), 1.0) \
+			or not is_equal_approx(FlutterHop.travel(FlutterHop.TOTAL_SECONDS), 1.0):
+		failures.append("the hop did not finish its 2 cells by landing frame 5")
+	if not is_zero_approx(FlutterHop.lift_tiles(0.0)) or not is_zero_approx(FlutterHop.lift_tiles(1.0)):
+		failures.append("the arc left the ground at its ends")
+	if not is_equal_approx(FlutterHop.lift_tiles(0.5), FlutterHop.PEAK_LIFT_TILES):
+		failures.append("the arc peak was not the authored 1.25 tiles")
+	if FlutterHop.lift_tiles(0.5) <= 1.0:
+		failures.append("the arc peak did not clear the 1-tile cone")
+	if FlutterHop.phase(0.0) != FlutterHop.PHASE_TAKEOFF \
+			or FlutterHop.phase(0.79) != FlutterHop.PHASE_TAKEOFF:
+		failures.append("the first 0.8 s of the hop were not the takeoff clip")
+	if FlutterHop.phase(0.8) != FlutterHop.PHASE_AIR \
+			or FlutterHop.phase(1.99) != FlutterHop.PHASE_AIR:
+		failures.append("the middle second of the hop was not the air loop")
+	if FlutterHop.phase(2.0) != FlutterHop.PHASE_LAND \
+			or FlutterHop.phase(2.79) != FlutterHop.PHASE_LAND:
+		failures.append("the last 0.8 s of the hop were not the landing clip")
 
 
 func _anim_clips(failures: PackedStringArray) -> void:
