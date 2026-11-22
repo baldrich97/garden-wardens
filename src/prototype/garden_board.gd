@@ -14,6 +14,8 @@ const SEED_PACKETS := [
 ]
 const _BACKDROP_SAVE := "user://backdrop.cfg"
 const DRAG_SLOP := 18.0
+## Cells of snail travel between slime puddles (presentation only).
+const TRAIL_SPACING := 0.22
 
 @onready var _margin: MarginContainer = %SafeMargin
 @onready var _top: TopBar = %TopBar
@@ -64,6 +66,10 @@ var _ghost_kind := -1
 var _mouse_over_lawn := false
 var _grub_rolls: Array[float] = []
 var _next_button: Button
+## The snail's pooled slime trail, laid on the lawn under the vermin.
+var _trail: SnailTrail
+## Last puddle column per snail actor, so puddles drop at a steady spacing.
+var _snail_last: Dictionary = {}
 
 
 func _ready() -> void:
@@ -90,6 +96,7 @@ func _ready() -> void:
 	_build_hint()
 	_build_result()
 	_build_hud_extras()
+	_build_trail()
 	_build_ghost()
 	_schedule_sky()
 	_present_cards()
@@ -132,6 +139,7 @@ func advance(delta: float) -> void:
 	_tick_vermin(delta)
 	_tick_dying_vermin(delta)
 	_tick_drops(delta)
+	_trail.tick(delta)
 	_collect_with_barrels()
 	_result = MatchOutcome.evaluate(_breached, _vermin.size(), _pending_spawns())
 	if _result != MatchOutcome.Result.ONGOING:
@@ -286,6 +294,8 @@ func _tick_vermin(delta: float) -> void:
 			vermin.column_pos -= vermin.speed() * scale * pace * delta
 			if vermin.column_pos <= 0.0:
 				_breached = true
+			if vermin.kind == UnitCatalog.Vermin.SNAIL:
+				_snail_trail_drop(vermin)
 		vermin.tick(delta, VerminActor.Mode.CHEW if blocking >= 0 else VerminActor.Mode.MOVE)
 
 
@@ -336,7 +346,26 @@ func _apply_bee_step(vermin: VerminActor, step: Vector2i) -> void:
 		vermin.bee_since_forward += 1
 		vermin.bee_since_backward += 1
 		vermin.row = clampi(vermin.row + step.y, 0, LawnView.ROWS - 1)
+		# In-place rise (up) / drop (down) clip while the lane change happens.
+		vermin.start_lane_change(step.y < 0)
 	vermin.column_pos = float(vermin.bee_column) + 0.5
+
+
+## Lays a slime puddle behind the snail once it has scooted TRAIL_SPACING
+## cells since its last puddle; the pool fades and recycles the puddles.
+func _snail_trail_drop(vermin: VerminActor) -> void:
+	var cell := _lawn.cell_size_px()
+	if cell <= 0.0:
+		return
+	var last: float = _snail_last.get(vermin, INF)
+	if last - vermin.column_pos < TRAIL_SPACING:
+		return
+	_snail_last[vermin] = vermin.column_pos
+	var ground := _lawn.grid_origin() + Vector2(
+		vermin.column_pos * cell,
+		(float(vermin.row) + 0.85) * cell,
+	)
+	_trail.drop(ground, cell)
 
 
 func _add_shot(warden: WardenActor) -> void:
@@ -430,6 +459,7 @@ func _drop_dead_vermin() -> void:
 	var births: Array[Vector2] = []
 	for vermin in _vermin:
 		if vermin.hp <= 0:
+			_snail_last.erase(vermin)
 			if UnitCatalog.leaves_grub(vermin.kind, _next_grub_roll()):
 				births.append(Vector2(maxf(0.2, vermin.column_pos), vermin.row))
 			vermin.die()
@@ -590,6 +620,12 @@ func _refresh_cursor() -> void:
 		return
 	_lawn.show_aim(aim, _can_place(kind, aim.x, aim.y))
 	_refresh_ghost(aim, kind)
+
+
+## The snail's slime trail: a pooled node on the lawn, under the vermin.
+func _build_trail() -> void:
+	_trail = SnailTrail.new()
+	_lawn.add_child(_trail)
 
 
 ## Builds the translucent hover preview once and parks it on the lawn.
