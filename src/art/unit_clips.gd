@@ -43,7 +43,7 @@ static func warden_animations(kind: UnitCatalog.Warden) -> PackedStringArray:
 	return PackedStringArray(["idle", "attack", "hurt"])
 
 
-## Rain Barrel and Seed Lobber have no drawing yet, so the lawn labels them.
+## Rain Catcher and Seed Lobber have no drawing yet, so the lawn labels them.
 static func needs_label(kind: UnitCatalog.Warden) -> bool:
 	return kind == UnitCatalog.Warden.RAIN or kind == UnitCatalog.Warden.SEED
 

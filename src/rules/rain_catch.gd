@@ -1,4 +1,4 @@
-## Which landed droplets a Rain Barrel scoops up. It watches the eight tiles around it.
+## Which landed droplets a Rain Catcher scoops up. It watches the eight tiles around it.
 class_name RainCatch
 extends RefCounted
 
