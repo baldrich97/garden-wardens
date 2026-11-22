@@ -52,6 +52,7 @@ var _pose_wait := 0.0
 var _return_pose := Pose.MOVE
 var _return_wait := 0.0
 var _hp_state := "100"
+var _forced_state := ""
 var _dying := false
 ## Which flutter clip the board asked for this step (the hop base name).
 var _flutter_base := FlutterHop.PHASE_AIR
@@ -176,9 +177,9 @@ func take_damage(amount: int) -> bool:
 	hp -= amount
 	refresh_bar()
 	if hp <= 0:
-		_hp_state = AnimLibrary.state_for_hp(0.0)
+		_hp_state = _display_state()
 		return true
-	var next_state := AnimLibrary.state_for_hp(float(hp) / float(max_hp))
+	var next_state := _display_state()
 	if next_state != _hp_state:
 		_hp_state = next_state
 		_retarget_pose_clip()
@@ -200,6 +201,27 @@ func refresh_bar() -> void:
 	var fraction := 0.0 if max_hp <= 0 else clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	_bar.position = _bar_back.position
 	_bar.size = Vector2(width * fraction, height)
+
+
+## Debug view (GW-AW-7): show one damage state's art ("100", "66", "33") no
+## matter the real HP, or "" to go back to HP-driven states. Combat still
+## updates HP and the bar; only the art stays pinned while a state is forced.
+func set_forced_damage_state(state: String) -> void:
+	_forced_state = state
+	var next := _display_state()
+	if next != _hp_state:
+		_hp_state = next
+		_retarget_pose_clip()
+
+
+## The damage-state key the clips should show: the forced debug state, or the
+## one the current HP dictates.
+func _display_state() -> String:
+	if not _forced_state.is_empty():
+		return _forced_state
+	if max_hp <= 0:
+		return AnimLibrary.state_for_hp(0.0)
+	return AnimLibrary.state_for_hp(clampf(float(hp) / float(max_hp), 0.0, 1.0))
 
 
 ## Pose transitions the board's mode drives, plus the timed holds: the lane

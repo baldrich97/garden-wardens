@@ -14,9 +14,15 @@ const SEED_PACKETS := [
 ]
 const _PORCH_TEXTURE: Texture2D = preload("res://assets/art/environment/board/player_end_porch.png")
 const _VERMIN_END_TEXTURE: Texture2D = preload("res://assets/art/environment/board/vermin_end_compost_eyes.png")
+const _WIN_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_A.png")
+const _LOSS_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/loss_banner.png")
 const DRAG_SLOP := 18.0
 ## Cells of snail travel between slime puddles (presentation only).
 const TRAIL_SPACING := 0.22
+## The look the backdrop button shows after the last mood (GW-AW-7 debug tour).
+const GOLDEN_HOUR_NAME := "Golden Hour"
+## The F8 damage-art cycle: normal, then the three authored damage states.
+const DAMAGE_CYCLE: Array[String] = ["", "100", "66", "33"]
 
 @onready var _margin: MarginContainer = %SafeMargin
 @onready var _top: TopBar = %TopBar
@@ -78,9 +84,15 @@ var _next_button: Button
 var _trail: SnailTrail
 ## Last puddle column per snail actor, so puddles drop at a steady spacing.
 var _snail_last: Dictionary = {}
+## The F8 debug pin: "" lets HP pick the damage art, otherwise this state shows.
+var _forced_state := ""
+var _damage_step := 0
+var _win_banner: TextureRect
+var _loss_banner: TextureRect
 
 
 func _ready() -> void:
+	_read_level_arg()
 	_level = LevelCatalog.current()
 	_match_seed = _read_match_seed()
 	_wallet = WaterWallet.new(_level.water)
@@ -112,6 +124,7 @@ func _ready() -> void:
 	_build_seed_label()
 	_schedule_sky()
 	_present_cards()
+	_place_presets()
 	_bind_tooltips()
 	_refresh_hud()
 	use_backdrop(BackdropCatalog.pick_index(_match_seed.value))
@@ -175,6 +188,8 @@ func try_place(kind: int, column: int, row: int) -> bool:
 		return false
 	var actor := WardenActor.new()
 	actor.setup(kind, column, row, id)
+	if not _forced_state.is_empty():
+		actor.set_forced_damage_state(_forced_state)
 	_lawn.add_child(actor)
 	_wardens.append(actor)
 	_cooldowns[kind].start(UnitCatalog.WARDEN_COOLDOWN[kind])
@@ -184,10 +199,32 @@ func try_place(kind: int, column: int, row: int) -> bool:
 	return true
 
 
+## Plants the level's pre-set Wardens (LevelDef.pre_placed) for free, before
+## Start. The showcase's Ladybug-hop demo uses this; no water, no cooldown.
+func _place_presets() -> void:
+	for preset in _level.pre_placed:
+		if not _grid.is_inside(preset.x, preset.y) or _grid.occupant(preset.x, preset.y) != 0:
+			continue
+		var id := _next_id
+		_next_id += 1
+		if not _grid.try_place(preset.x, preset.y, id):
+			_next_id -= 1
+			continue
+		var actor := WardenActor.new()
+		actor.setup(int(preset.z), preset.x, preset.y, id)
+		if not _forced_state.is_empty():
+			actor.set_forced_damage_state(_forced_state)
+		_lawn.add_child(actor)
+		_wardens.append(actor)
+	_layout_actors()
+
+
 ## Drops a Vermin into a row. The wave and the match test both use this.
 func spawn_vermin(kind: UnitCatalog.Vermin, row: int, column_pos: float) -> void:
 	var actor := VerminActor.new()
 	actor.setup(kind, row, column_pos)
+	if not _forced_state.is_empty():
+		actor.set_forced_damage_state(_forced_state)
 	_lawn.add_child(actor)
 	_vermin.append(actor)
 	_layout_actors()
@@ -711,7 +748,9 @@ func _layout_sky() -> void:
 func _build_seed_label() -> void:
 	_seed_panel = PanelContainer.new()
 	_seed_panel.name = "SeedLabel"
-	_seed_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# PASS (not IGNORE) so hovering the watermark can raise its debug tooltip;
+	# clicks still reach the lawn underneath.
+	_seed_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	_seed_panel.z_index = 7
 	_seed_panel.add_theme_stylebox_override("panel", FlatStyle.panel(Color(FlatStyle.PANEL, 0.55), FlatStyle.INK, 10, 2))
 	_seed_label = Label.new()
@@ -726,7 +765,9 @@ func _build_seed_label() -> void:
 func _refresh_seed_label() -> void:
 	if _seed_label == null or _match_seed == null:
 		return
-	_seed_label.text = "Seed %d, %s" % [_match_seed.value, BackdropCatalog.NAMES[_backdrop]]
+	var look := GOLDEN_HOUR_NAME if _golden_hour != null else BackdropCatalog.NAMES[_backdrop]
+	var damage_hint := "" if _forced_state.is_empty() else ", Dmg %s" % _forced_state
+	_seed_label.text = "Seed %d, %s%s" % [_match_seed.value, look, damage_hint]
 
 
 func _place_box(node: Control, origin: Vector2, cell: float, column_pos: float, row_pos: float, scale: float) -> void:
@@ -900,7 +941,18 @@ func use_backdrop(index: int) -> void:
 	_apply_backdrop()
 
 
+## The debug look tour (GW-AW-7): the four seeded moods, then the composed
+## Golden Hour as its last stop, then back to the first mood.
 func _cycle_backdrop() -> void:
+	if _golden_hour != null:
+		use_golden_hour(false)
+		use_backdrop(0)
+		return
+	if _backdrop == BackdropCatalog.count() - 1:
+		use_golden_hour(true)
+		_bottom.set_backdrop_name(GOLDEN_HOUR_NAME)
+		_refresh_seed_label()
+		return
 	use_backdrop(_backdrop + 1)
 
 
@@ -920,14 +972,49 @@ func visual_seed() -> int:
 
 
 ## Forces the Golden Hour layered backdrop on or off. AW-7's showcase toggle
-## calls this; ordinary matches leave it alone.
+## (the backdrop cycle's last stop, and --golden-hour) calls this; ordinary
+## matches leave it alone. The seeded sky hides while it is on: Golden Hour
+## paints its own sky and sun, and two skies would double the celestials.
 func use_golden_hour(enabled: bool) -> void:
 	if enabled and _golden_hour == null:
 		_golden_hour = GoldenHourBackdrop.compose(self)
 		move_child(_golden_hour, 2)
+		if _sky_layer != null:
+			_sky_layer.visible = false
 	elif not enabled and _golden_hour != null:
 		_golden_hour.queue_free()
 		_golden_hour = null
+		if _sky_layer != null:
+			_sky_layer.visible = true
+	_refresh_seed_label()
+
+
+## F8 (and --damage-state): pin every visible unit's art to the next damage
+## state in the cycle normal -> 100 -> 66 -> 33 -> normal, no combat needed.
+## Units placed or spawned after a pin adopt it too, until the cycle returns
+## to normal. HP, bars, and combat are untouched.
+func _cycle_damage_state() -> void:
+	_damage_step = (_damage_step + 1) % DAMAGE_CYCLE.size()
+	_forced_state = DAMAGE_CYCLE[_damage_step]
+	_apply_forced_state()
+
+
+## Pins every live actor's damage art to the current _forced_state.
+func _apply_forced_state() -> void:
+	for warden in _wardens:
+		warden.set_forced_damage_state(_forced_state)
+	for vermin in _vermin:
+		vermin.set_forced_damage_state(_forced_state)
+	_refresh_seed_label()
+
+
+## Picks the level for a debug run (the showcase is --level 8) without
+## playing to it. 1-based, clamped to the catalog.
+func _read_level_arg() -> void:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--level")
+	if index >= 0 and index + 1 < args.size() and args[index + 1].is_valid_int():
+		LevelCatalog.index = clampi(int(args[index + 1]) - 1, 0, LevelCatalog.count() - 1)
 
 
 ## The match's visual dice cup. --seed N on the command line replays a look.
@@ -958,6 +1045,10 @@ func _on_pause_toggled(paused: bool) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.physical_keycode == KEY_F8:
+		_cycle_damage_state()
+		return
 	if _result != MatchOutcome.Result.ONGOING or event.is_echo():
 		return
 	if event.is_action_pressed("ui_cancel"):
@@ -1146,7 +1237,8 @@ func _bind_tooltips() -> void:
 	GameTooltip.attach(_top.find_child("SpeedButton", true, false) as Control, "Run the wave at double time.", _tip)
 	GameTooltip.attach(_top.find_child("PauseButton", true, false) as Control, "Freeze the match.", _tip)
 	GameTooltip.attach(_top.find_child("PreviewButton", true, false) as Control, "Preview each unit's idle, attack, and walk clips.", _tip)
-	GameTooltip.attach(_bottom.find_child("BackdropButton", true, false) as Control, "Show the next backdrop. The match opens on the look its seed picked: Main, Sunny, Overcast, or Dusk.", _tip)
+	GameTooltip.attach(_bottom.find_child("BackdropButton", true, false) as Control, "Show the next look. The match opens on the look its seed picked: Main, Sunny, Overcast, or Dusk; one stop past Dusk shows the Golden Hour backdrop.", _tip)
+	GameTooltip.attach(_seed_panel, "Debug: F8 cycles every unit's damage art 100, 66, 33, normal.", _tip)
 	GameTooltip.attach(_roster.find_child("StartButton", true, false) as Control, "Start the wave. Vermin stay off the lawn until then.", _tip)
 	GameTooltip.attach(_top.find_child("WaterLabel", true, false) as Control, "Water spent to plant Wardens. Collect droplets to earn more.", _tip)
 	GameTooltip.attach(_top.find_child("WaveLabel", true, false) as Control, "Level %d, %s." % [LevelCatalog.number(), _level.title], _tip)
@@ -1273,6 +1365,14 @@ func _build_result() -> void:
 	box.add_theme_stylebox_override("panel", FlatStyle.panel(FlatStyle.PANEL, FlatStyle.GOLD, 18, 4))
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 12)
+	_win_banner = _make_banner(_WIN_BANNER_TEXTURE)
+	_win_banner.name = "WinBanner"
+	_win_banner.visible = false
+	column.add_child(_win_banner)
+	_loss_banner = _make_banner(_LOSS_BANNER_TEXTURE)
+	_loss_banner.name = "LossBanner"
+	_loss_banner.visible = false
+	column.add_child(_loss_banner)
 	var message := Label.new()
 	message.name = "Message"
 	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1305,6 +1405,10 @@ func _show_result() -> void:
 	var message := _result_layer.find_child("Message", true, false) as Label
 	if message != null:
 		message.text = "The garden holds." if _result == MatchOutcome.Result.WON else "The vermin broke through."
+	if _win_banner != null:
+		_win_banner.visible = _result == MatchOutcome.Result.WON
+	if _loss_banner != null:
+		_loss_banner.visible = _result == MatchOutcome.Result.LOST
 	_result_layer.visible = true
 	if _next_button != null:
 		_next_button.visible = _result == MatchOutcome.Result.WON and LevelCatalog.has_next()
@@ -1313,6 +1417,17 @@ func _show_result() -> void:
 func _go_to_next_level() -> void:
 	LevelCatalog.advance()
 	get_tree().reload_current_scene()
+
+
+## A result-banner image: fixed box, art centered inside at its own aspect.
+func _make_banner(texture: Texture2D) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.texture = texture
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.custom_minimum_size = Vector2(240, 110)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	return rect
 
 
 func _bind_slot_keys() -> void:
@@ -1380,6 +1495,16 @@ func _apply_safe_area() -> void:
 
 func _read_shot_args() -> void:
 	var args := OS.get_cmdline_user_args()
+	var gh_index := args.find("--golden-hour")
+	if gh_index >= 0:
+		use_golden_hour(true)
+		_bottom.set_backdrop_name(GOLDEN_HOUR_NAME)
+	var damage_index := args.find("--damage-state")
+	if damage_index >= 0 and damage_index + 1 < args.size() \
+			and DAMAGE_CYCLE.has(args[damage_index + 1]) and args[damage_index + 1] != "":
+		_forced_state = args[damage_index + 1]
+		_damage_step = DAMAGE_CYCLE.find(_forced_state)
+		_apply_forced_state()
 	var shot_index := args.find("--shot")
 	if shot_index >= 0 and shot_index + 1 < args.size():
 		_capture_after_frames(args[shot_index + 1])
@@ -1397,6 +1522,25 @@ func _read_shot_args() -> void:
 		try_place(UnitCatalog.Warden.NEEDLE, 1, 2)
 		try_place(UnitCatalog.Warden.BARK, 3, 2)
 		spawn_vermin(UnitCatalog.Vermin.FLY, 2, 6.2)
+	var result_index := args.find("--result-shot")
+	if result_index >= 0 and result_index + 1 < args.size():
+		var won := args[result_index + 1] == "win"
+		var output := args[result_index + 2] if result_index + 2 < args.size() \
+				else "build/screenshots/result_%s.png" % ["win" if won else "loss"]
+		_show_result_for_shot(won, output)
+
+
+## Shows the win or loss banner on command (debug screenshot aid only). The
+## match is frozen with its spawns consumed, so nothing keeps ticking behind
+## the banner; LevelCatalog is never advanced.
+func _show_result_for_shot(won: bool, output: String) -> void:
+	_paused = true
+	_next_spawn = _level.wave.size()
+	_result = MatchOutcome.Result.WON if won else MatchOutcome.Result.LOST
+	if _roster != null:
+		_roster.visible = false
+	_show_result()
+	_capture_after_frames(output)
 
 
 func _capture_after_frames(output: String) -> void:

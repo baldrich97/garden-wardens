@@ -34,6 +34,7 @@ var _pose_wait := 0.0
 var _return_pose := Pose.IDLE
 var _return_wait := 0.0
 var _hp_state := "100"
+var _forced_state := ""
 var _dying := false
 
 
@@ -155,12 +156,12 @@ func take_damage(amount: float) -> bool:
 	hp -= int(ceil(amount))
 	refresh_bar()
 	if hp <= 0:
-		var dead_state := AnimLibrary.state_for_hp(0.0)
+		var dead_state := _display_state()
 		if dead_state != _hp_state:
 			_hp_state = dead_state
 			_retarget_pose_clip()
 		return true
-	var next_state := AnimLibrary.state_for_hp(float(hp) / float(max_hp))
+	var next_state := _display_state()
 	if next_state != _hp_state:
 		_hp_state = next_state
 		_retarget_pose_clip()
@@ -188,6 +189,27 @@ func refresh_bar() -> void:
 	_bar.position = _bar_back.position
 	_bar.size = Vector2(width * fraction, height)
 	_bar.color = FlatStyle.CLAY if fraction < 0.35 else Color("7dce4a")
+
+
+## Debug view (GW-AW-7): show one damage state's art ("100", "66", "33") no
+## matter the real HP, or "" to go back to HP-driven states. Combat still
+## updates HP and the bar; only the art stays pinned while a state is forced.
+func set_forced_damage_state(state: String) -> void:
+	_forced_state = state
+	var next := _display_state()
+	if next != _hp_state:
+		_hp_state = next
+		_retarget_pose_clip()
+
+
+## The damage-state key the clips should show: the forced debug state, or the
+## one the current HP dictates.
+func _display_state() -> String:
+	if not _forced_state.is_empty():
+		return _forced_state
+	if max_hp <= 0:
+		return AnimLibrary.state_for_hp(0.0)
+	return AnimLibrary.state_for_hp(clampf(float(hp) / float(max_hp), 0.0, 1.0))
 
 
 ## Lets a hurt (or brace) hold finish before returning to the interrupted pose.

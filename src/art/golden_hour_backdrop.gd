@@ -173,10 +173,13 @@ func _layout() -> void:
 
 
 ## Tells a wheel shader where the design frame and the wheel itself live.
+## frame_size is the design frame scaled, not the Control's size: under the
+## expand aspect stretch a non-16:9 window makes those differ, and the mask
+## must map the 1280x720 design frame exactly as _layout maps its layers.
 func _feed_mask_uniforms(material: ShaderMaterial, wheel: Sprite2D, offset: Vector2, scale: float) -> void:
 	if material == null or wheel == null:
 		return
 	material.set_shader_parameter("frame_origin", offset)
-	material.set_shader_parameter("frame_size", size)
+	material.set_shader_parameter("frame_size", _canvas * scale)
 	material.set_shader_parameter("wheel_origin", wheel.position)
 	material.set_shader_parameter("wheel_scale", scale)
