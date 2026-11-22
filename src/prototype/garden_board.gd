@@ -4,6 +4,14 @@ extends Control
 
 const WATER_ICON: Texture2D = preload("res://assets/sprites/board/water.png")
 const CARD_SCENE := preload("res://src/ui/warden_card.tscn")
+## Card faces for the bottom bar, index-aligned with UnitCatalog.Warden.
+const SEED_PACKETS := [
+	preload("res://assets/art/ui/seed_packets/seed_packet_dew_dropper.png"),
+	preload("res://assets/art/ui/seed_packets/seed_packet_needle_spitter.png"),
+	preload("res://assets/art/ui/seed_packets/seed_packet_stubborn_cone.png"),
+	preload("res://assets/art/ui/seed_packets/seed_packet_rain_catcher.png"),
+	preload("res://assets/art/ui/seed_packets/seed_packet_seed_lobber.png"),
+]
 const _BACKDROP_SAVE := "user://backdrop.cfg"
 const DRAG_SLOP := 18.0
 
@@ -49,6 +57,10 @@ var _press_pos := Vector2.ZERO
 var _dragging := false
 var _drag_ghost: WardenCard
 var _drag_kind := -1
+var _ghost: Control
+var _ghost_clip: ClipView
+var _ghost_kind := -1
+var _mouse_over_lawn := false
 var _grub_rolls: Array[float] = []
 var _next_button: Button
 
@@ -77,6 +89,7 @@ func _ready() -> void:
 	_build_hint()
 	_build_result()
 	_build_hud_extras()
+	_build_ghost()
 	_schedule_sky()
 	_present_cards()
 	_bind_tooltips()
@@ -516,8 +529,14 @@ func _present_cards() -> void:
 	var cards := _bottom.cards()
 	for index in cards.size():
 		var kind: int = _level.cards[index]
-		var texture := UnitClips.portrait(UnitClips.warden(kind))
-		cards[index].present(kind, UnitCatalog.WARDEN_NAMES[kind], UnitCatalog.WARDEN_COST[kind], texture, false, false, "")
+		cards[index].present(kind, UnitCatalog.WARDEN_NAMES[kind], UnitCatalog.WARDEN_COST[kind], _card_face(kind), false, false, "")
+
+
+## The card face for one Warden: its seed packet art.
+func _card_face(kind: int) -> Texture2D:
+	if kind < 0 or kind >= SEED_PACKETS.size():
+		return null
+	return SEED_PACKETS[kind]
 
 
 func _refresh_hud() -> void:
@@ -532,19 +551,83 @@ func _refresh_hud() -> void:
 
 func _refresh_cursor() -> void:
 	if _dragging:
+		_hide_ghost()
 		return
 	var aim := _key_aim if _aim_from_keys else _hover
 	if aim.x < 0 or _result != MatchOutcome.Result.ONGOING:
 		_lawn.show_aim(Vector2i(-1, -1), false)
+		_hide_ghost()
 		return
 	if _removing:
 		_lawn.show_aim(aim, _warden_at(aim.x, aim.y) != null)
+		_hide_ghost()
 		return
 	var kind := _selected_kind()
 	if kind < 0:
 		_lawn.show_aim(Vector2i(-1, -1), false)
+		_hide_ghost()
 		return
 	_lawn.show_aim(aim, _can_place(kind, aim.x, aim.y))
+	_refresh_ghost(aim, kind)
+
+
+## Builds the translucent hover preview once and parks it on the lawn.
+func _build_ghost() -> void:
+	_ghost = Control.new()
+	_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ghost.z_index = 6
+	_ghost.modulate = Color(1, 1, 1, 0.4)
+	_ghost.visible = false
+	_ghost_clip = ClipView.new()
+	_ghost_clip.set_motion_enabled(false)
+	_ghost.add_child(_ghost_clip)
+	_lawn.add_child(_ghost)
+	_lawn.mouse_entered.connect(_on_lawn_mouse_entered)
+	_lawn.mouse_exited.connect(_on_lawn_mouse_exited)
+
+
+func _on_lawn_mouse_entered() -> void:
+	_mouse_over_lawn = true
+
+
+func _on_lawn_mouse_exited() -> void:
+	_mouse_over_lawn = false
+
+
+## Shows the selected Warden on the hovered tile at a quarter of its strength,
+## so a placed Warden and the green or red tile cursor still read on top.
+func _refresh_ghost(aim: Vector2i, kind: int) -> void:
+	var cell := _lawn.cell_size_px()
+	if cell <= 0.0:
+		_hide_ghost()
+		return
+	var hovered := _mouse_over_lawn or _aim_from_keys
+	if not hovered or _grid.occupant(aim.x, aim.y) != 0:
+		_hide_ghost()
+		return
+	if kind != _ghost_kind:
+		_ghost_kind = kind
+		_build_ghost_clip(kind)
+	_place_box(_ghost, _lawn.grid_origin(), cell, float(aim.x) + 0.5, float(aim.y), 1.0)
+	_ghost_clip.tick(0.0, _ghost.size)
+	_ghost.visible = true
+
+
+func _hide_ghost() -> void:
+	if _ghost != null:
+		_ghost.visible = false
+
+
+## Idle clip for the preview, anchored and scaled the way a planted Warden is.
+func _build_ghost_clip(kind: int) -> void:
+	var frames := AnimLibrary.warden(kind)
+	_ghost_clip.use(frames)
+	var folder := AnimLibrary.warden_folder(kind)
+	var ground := AnimLibrary.ground_point_px(folder)
+	var canvas := AnimLibrary.canvas_px(folder)
+	if ground != Vector2.INF and canvas != Vector2.INF:
+		_ghost_clip.set_anchor_fit(ground, canvas)
+	_ghost_clip.play(AnimLibrary.animation_name(frames, "idle", "100"))
 
 
 func _on_card_pointer_down(card: WardenCard) -> void:
@@ -738,8 +821,7 @@ func _begin_drag() -> void:
 	_drag_kind = card.kind
 	_drag_ghost = CARD_SCENE.instantiate() as WardenCard
 	add_child(_drag_ghost)
-	var texture := UnitClips.portrait(UnitClips.warden(_drag_kind))
-	_drag_ghost.present(_drag_kind, UnitCatalog.WARDEN_NAMES[_drag_kind], UnitCatalog.WARDEN_COST[_drag_kind], texture, true, false, "")
+	_drag_ghost.present(_drag_kind, UnitCatalog.WARDEN_NAMES[_drag_kind], UnitCatalog.WARDEN_COST[_drag_kind], _card_face(_drag_kind), true, false, "")
 	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_drag_ghost.z_index = 30
 	_set_drops_locked(true)
