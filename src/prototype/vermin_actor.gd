@@ -5,6 +5,8 @@
 ## chewing, hurt on a hit (then back to the interrupted pose), and death
 ## played out and handed to the poof before the actor frees. A damage-state
 ## change swaps the showing clip in place keeping the frame, as on Wardens.
+## The Bee's lane-change clips — rise (up) and drop (down) — hold in place
+## for their authored duration, then hand back to the board's pose.
 class_name VerminActor
 extends Control
 
@@ -17,7 +19,7 @@ const SPAWN_CAP := 2.5
 const STEP_HOLD := 0.6
 
 ## Which lifecycle animation is showing right now.
-enum Pose { MOVE, IDLE, SPAWN, ACTION, HURT, DEATH }
+enum Pose { MOVE, IDLE, SPAWN, ACTION, HURT, DEATH, RISE, DROP }
 ## What the board says this Vermin is doing this step.
 enum Mode { MOVE, IDLE, CHEW }
 
@@ -109,6 +111,15 @@ func play(anim_name: String) -> void:
 		_clip.play(anim_name)
 
 
+## Bee lane change: holds the rise (up) or drop (down) clip in place for its
+## authored duration, then hands back to whatever the board asks next.
+## Skipped while the lane-entrance clip or a hurt flinch owns the frame.
+func start_lane_change(up: bool) -> void:
+	if _dying or _pose == Pose.SPAWN or _pose == Pose.HURT:
+		return
+	_start_pose(Pose.RISE if up else Pose.DROP)
+
+
 ## Starts the bounded death pose. The board keeps drawing the actor, calls
 ## tick_death() each step until it returns true, then poofs and frees it.
 func die() -> void:
@@ -191,6 +202,16 @@ func _advance_mode(mode: Mode, delta: float) -> void:
 		Pose.ACTION:
 			if mode != Mode.CHEW:
 				_start_pose(Pose.MOVE)
+		Pose.RISE, Pose.DROP:
+			_pose_wait -= delta
+			if _pose_wait > 0.0:
+				return
+			if mode == Mode.MOVE:
+				_start_pose(Pose.MOVE)
+			elif mode == Mode.CHEW:
+				_start_pose(Pose.ACTION)
+			else:
+				_start_pose(Pose.IDLE)
 		_:
 			if mode == Mode.CHEW:
 				_start_pose(Pose.ACTION)
@@ -216,6 +237,10 @@ func _start_pose(next: Pose) -> void:
 			_pose_wait = minf(_hold_for(clip_name, 0.8), SPAWN_CAP)
 		Pose.HURT:
 			_pose_wait = _hold_for(clip_name, 0.5)
+		Pose.RISE, Pose.DROP:
+			# In-place lane change: hold the authored clip length, no cap. A
+			# legacy clip without the animation holds as before, no wait added.
+			_pose_wait = 0.0 if clip_name.is_empty() else _hold_for(clip_name, 0.8)
 		_:
 			_pose_wait = 0.0
 
@@ -238,6 +263,10 @@ func _pose_base(pose: Pose) -> String:
 			return "hurt"
 		Pose.DEATH:
 			return "death"
+		Pose.RISE:
+			return "rise"
+		Pose.DROP:
+			return "drop"
 		_:
 			return "idle"
 
