@@ -1,21 +1,20 @@
-## Backdrops the match can cycle through. Hills is the Kenney painting. The other four are drafts.
+## The backdrop the match starts on. The main scene plus its mood variants;
+## a match picks one from its visual seed, and the button still cycles them.
 class_name BackdropCatalog
 extends RefCounted
 
 const NAMES: Array[String] = [
-	"Hills",
-	"Flat garden",
-	"Morning dew",
-	"Late afternoon",
-	"Blight edge",
+	"Main",
+	"Sunny",
+	"Overcast",
+	"Dusk",
 ]
 
 const PATHS: Array[String] = [
-	"res://assets/sprites/board/background.png",
-	"res://assets/sprites/board/backdrops/flat_garden.jpg",
-	"res://assets/sprites/board/backdrops/morning_dew.jpg",
-	"res://assets/sprites/board/backdrops/late_afternoon.jpg",
-	"res://assets/sprites/board/backdrops/blight_edge.jpg",
+	"res://assets/art/environment/backdrops/main_noclouds.png",
+	"res://assets/art/environment/backdrops/mood_1_sunny_noclouds.png",
+	"res://assets/art/environment/backdrops/mood_3_overcast_noclouds.png",
+	"res://assets/art/environment/backdrops/mood_4_dusk_noclouds.png",
 ]
 
 
@@ -25,3 +24,9 @@ static func count() -> int:
 
 static func texture_at(index: int) -> Texture2D:
 	return load(PATHS[posmod(index, PATHS.size())]) as Texture2D
+
+
+## The look this match opens with. Same seed, same look, always.
+static func pick_index(seed_value: int) -> int:
+	var rng := MatchSeed.with_value(seed_value).rng("backdrop")
+	return rng.randi_range(0, NAMES.size() - 1)
