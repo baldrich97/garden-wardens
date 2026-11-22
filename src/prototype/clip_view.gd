@@ -43,6 +43,8 @@ func setup(frames: SpriteFrames) -> void:
 	var names := frames.get_animation_names()
 	if names.has("idle"):
 		play("idle")
+	elif names.has("idle_100"):
+		play("idle_100")
 	elif not names.is_empty():
 		play(names[0])
 
