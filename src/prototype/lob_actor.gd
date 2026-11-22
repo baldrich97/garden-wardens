@@ -1,9 +1,13 @@
 ## A lobbed seed bundle. It travels to a tile, then the seeds finish the trip.
+## Visuals: the Seed Lobber's fx/projectile art (fluff_ball.png bundle,
+## seed_single.png seeds); the flight and burst timing are unchanged.
 class_name LobActor
 extends Control
 
 const TRAVEL_TIME := 0.42
 const SEED_TIME := 0.24
+const FLUFF: Texture2D = preload("res://assets/sprites/anim/wardens/seed_lobber/fx/projectile/fluff_ball.png")
+const SEED_PUFF: Texture2D = preload("res://assets/sprites/anim/wardens/seed_lobber/fx/projectile/seed_single.png")
 
 var column_pos: float
 var row_pos: float
@@ -15,8 +19,8 @@ var _phase := 0
 var _travel := 0.0
 var _seed_time := 0.0
 var _hit := false
-var _bundle: Panel
-var _seeds: Array[Panel] = []
+var _bundle: TextureRect
+var _seeds: Array[TextureRect] = []
 
 
 func _init() -> void:
@@ -30,18 +34,24 @@ func setup(from_pos: Vector2, target: Vector2i, seed_cells: Array[Vector2i]) -> 
 	cells = seed_cells
 	column_pos = from_pos.x
 	row_pos = from_pos.y
-	_bundle = Panel.new()
-	_bundle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bundle = _make_puff(FLUFF)
 	_bundle.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_bundle.add_theme_stylebox_override("panel", _dot(Color("e0a106"), 16))
 	add_child(_bundle)
 	for _cell in cells:
-		var seed := Panel.new()
-		seed.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var seed := _make_puff(SEED_PUFF)
 		seed.visible = false
-		seed.add_theme_stylebox_override("panel", _dot(Color("f2c14e"), 10))
 		add_child(seed)
 		_seeds.append(seed)
+
+
+## A borderless art rect sized by the lawn placement code.
+func _make_puff(texture: Texture2D) -> TextureRect:
+	var puff := TextureRect.new()
+	puff.texture = texture
+	puff.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	puff.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	puff.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return puff
 
 
 ## Returns true on the frame the seeds land and damage should be applied.
@@ -88,12 +98,3 @@ func place_on_lawn(origin: Vector2, cell: float) -> void:
 		seed.size = Vector2(seed_box, seed_box)
 		var world := origin + Vector2(spot.x * cell, (spot.y + 0.5) * cell)
 		seed.position = world - position - seed.size * 0.5
-
-
-func _dot(fill: Color, radius: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = fill
-	style.border_color = FlatStyle.INK
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(radius)
-	return style
