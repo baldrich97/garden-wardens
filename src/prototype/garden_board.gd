@@ -87,6 +87,8 @@ var _snail_last: Dictionary = {}
 ## The F8 debug pin: "" lets HP pick the damage art, otherwise this state shows.
 var _forced_state := ""
 var _damage_step := 0
+## The F7 debug overlay: gates the seed/mood pill watermark (GW-P1).
+var _debug_overlay := false
 var _win_banner: TextureRect
 var _loss_banner: TextureRect
 
@@ -526,6 +528,7 @@ func _collect_with_barrels() -> void:
 			if not is_instance_valid(drop):
 				continue
 			if RainCatch.catches(origin, drop.column_pos, drop.row_pos, drop.falling):
+				warden.play_catch()
 				drop.collect()
 
 

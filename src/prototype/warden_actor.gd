@@ -117,6 +117,18 @@ func tick(delta: float, can_shoot: bool) -> String:
 	return action
 
 
+## The beat for a Warden doing a one-off job the match just triggered (the Rain
+## Catcher scooping a dropped droplet). Plays the action clip with the same
+## guards as the shoot beat in tick(): hold for the clip's authored length up
+## to ACTION_HOLD_CAP, carry back to idle when the hold ends, and fall back to
+## the legacy action names when no action art is authored.
+func play_catch() -> void:
+	if _dying:
+		return
+	_start_pose(Pose.ACTION)
+	_clip.pulse()
+
+
 ## Starts the death pose. The board keeps the tile occupied, calls tick_death()
 ## each step until it returns true, then poofs and frees the tile.
 func die() -> void:
