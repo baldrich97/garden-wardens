@@ -108,5 +108,20 @@ static func _levels() -> Array[LevelDef]:
 			Vector3(18.0, UnitCatalog.Vermin.FLY, 2),
 			Vector3(24.0, UnitCatalog.Vermin.LADYBUG, 4),
 		]),
+		# The showcase: enough water for the whole bench at once, every Vermin
+		# type across the lanes, and a pre-placed Stubborn Cone in lane 3 with
+		# Ladybugs queued to hop it. Not tuned for winnability (GW-AW-7).
+		LevelDef.new("The Whole Cast", 450, with_seed, [
+			Vector3(3.0, UnitCatalog.Vermin.FLY, 0),
+			Vector3(5.0, UnitCatalog.Vermin.BEE, 1),
+			Vector3(5.0, UnitCatalog.Vermin.SNAIL, 3),
+			Vector3(7.0, UnitCatalog.Vermin.GRUB, 4),
+			Vector3(8.0, UnitCatalog.Vermin.LADYBUG, 2),
+			Vector3(12.0, UnitCatalog.Vermin.FLY, 4),
+			Vector3(12.0, UnitCatalog.Vermin.LADYBUG, 2),
+			Vector3(15.0, UnitCatalog.Vermin.BEE, 0),
+			Vector3(15.0, UnitCatalog.Vermin.SNAIL, 3),
+			Vector3(18.0, UnitCatalog.Vermin.GRUB, 1),
+		], [Vector3i(8, 2, UnitCatalog.Warden.BARK)]),
 	]
 	return _built

@@ -283,8 +283,8 @@ func _grubs(failures: PackedStringArray) -> void:
 
 
 func _levels(failures: PackedStringArray) -> void:
-	if LevelCatalog.count() != 7:
-		failures.append("expected 7 levels, found %d" % LevelCatalog.count())
+	if LevelCatalog.count() != 8:
+		failures.append("expected 8 levels, found %d" % LevelCatalog.count())
 	var wardens: Array[int] = []
 	var vermin: Array[int] = []
 	for index in LevelCatalog.count():
@@ -305,6 +305,10 @@ func _levels(failures: PackedStringArray) -> void:
 		for card in level.cards:
 			if not wardens.has(card):
 				wardens.append(card)
+		for preset in level.pre_placed:
+			if preset.x < 0 or preset.x >= LawnView.COLUMNS or preset.y < 0 or preset.y >= LawnView.ROWS \
+					or preset.z < 0 or preset.z >= UnitCatalog.Warden.size():
+				failures.append("level %d has a bad pre-placed Warden" % index)
 	if wardens.size() != UnitCatalog.Warden.size():
 		failures.append("a warden is missing from every level")
 	if vermin.size() != UnitCatalog.Vermin.size():
