@@ -2,10 +2,14 @@
 class_name TopBar
 extends PanelContainer
 
+## The game logo shown left of the title (GW-AW-7 UI wiring).
+const LOGO_TEXTURE: Texture2D = preload("res://assets/art/ui/logo.png")
+
 signal pause_toggled(paused: bool)
 signal speed_toggled(fast: bool)
 signal preview_requested
 
+@onready var _row: HBoxContainer = $Row
 @onready var _water_icon: TextureRect = %WaterIcon
 @onready var _water_label: Label = %WaterLabel
 @onready var _wave_label: Label = %WaveLabel
@@ -17,6 +21,15 @@ signal preview_requested
 
 func _ready() -> void:
 	add_theme_stylebox_override("panel", FlatStyle.panel(FlatStyle.PANEL, FlatStyle.INK, 18, 4))
+	var logo := TextureRect.new()
+	logo.name = "Logo"
+	logo.texture = LOGO_TEXTURE
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	logo.custom_minimum_size = Vector2(56, 56)
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_row.add_child(logo)
+	_row.move_child(logo, 0)
 	FlatStyle.apply_button(_speed_button)
 	FlatStyle.apply_button(_pause_button)
 	FlatStyle.apply_button(_preview_button)

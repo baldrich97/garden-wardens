@@ -2,6 +2,9 @@
 class_name WaveRoster
 extends PanelContainer
 
+## The flag shown above the roster title (GW-AW-7 UI wiring).
+const WAVE_FLAG_TEXTURE: Texture2D = preload("res://assets/art/ui/wave_flag.png")
+
 ## Wide enough for two portrait columns, the title, and Start.
 const WIDTH := 188.0
 
@@ -24,6 +27,15 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 8)
 	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(column)
+	var flag := TextureRect.new()
+	flag.name = "WaveFlag"
+	flag.texture = WAVE_FLAG_TEXTURE
+	flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flag.custom_minimum_size = Vector2(54, 54)
+	flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	flag.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(flag)
 	var title := Label.new()
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.text = "This wave"
