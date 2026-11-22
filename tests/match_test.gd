@@ -53,7 +53,7 @@ func _check_fight(board: GardenBoard) -> PackedStringArray:
 	if not board.try_place(UnitCatalog.Warden.NEEDLE, 1, 2):
 		failures.append("needle spitter refused an empty tile")
 	if board.try_place(UnitCatalog.Warden.BARK, 1, 2):
-		failures.append("occupied tile accepted a bark block")
+		failures.append("occupied tile accepted a stubborn cone")
 	if board.water_amount() != LevelCatalog.current().water - UnitCatalog.WARDEN_COST[UnitCatalog.Warden.DEW] - UnitCatalog.WARDEN_COST[UnitCatalog.Warden.NEEDLE]:
 		failures.append("water after two placements was %d" % board.water_amount())
 	board.spawn_vermin(UnitCatalog.Vermin.FLY, 2, 3.2)
@@ -105,16 +105,16 @@ func _check_extra(board: GardenBoard) -> PackedStringArray:
 	if board.water_amount() != water:
 		failures.append("a refused drag spent water")
 	if not board.drag_place(2, 5, 1):
-		failures.append("dragging a bark block onto an empty tile did not plant")
+		failures.append("dragging a stubborn cone onto an empty tile did not plant")
 	if not board.try_place(UnitCatalog.Warden.RAIN, 2, 2):
-		failures.append("rain barrel refused an empty tile")
+		failures.append("rain catcher refused an empty tile")
 	var before_catch := board.water_amount()
 	board.spawn_test_drop(3.2, 2.0)
 	board.spawn_test_drop(2.2, 2.0)
 	board.start_wave()
 	board.advance(0.2)
 	if board.water_amount() != before_catch + UnitCatalog.DEW_AMOUNT:
-		failures.append("rain barrel collected the wrong drops, water %d" % board.water_amount())
+		failures.append("rain catcher collected the wrong drops, water %d" % board.water_amount())
 	for _drop in 4:
 		board.spawn_test_drop(10.5, 0.0)
 	board.collect_all_drops()

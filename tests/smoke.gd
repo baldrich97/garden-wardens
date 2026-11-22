@@ -70,7 +70,7 @@ func _wave_count() -> int:
 func _check_texts(node: Node, failures: PackedStringArray) -> void:
 	var texts: PackedStringArray = []
 	_collect_text(node, texts)
-	for required in ["Garden Wardens", "Dew Dropper", "Needle Spitter", "Bark Block", "200", "Level 1", "Vermin %d" % _wave_count(), "Ability", "Remove", "Speed", "Pause", "Anims"]:
+	for required in ["Garden Wardens", "Dew Dropper", "Needle Spitter", "Stubborn Cone", "200", "Level 1", "Vermin %d" % _wave_count(), "Ability", "Remove", "Speed", "Pause", "Anims"]:
 		if not _has_text(texts, required):
 			failures.append("missing text: %s" % required)
 

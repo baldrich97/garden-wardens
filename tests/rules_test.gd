@@ -208,15 +208,15 @@ func _roster_rules(failures: PackedStringArray) -> void:
 func _rain(failures: PackedStringArray) -> void:
 	var origin := Vector2i(2, 2)
 	if not RainCatch.catches(origin, 3.2, 2.0, false):
-		failures.append("a rain barrel missed a landed drop on a neighbor")
+		failures.append("a rain catcher missed a landed drop on a neighbor")
 	if not RainCatch.catches(origin, 1.1, 1.2, false):
-		failures.append("a rain barrel missed a diagonal neighbor")
+		failures.append("a rain catcher missed a diagonal neighbor")
 	if RainCatch.catches(origin, 2.4, 2.0, false):
-		failures.append("a rain barrel collected the drop on its own tile")
+		failures.append("a rain catcher collected the drop on its own tile")
 	if RainCatch.catches(origin, 4.2, 2.0, false):
-		failures.append("a rain barrel collected a drop two tiles away")
+		failures.append("a rain catcher collected a drop two tiles away")
 	if RainCatch.catches(origin, 3.0, 2.0, true):
-		failures.append("a rain barrel collected a drop that was still falling")
+		failures.append("a rain catcher collected a drop that was still falling")
 
 
 func _seeds(failures: PackedStringArray) -> void:
@@ -381,7 +381,7 @@ func _anim_loader(failures: PackedStringArray) -> void:
 	var bark_folder := AnimLibrary.warden_folder(UnitCatalog.Warden.BARK)
 	var bark := AnimLibrary.clip_for_folder(bark_folder)
 	if bark == null:
-		failures.append("Bark Block clips did not build from frames.json")
+		failures.append("Stubborn Cone clips did not build from frames.json")
 	else:
 		_bark_states(failures, bark)
 		_anim_swap(failures, bark)
@@ -413,17 +413,17 @@ func _bark_states(failures: PackedStringArray, bark: SpriteFrames) -> void:
 	for state in AnimLibrary.DAMAGE_STATES:
 		var clip_name := "idle_" + state
 		if not bark.has_animation(clip_name) or bark.get_frame_count(clip_name) != idle_frames:
-			failures.append("Bark Block is missing %s" % clip_name)
+			failures.append("Stubborn Cone is missing %s" % clip_name)
 			continue
 		var durations: Array = idle.get("durations_ms", [])
 		if durations.is_empty() or not is_equal_approx(bark.get_frame_duration(clip_name, 0), float(durations[0]) / 1000.0):
-			failures.append("Bark Block %s ignores authored frame durations" % clip_name)
+			failures.append("Stubborn Cone %s ignores authored frame durations" % clip_name)
 		if bark.get_animation_loop(clip_name) != bool(idle.get("loop", false)):
-			failures.append("Bark Block %s ignores the loop flag" % clip_name)
+			failures.append("Stubborn Cone %s ignores the loop flag" % clip_name)
 	if not bark.has_animation("place_100") or bark.has_animation("place_66"):
-		failures.append("Bark Block place states are wrong")
+		failures.append("Stubborn Cone place states are wrong")
 	if not bark.has_animation("death_33") or bark.has_animation("death_100"):
-		failures.append("Bark Block death states are wrong")
+		failures.append("Stubborn Cone death states are wrong")
 	if AnimLibrary.animation_name(bark, "place", "66") != "place_100":
 		failures.append("animation_name missed the place fallback")
 	if AnimLibrary.animation_name(bark, "death", "100") != "death_33":
