@@ -8,8 +8,8 @@ Read this first when picking up the project. Process rules are in
 - Baseline: `44fabb91cb4f390d50a08dcfa251875b93c703ce` — the uncommitted 7-level campaign
   pass landed as local commits (rules systems, board/UX, vermin/warden behaviors +
   levels, tests, docs + asset provenance).
-- Contents: 7 levels, 5 Wardens (Dew Dropper, Rain Barrel, Needle Spitter, Seed Lobber,
-  Bark Block), 5 Vermin (Fly, Bee, Ladybug, Snail, Grub), soil kinds (regular/sand/stone),
+- Contents: 7 levels, 5 Wardens (Dew Dropper, Rain Catcher, Needle Spitter, Seed Lobber,
+  Stubborn Cone), 5 Vermin (Fly, Bee, Ladybug, Snail, Grub), soil kinds (regular/sand/stone),
   droplets, speed/pause/remove tools, vermin side panel, tooltips.
 - Checks: rules + smoke + match suites green at baseline (see ../AGENTS.md for the
   headless commands).

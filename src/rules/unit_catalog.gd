@@ -5,7 +5,7 @@ extends RefCounted
 enum Warden { DEW, NEEDLE, BARK, RAIN, SEED }
 enum Vermin { FLY, BEE, LADYBUG, SNAIL, GRUB }
 
-const WARDEN_NAMES: Array[String] = ["Dew Dropper", "Needle Spitter", "Bark Block", "Rain Barrel", "Seed Lobber"]
+const WARDEN_NAMES: Array[String] = ["Dew Dropper", "Needle Spitter", "Stubborn Cone", "Rain Catcher", "Seed Lobber"]
 const WARDEN_SHORT: Array[String] = ["Dew", "Needle", "Bark", "Rain", "Seeds"]
 const WARDEN_COST: Array[int] = [50, 100, 50, 50, 150]
 const WARDEN_COOLDOWN: Array[float] = [4.0, 1.5, 3.0, 6.0, 2.4]
@@ -42,9 +42,9 @@ static func warden_blurb(kind: int) -> String:
 		Warden.NEEDLE:
 			return "Needle Spitter. Costs 100 water. Shoots vermin in its row."
 		Warden.BARK:
-			return "Bark Block. Costs 50 water. A tough wall that does not attack."
+			return "Stubborn Cone. Costs 50 water. A tough wall that does not attack."
 		Warden.RAIN:
-			return "Rain Barrel. Costs 50 water. Collects droplets on the eight tiles around it. It does not make water, and it leaves a drop on its own tile."
+			return "Rain Catcher. Costs 50 water. Collects droplets on the eight tiles around it. It does not make water, and it leaves a drop on its own tile."
 		Warden.SEED:
 			return "Seed Lobber. Costs 150 water. Lobs a bundle that bursts into seeds. The landing tile is always hit, and three more tiles in that 3 by 3 are random. Each seed hits one vermin."
 		_:
