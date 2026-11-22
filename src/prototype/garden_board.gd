@@ -28,6 +28,7 @@ var _cooldowns: Array[Cooldown] = []
 var _wardens: Array[WardenActor] = []
 var _dying_wardens: Array[WardenActor] = []
 var _vermin: Array[VerminActor] = []
+var _dying_vermin: Array[VerminActor] = []
 var _shots: Array[ShotActor] = []
 var _lobs: Array[LobActor] = []
 var _selected := -1
@@ -129,6 +130,7 @@ func advance(delta: float) -> void:
 	_tick_shots(delta)
 	_tick_lobs(delta)
 	_tick_vermin(delta)
+	_tick_dying_vermin(delta)
 	_tick_drops(delta)
 	_collect_with_barrels()
 	_result = MatchOutcome.evaluate(_breached, _vermin.size(), _pending_spawns())
@@ -273,40 +275,37 @@ func _tick_vermin(delta: float) -> void:
 		var columns := _warden_columns(vermin.row)
 		var blocking := RowTarget.reached_column(vermin.column_pos, columns)
 		if blocking >= 0:
-			vermin.play("chew")
 			vermin.column_pos = float(blocking) + 1.0
 			var warden := _warden_at(blocking, vermin.row)
 			if warden != null and warden.take_damage(vermin.chew_damage() * delta):
 				_kill_warden(warden)
 		else:
-			vermin.play("walk")
 			var column := clampi(int(floor(vermin.column_pos)), 0, _lawn.column_count() - 1)
 			var scale := SoilMap.vermin_scale(SoilMap.kind_at(column, vermin.row, _lawn.column_count()))
 			var pace := SnailPace.scale(vermin.column_pos, vermin.row, UnitCatalog.is_ground(vermin.kind), _snail_spots())
 			vermin.column_pos -= vermin.speed() * scale * pace * delta
 			if vermin.column_pos <= 0.0:
 				_breached = true
-		vermin.tick_visual(delta)
+		vermin.tick(delta, VerminActor.Mode.CHEW if blocking >= 0 else VerminActor.Mode.MOVE)
 
 
-## Bees step one tile at a time. Forward is left, toward the house.
+## Bees step one tile at a time. Forward is left, toward the house. They
+## hover (idle) while the step timer runs and show one stride after a hop.
 func _tick_bee(vermin: VerminActor, delta: float) -> void:
 	var ahead := vermin.bee_column - 1
 	var warden := _warden_at(vermin.bee_column, vermin.row)
 	if warden == null and ahead >= 0:
 		warden = _warden_at(ahead, vermin.row)
 	if warden != null:
-		vermin.play("chew")
-		vermin.tick_visual(delta)
+		vermin.tick(delta, VerminActor.Mode.CHEW)
 		if warden.take_damage(vermin.chew_damage() * delta):
 			_kill_warden(warden)
 		return
-	vermin.play("walk")
 	var scale := SoilMap.vermin_scale(SoilMap.kind_at(vermin.bee_column, vermin.row, _lawn.column_count()))
 	var pace := SnailPace.scale(vermin.column_pos, vermin.row, UnitCatalog.is_ground(vermin.kind), _snail_spots())
 	vermin.bee_wait -= delta * scale * pace
 	if vermin.bee_wait > 0.0:
-		vermin.tick_visual(delta)
+		vermin.tick(delta, VerminActor.Mode.IDLE)
 		return
 	vermin.bee_wait = UnitCatalog.BEE_STEP
 	var step := BeePath.next_step(
@@ -318,7 +317,7 @@ func _tick_bee(vermin: VerminActor, delta: float) -> void:
 		vermin.bee_since_backward,
 	)
 	_apply_bee_step(vermin, step)
-	vermin.tick_visual(delta)
+	vermin.tick(delta, VerminActor.Mode.MOVE)
 
 
 func _apply_bee_step(vermin: VerminActor, step: Vector2i) -> void:
@@ -423,6 +422,9 @@ func spawn_test_drop(column: float, row: float) -> void:
 	_spawn_drop(column, row, false)
 
 
+## Zero-HP Vermin start their bounded death pose here, on the same step the
+## killing blow landed. Grub births keep the kill-step timing; only the
+## visual lingers until _tick_dying_vermin poofs and frees the actor.
 func _drop_dead_vermin() -> void:
 	var kept: Array[VerminActor] = []
 	var births: Array[Vector2] = []
@@ -430,12 +432,29 @@ func _drop_dead_vermin() -> void:
 		if vermin.hp <= 0:
 			if UnitCatalog.leaves_grub(vermin.kind, _next_grub_roll()):
 				births.append(Vector2(maxf(0.2, vermin.column_pos), vermin.row))
-			vermin.queue_free()
+			vermin.die()
+			_dying_vermin.append(vermin)
 		else:
 			kept.append(vermin)
 	_vermin = kept
 	for birth in births:
 		spawn_vermin(UnitCatalog.Vermin.GRUB, int(birth.y), birth.x)
+
+
+## Plays out the death poses (bounded), then poofs at the actor and frees it.
+func _tick_dying_vermin(delta: float) -> void:
+	var kept: Array[VerminActor] = []
+	for vermin in _dying_vermin:
+		if not vermin.tick_death(delta):
+			kept.append(vermin)
+			continue
+		var cell := _lawn.cell_size_px()
+		if cell > 0.0:
+			var poof := PoofActor.new()
+			_lawn.add_child(poof)
+			poof.play_at(vermin.position + vermin.size * Vector2(0.5, 0.6), cell * 0.6)
+		vermin.queue_free()
+	_dying_vermin = kept
 
 
 func _remove_warden(warden: WardenActor) -> void:
@@ -508,6 +527,8 @@ func _layout_actors() -> void:
 	for vermin in _vermin:
 		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row), 0.7)
 		vermin.refresh_bar()
+	for vermin in _dying_vermin:
+		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row), 0.7)
 	for shot in _shots:
 		_place_box(shot, origin, cell, shot.column_pos, float(shot.row), 0.55)
 	for lob in _lobs:
