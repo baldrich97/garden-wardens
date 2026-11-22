@@ -7,6 +7,9 @@
 ## change swaps the showing clip in place keeping the frame, as on Wardens.
 ## The Bee's lane-change clips — rise (up) and drop (down) — hold in place
 ## for their authored duration, then hand back to the board's pose.
+## A hopping Ladybug shows the flutter clips instead: the board owns the arc
+## and names the clip (takeoff, air, land) each step through
+## [method VerminActor.tick_flutter].
 class_name VerminActor
 extends Control
 
@@ -19,9 +22,9 @@ const SPAWN_CAP := 2.5
 const STEP_HOLD := 0.6
 
 ## Which lifecycle animation is showing right now.
-enum Pose { MOVE, IDLE, SPAWN, ACTION, HURT, DEATH, RISE, DROP }
+enum Pose { MOVE, IDLE, SPAWN, ACTION, HURT, DEATH, RISE, DROP, FLUTTER }
 ## What the board says this Vermin is doing this step.
-enum Mode { MOVE, IDLE, CHEW }
+enum Mode { MOVE, IDLE, CHEW, FLUTTER }
 
 var kind: UnitCatalog.Vermin
 var row: int
@@ -32,6 +35,12 @@ var bee_column: int
 var bee_since_forward: int
 var bee_since_backward: int = 5
 var bee_wait: float = UnitCatalog.BEE_STEP
+## Seconds into the flutter hop, or -1 while grounded. The board drives these
+## three fields through [method FlutterHop]; [member hop_lift_tiles] is the
+## arc height the layout lifts the box by.
+var hop_elapsed := -1.0
+var hop_from := 0.0
+var hop_lift_tiles := 0.0
 
 var _clip: ClipView
 var _bar: ColorRect
@@ -44,6 +53,8 @@ var _return_pose := Pose.MOVE
 var _return_wait := 0.0
 var _hp_state := "100"
 var _dying := false
+## Which flutter clip the board asked for this step (the hop base name).
+var _flutter_base := FlutterHop.PHASE_AIR
 
 
 func _init() -> void:
@@ -111,6 +122,14 @@ func play(anim_name: String) -> void:
 		_clip.play(anim_name)
 
 
+## One flutter-hop step: [param base] is the flutter clip for this point of
+## the arc (takeoff, air, or land). The board owns the hop timing and the
+## sprite's arc position; the actor only shows the clip the phase names.
+func tick_flutter(delta: float, base: String) -> void:
+	_flutter_base = base
+	tick(delta, Mode.FLUTTER)
+
+
 ## Bee lane change: holds the rise (up) or drop (down) clip in place for its
 ## authored duration, then hands back to whatever the board asks next.
 ## Skipped while the lane-entrance clip or a hurt flinch owns the frame.
@@ -127,6 +146,9 @@ func die() -> void:
 		return
 	_dying = true
 	_pose = Pose.DEATH
+	# A hop that gets killed mid-air lands for its death pose.
+	hop_elapsed = -1.0
+	hop_lift_tiles = 0.0
 	_bar.visible = false
 	_bar_back.visible = false
 	var clip_name := _clip_name("death")
@@ -187,9 +209,14 @@ func _advance_mode(mode: Mode, delta: float) -> void:
 	match _pose:
 		Pose.SPAWN:
 			_pose_wait -= delta
-			if _pose_wait > 0.0 and mode != Mode.CHEW:
+			if _pose_wait > 0.0 and mode != Mode.CHEW and mode != Mode.FLUTTER:
 				return
-			_start_pose(Pose.ACTION if mode == Mode.CHEW else Pose.MOVE)
+			if mode == Mode.CHEW:
+				_start_pose(Pose.ACTION)
+			elif mode == Mode.FLUTTER:
+				_start_pose(Pose.FLUTTER)
+			else:
+				_start_pose(Pose.MOVE)
 		Pose.HURT:
 			_pose_wait -= delta
 			if _pose_wait > 0.0:
@@ -197,10 +224,15 @@ func _advance_mode(mode: Mode, delta: float) -> void:
 			var back := _return_pose
 			if back == Pose.ACTION and mode != Mode.CHEW:
 				back = Pose.MOVE
+			if back == Pose.FLUTTER and mode != Mode.FLUTTER:
+				back = Pose.MOVE
 			_pose = back
 			_pose_wait = _return_wait
 		Pose.ACTION:
 			if mode != Mode.CHEW:
+				_start_pose(Pose.MOVE)
+		Pose.FLUTTER:
+			if mode != Mode.FLUTTER:
 				_start_pose(Pose.MOVE)
 		Pose.RISE, Pose.DROP:
 			_pose_wait -= delta
@@ -215,6 +247,8 @@ func _advance_mode(mode: Mode, delta: float) -> void:
 		_:
 			if mode == Mode.CHEW:
 				_start_pose(Pose.ACTION)
+			elif mode == Mode.FLUTTER:
+				_start_pose(Pose.FLUTTER)
 			elif mode == Mode.IDLE and _pose == Pose.MOVE and _pose_wait > 0.0:
 				_pose_wait -= delta
 			elif mode == Mode.IDLE and _pose != Pose.IDLE:
@@ -267,6 +301,8 @@ func _pose_base(pose: Pose) -> String:
 			return "rise"
 		Pose.DROP:
 			return "drop"
+		Pose.FLUTTER:
+			return _flutter_base
 		_:
 			return "idle"
 

@@ -192,6 +192,21 @@ func vermin_hp_in_row(row: int) -> int:
 	return -1
 
 
+## The column of the first Vermin on a row, or -1. The hop test uses this.
+func vermin_column_in_row(row: int) -> float:
+	for vermin in _vermin:
+		if vermin.row == row:
+			return vermin.column_pos
+	return -1.0
+
+
+## The remaining HP of the Warden on a tile, or -1 when the tile is empty.
+## The hop test uses this.
+func warden_hp_at(column: int, row: int) -> int:
+	var warden := _warden_at(column, row)
+	return -1 if warden == null else warden.hp
+
+
 func vermin_of_kind(kind: int) -> int:
 	var count := 0
 	for vermin in _vermin:
@@ -280,11 +295,17 @@ func _tick_vermin(delta: float) -> void:
 		if vermin.kind == UnitCatalog.Vermin.BEE:
 			_tick_bee(vermin, delta)
 			continue
+		if vermin.hop_elapsed >= 0.0:
+			_advance_hop(vermin, delta)
+			continue
 		var columns := _warden_columns(vermin.row)
 		var blocking := RowTarget.reached_column(vermin.column_pos, columns)
 		if blocking >= 0:
 			vermin.column_pos = float(blocking) + 1.0
 			var warden := _warden_at(blocking, vermin.row)
+			if warden != null and FlutterHop.can_hop(vermin.kind, warden.kind):
+				_start_hop(vermin, vermin.column_pos)
+				continue
 			if warden != null and warden.take_damage(vermin.chew_damage() * delta):
 				_kill_warden(warden)
 		else:
@@ -297,6 +318,37 @@ func _tick_vermin(delta: float) -> void:
 			if vermin.kind == UnitCatalog.Vermin.SNAIL:
 				_snail_trail_drop(vermin)
 		vermin.tick(delta, VerminActor.Mode.CHEW if blocking >= 0 else VerminActor.Mode.MOVE)
+
+
+## A Ladybug reaching a Stubborn Cone takes off instead of chewing: it lifts
+## off the cone's right edge and [method _advance_hop] carries it over.
+func _start_hop(vermin: VerminActor, stand_pos: float) -> void:
+	vermin.hop_from = stand_pos
+	vermin.column_pos = stand_pos
+	vermin.hop_elapsed = 0.0
+	vermin.tick_flutter(0.0, FlutterHop.phase(0.0))
+
+
+## Walks the flutter-hop arc: hold through the crouch frames, slide one tile
+## per second across the cone's tile on the parabola, land two tiles short of
+## the takeoff spot, and hand the clip back to the walk. The cone is never
+## chewed during a hop, so it keeps every point of its HP.
+func _advance_hop(vermin: VerminActor, delta: float) -> void:
+	vermin.hop_elapsed += delta
+	if vermin.hop_elapsed >= FlutterHop.TOTAL_SECONDS:
+		vermin.hop_elapsed = -1.0
+		vermin.hop_lift_tiles = 0.0
+		vermin.column_pos = vermin.hop_from - FlutterHop.TRAVEL_TILES
+		if vermin.column_pos <= 0.0:
+			_breached = true
+		vermin.tick(delta, VerminActor.Mode.MOVE)
+		return
+	var t := FlutterHop.travel(vermin.hop_elapsed)
+	vermin.column_pos = vermin.hop_from - FlutterHop.TRAVEL_TILES * t
+	vermin.hop_lift_tiles = FlutterHop.lift_tiles(t)
+	if vermin.column_pos <= 0.0:
+		_breached = true
+	vermin.tick_flutter(delta, FlutterHop.phase(vermin.hop_elapsed))
 
 
 ## Bees step one tile at a time. Forward is left, toward the house. They
@@ -555,7 +607,7 @@ func _layout_actors() -> void:
 	for warden in _dying_wardens:
 		_place_box(warden, origin, cell, float(warden.column) + 0.5, float(warden.row), 1.0)
 	for vermin in _vermin:
-		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row), 0.7)
+		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row) - vermin.hop_lift_tiles, 0.7)
 		vermin.refresh_bar()
 	for vermin in _dying_vermin:
 		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row), 0.7)
