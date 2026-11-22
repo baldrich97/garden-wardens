@@ -18,6 +18,7 @@ var _level: LevelDef
 var _grid := LawnGrid.new(LawnView.COLUMNS, LawnView.ROWS)
 var _cooldowns: Array[Cooldown] = []
 var _wardens: Array[WardenActor] = []
+var _dying_wardens: Array[WardenActor] = []
 var _vermin: Array[VerminActor] = []
 var _shots: Array[ShotActor] = []
 var _lobs: Array[LobActor] = []
@@ -111,6 +112,7 @@ func advance(delta: float) -> void:
 	_spawn_due()
 	_spawn_sky()
 	_tick_wardens(delta)
+	_tick_dying_wardens(delta)
 	_tick_shots(delta)
 	_tick_lobs(delta)
 	_tick_vermin(delta)
@@ -262,7 +264,7 @@ func _tick_vermin(delta: float) -> void:
 			vermin.column_pos = float(blocking) + 1.0
 			var warden := _warden_at(blocking, vermin.row)
 			if warden != null and warden.take_damage(vermin.chew_damage() * delta):
-				_remove_warden(warden)
+				_kill_warden(warden)
 		else:
 			vermin.play("walk")
 			var column := clampi(int(floor(vermin.column_pos)), 0, _lawn.column_count() - 1)
@@ -284,7 +286,7 @@ func _tick_bee(vermin: VerminActor, delta: float) -> void:
 		vermin.play("chew")
 		vermin.tick_visual(delta)
 		if warden.take_damage(vermin.chew_damage() * delta):
-			_remove_warden(warden)
+			_kill_warden(warden)
 		return
 	vermin.play("walk")
 	var scale := SoilMap.vermin_scale(SoilMap.kind_at(vermin.bee_column, vermin.row, _lawn.column_count()))
@@ -429,6 +431,30 @@ func _remove_warden(warden: WardenActor) -> void:
 	warden.queue_free()
 
 
+## Chewing reached zero HP: play the death pose out (bounded), then poof at the
+## actor and free the tile. The match stops seeing the Warden right away.
+func _kill_warden(warden: WardenActor) -> void:
+	_wardens.erase(warden)
+	warden.die()
+	_dying_wardens.append(warden)
+
+
+func _tick_dying_wardens(delta: float) -> void:
+	var kept: Array[WardenActor] = []
+	for warden in _dying_wardens:
+		if not warden.tick_death(delta):
+			kept.append(warden)
+			continue
+		var cell := _lawn.cell_size_px()
+		if cell > 0.0:
+			var poof := PoofActor.new()
+			_lawn.add_child(poof)
+			poof.play_at(warden.position + warden.size * Vector2(0.5, 0.92), cell * 0.7)
+		_grid.remove(warden.column, warden.row)
+		warden.queue_free()
+	_dying_wardens = kept
+
+
 func _warden_at(column: int, row: int) -> WardenActor:
 	for warden in _wardens:
 		if warden.column == column and warden.row == row:
@@ -462,8 +488,10 @@ func _layout_actors() -> void:
 		return
 	var origin := _lawn.grid_origin()
 	for warden in _wardens:
-		_place_box(warden, origin, cell, float(warden.column) + 0.5, float(warden.row), 0.64)
+		_place_box(warden, origin, cell, float(warden.column) + 0.5, float(warden.row), 1.0)
 		warden.refresh_bar()
+	for warden in _dying_wardens:
+		_place_box(warden, origin, cell, float(warden.column) + 0.5, float(warden.row), 1.0)
 	for vermin in _vermin:
 		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row), 0.7)
 		vermin.refresh_bar()
