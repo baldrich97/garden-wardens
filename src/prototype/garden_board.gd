@@ -61,6 +61,7 @@ var _seed_label: Label
 var _end_porch: TextureRect
 var _end_vermin: TextureRect
 var _golden_hour: GoldenHourBackdrop
+var _sky_layer: SkyLayer
 var _started := false
 var _press_card := -1
 var _press_pos := Vector2.ZERO
@@ -107,6 +108,7 @@ func _ready() -> void:
 	_build_trail()
 	_build_ghost()
 	_build_board_ends()
+	_build_sky()
 	_build_seed_label()
 	_schedule_sky()
 	_present_cards()
@@ -630,6 +632,7 @@ func _layout_actors() -> void:
 			_place_box(drop, origin, cell, drop.column_pos, drop.row_pos, 0.63)
 	_place_hint()
 	_layout_board_ends()
+	_layout_sky()
 
 
 ## Builds the porch and the compost eyes that flank the lawn. Drawn under the
@@ -641,6 +644,15 @@ func _build_board_ends() -> void:
 	add_child(_end_vermin)
 	move_child(_end_porch, 2)
 	move_child(_end_vermin, 3)
+
+
+## Builds the drifting sky over the lawn band (GW-AW-6b): stick clouds, the
+## match's sun, and rain when the seed says so. Sits over the backdrop, under
+## the board ends and the lawn, so actors always draw over it.
+func _build_sky() -> void:
+	_sky_layer = SkyLayer.new()
+	add_child(_sky_layer)
+	move_child(_sky_layer, 2)
 
 
 func _make_board_end(node_name: String, texture: Texture2D) -> TextureRect:
@@ -678,6 +690,20 @@ func _size_board_end(rect: TextureRect, lane_height: float, max_width: float) ->
 	var aspect := rect.texture.get_size().x / rect.texture.get_size().y
 	var width := minf(lane_height * aspect, max_width)
 	rect.size = Vector2(width, width / aspect)
+
+
+## Puts the sky band in the lawn's reserved sky zone: the strip the lawn
+## keeps above the tiles for sky effects (LawnView.SKY_ROWS), across the
+## full board width. It sits below the UI row, so the sky is always visible.
+func _layout_sky() -> void:
+	if _sky_layer == null:
+		return
+	var cell := _lawn.cell_size_px()
+	if cell <= 0.0:
+		return
+	var grid_top := _lawn.global_position + _lawn.grid_origin()
+	var sky_h := cell * LawnView.SKY_ROWS
+	_sky_layer.set_band(Rect2(0.0, grid_top.y - sky_h, size.x, sky_h))
 
 
 ## A small watermark naming the visual seed and look, so a match can be
@@ -884,6 +910,8 @@ func _apply_backdrop() -> void:
 		_background.texture = texture
 	_bottom.set_backdrop_name(BackdropCatalog.NAMES[_backdrop])
 	_refresh_seed_label()
+	if _sky_layer != null:
+		_sky_layer.apply_look(_match_seed.value, _backdrop)
 
 
 ## The value this match's look was picked from. Shown on the debug label.

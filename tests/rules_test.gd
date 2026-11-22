@@ -19,6 +19,7 @@ func _init() -> void:
 	_flutter(failures)
 	_match_seed(failures)
 	_golden_hour(failures)
+	_sky_look(failures)
 	if failures.is_empty():
 		print("RULES_OK")
 		quit(0)
@@ -529,3 +530,69 @@ func _golden_hour(failures: PackedStringArray) -> void:
 	for key in GoldenHourBackdrop.LAYER_PATHS:
 		if load(GoldenHourBackdrop.LAYER_PATHS[key]) as Texture2D == null:
 			failures.append("golden hour layer %s did not load" % key)
+
+
+func _sky_look(failures: PackedStringArray) -> void:
+	# One sun per match, always textured, never on the overcast mood.
+	var sky := SkyLayer.new()
+	root.add_child(sky)
+	sky.set_band(Rect2(100.0, 40.0, 1080.0, 120.0))
+	sky.apply_look(4242, 0)
+	if not sky.sun_visible():
+		failures.append("the sun hid on a clear mood")
+	if sky.sun_texture() == null:
+		failures.append("the match sun had no texture")
+	var clouds := sky.cloud_count()
+	if clouds < SkyLook.CLOUD_MIN or clouds > SkyLook.CLOUD_MAX:
+		failures.append("cloud count %d left the %d-%d range" % [clouds, SkyLook.CLOUD_MIN, SkyLook.CLOUD_MAX])
+	if not sky.clouds_have_textures():
+		failures.append("a drifting cloud lost its texture")
+	# Determinism: the same seed builds the same sky.
+	var again := SkyLayer.new()
+	root.add_child(again)
+	again.set_band(Rect2(0.0, 0.0, 1080.0, 120.0))
+	again.apply_look(4242, 0)
+	if sky.sun_texture() != again.sun_texture():
+		failures.append("the same seed picked a different sun")
+	if sky.cloud_count() != again.cloud_count() or sky.raining() != again.raining():
+		failures.append("the same seed built a different sky")
+	if sky.raining() != SkyLook.rain_active(4242, 0):
+		failures.append("the sky disagreed with its seeded rain call")
+	# Overcast: the sun goes out.
+	sky.apply_look(4242, SkyLook.MOOD_OVERCAST)
+	if sky.sun_visible():
+		failures.append("the sun showed on the overcast mood")
+	sky.free()
+	again.free()
+	# Rain: a seeded match where it falls shows drops, then splashes at the grass.
+	var rainy := -1
+	for probe in 64:
+		if SkyLook.rain_active(probe, 0):
+			rainy = probe
+			break
+	if rainy < 0:
+		failures.append("64 seeds never rained on a clear mood")
+		return
+	var shower := SkyLayer.new()
+	root.add_child(shower)
+	shower.set_band(Rect2(100.0, 40.0, 1080.0, 120.0))
+	shower.apply_look(rainy, 0)
+	if not shower.raining():
+		failures.append("a seeded rainy match stayed dry")
+		shower.free()
+		return
+	var saw_drop := false
+	var saw_splash := false
+	for _step in 30:
+		shower.tick(0.1)
+		if shower.active_drops() > 0:
+			saw_drop = true
+		if shower.active_splashes() > 0:
+			saw_splash = true
+		if saw_drop and saw_splash:
+			break
+	if not saw_drop:
+		failures.append("no drops were falling mid-rain")
+	if not saw_splash:
+		failures.append("no splash appeared where a drop landed")
+	shower.free()
