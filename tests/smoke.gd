@@ -50,6 +50,12 @@ func _check(board: Node) -> PackedStringArray:
 	var frame := board.find_child("BoardFrame", true, false) as TextureRect
 	if frame == null or frame.texture == null or frame.size.x <= 0.0:
 		failures.append("felt board frame missing from the lawn")
+	var icon := board.find_child("WaterIcon", true, false) as TextureRect
+	if icon == null or icon.texture != FxArt.WATER_DROP_SMALL:
+		failures.append("top-bar water icon is not the origami small drop")
+	var ring := board.find_child("LeafRing", true, false) as TextureRect
+	if ring == null or ring.texture != FxArt.LEAF_RING:
+		failures.append("placement leaf ring missing from the lawn")
 	var backdrop := board.find_child("BackdropButton", true, false) as Button
 	if backdrop == null or backdrop.text.is_empty():
 		failures.append("backdrop button missing")

@@ -45,7 +45,8 @@ Read this first when picking up the project. Process rules are in
   - Screenshot helpers: `--result-shot win|loss`, `--fall-shot <path>`,
     `--play-shot <path>`.
 - Art status: docs/ASSET_SOURCES.md now carries per-asset approved/unwired statuses
-  and the definitive unwired inventory (395 files, including `summon_bell.png`).
+  and the definitive unwired inventory (342 files after GW-AA pass 2, including
+  `summon_bell.png`).
 - Checks: the full gate is the 3 suites + 3 probes — see the Verification playbook
   below (it supersedes the suites-only commands in ../AGENTS.md).
 
@@ -70,6 +71,21 @@ Audit of the wired art against the Asset Gen locks. Fixed:
 Open creator calls are listed in the GW-AA report (backdrop framing vs. UI, 640x360
 mood art, duplicate porch/compost ends, soil look on felt, unwired fx/water sets).
 
+### GW-AA pass 2 (2026-11-23, creator-approved local commit)
+
+- Wired the origami water set (parachute while falling, medium drop landed/dew, small
+  drop as the HUD icon), `A3`/`A4` impact bursts, `B3` collect flecks, the rotating
+  leaf ring under the placement ghost (red when blocked), Needle Spitter muzzle smoke,
+  Seed Lobber spin + seed burst and win banner B (seeded). Per-asset reasons for what
+  stays unwired are in docs/ASSET_SOURCES.md.
+- Board frame trimmed in `lawn_view.gd` (`BOARD_FRAME_SRC`): the compost-brown sliver at
+  the top-right corner is gone.
+- Probes: Bee lane changes and lobber volleys are seeded (combat probe 5/5 identical
+  runs); the input probe is time-based and runs at native refresh.
+- Deferred by the creator: the perspective (trapezoid) lawn — mockups only, nothing in
+  Godot yet; mood backdrops; sand/stone felt tiles; cloud/sun tuning (bring back to
+  the creator).
+
 ## Verification playbook
 
 Binary: the MAIN exe `tools/godot/Godot_v4.6-stable_win64.exe` for every run,
@@ -78,9 +94,10 @@ headless or windowed. Pitfalls, both learned the hard way:
   silently returns exit 0 with no output.
 - Do NOT pass `--quiet` — it mutes `print()`, so logs come back empty and every
   marker check becomes a false FAIL.
-- On a high-refresh display (this host runs 180 Hz) the windowed input probe's
-  frame-count waits run out early (steps 6 and 10 fail before and after GW-AA). Run it
-  with `--max-fps 60` (before `--path`) to get the intended timing.
+- The windowed input probe waits on wall-clock time, not frame counts (GW-AA pass 2),
+  so it passes at the display's native refresh (this host runs 180 Hz) with no
+  `--max-fps` flag. It prints `PROBE refresh=... max_fps=...` and `PROBE measured_fps=...`
+  so a log shows the rate it ran at. Do not reintroduce frame-count waits.
 
 All commands from the repo root.
 
@@ -102,12 +119,21 @@ A missing marker is a FAIL even if the exit code looks fine (../AGENTS.md).
   economy win (L1).
 - Combat: `... --headless --path . --script res://tests/probes/combat_probe.gd`
   — expect `COMBAT_PROBE_OK`. Live damage observation only: every vermin chews,
-  Needle single-target kill, Seed Lobber same-tick multi-hit.
+  Needle single-target kill, Seed Lobber same-tick multi-hit. Deterministic: it pins
+  the match seed (`PROBE_SEED`), so repeated runs give byte-identical logs.
 - Synthetic input: `... --path . res://tests/probes/input_probe.tscn` — WINDOWED
   only (real frame pacing drives the animation clock and viewport picking; this
   host has no xvfb, a brief visible window is normal and not a bug). Expect 10
   `STEP_OK` lines then `INPUT_PROBE_OK`; each step is one synthetic click/drag
-  through `Input.parse_input_event()`.
+  through `Input.parse_input_event()`. About 46 "Viewport was previously notified that
+  the mouse is in its area" warnings come from the synthetic mouse events and are
+  expected (same count at baseline).
+- Seeded randomness: every gameplay roll draws from `MatchSeed.rng(channel)` —
+  `bee_path` (Bee lane changes), `seed_burst` (lobber volley cells), `sky_drops`,
+  `grub_roll`, `win_banner`. Probes pin the seed with
+  `GardenBoard.forced_match_seed = N` (static; checked before `--seed`), so a probe
+  run replays exactly. `BeePath.next_step` / `SeedBurst.pick` take an optional
+  `RandomNumberGenerator` (falls back to the global RNG when none is passed).
 
 ### Watching gameplay/animations
 

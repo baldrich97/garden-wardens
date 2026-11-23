@@ -20,6 +20,7 @@ func _init() -> void:
 	_match_seed(failures)
 	_golden_hour(failures)
 	_sky_look(failures)
+	_fx_art(failures)
 	if failures.is_empty():
 		print("RULES_OK")
 		quit(0)
@@ -119,6 +120,20 @@ func _bees(failures: PackedStringArray) -> void:
 		failures.append("a bee stepped below the lawn")
 	if not bottom.has(BeePath.FORWARD):
 		failures.append("a bee lost its forward step at the left edge")
+	# Seeded wander (GW-AA pass 2): the same match seed replays the same steps.
+	var walk_a: Array[Vector2i] = []
+	var walk_b: Array[Vector2i] = []
+	var rng_a := MatchSeed.with_value(4242).rng("bee_path")
+	var rng_b := MatchSeed.with_value(4242).rng("bee_path")
+	for _step in 24:
+		walk_a.append(BeePath.next_step(5, 2, 12, 5, 0, 5, rng_a))
+		walk_b.append(BeePath.next_step(5, 2, 12, 5, 0, 5, rng_b))
+	if walk_a != walk_b:
+		failures.append("the same match seed gave a bee two different wanders")
+	for step in walk_a:
+		if not BeePath.legal_steps(5, 2, 12, 5, 0, 5).has(step):
+			failures.append("a seeded bee took an illegal step %s" % step)
+			break
 
 
 func _outcome(failures: PackedStringArray) -> void:
@@ -245,6 +260,10 @@ func _seeds(failures: PackedStringArray) -> void:
 	for cell in picked:
 		if not middle.has(cell):
 			failures.append("a seed left the 3 by 3")
+	var seeded_a := SeedBurst.pick(Vector2i(4, 2), 12, 5, UnitCatalog.LOB_EXTRA, MatchSeed.with_value(7).rng("seed_burst"))
+	var seeded_b := SeedBurst.pick(Vector2i(4, 2), 12, 5, UnitCatalog.LOB_EXTRA, MatchSeed.with_value(7).rng("seed_burst"))
+	if seeded_a != seeded_b:
+		failures.append("the same match seed picked two different seed volleys")
 	var spots: Array[Vector2] = [Vector2(6.2, 2), Vector2(2.2, 0)]
 	if SeedBurst.aim(1, 2, spots, 12, 5, UnitCatalog.LOB_RANGE) != Vector2i(2, 0):
 		failures.append("the lobber did not aim at the closer vermin")
@@ -627,3 +646,41 @@ func _sky_look(failures: PackedStringArray) -> void:
 	if not saw_splash:
 		failures.append("no splash appeared where a drop landed")
 	shower.free()
+
+
+## GW-AA pass 2: the origami water set, the Round 3 effect stills, and the
+## per-unit fx sequences all load at the sizes the wiring expects.
+func _fx_art(failures: PackedStringArray) -> void:
+	var stills := {
+		"water parachute": FxArt.WATER_PARACHUTE, "water medium": FxArt.WATER_DROP_MEDIUM,
+		"water small": FxArt.WATER_DROP_SMALL, "A4 small burst": FxArt.SMALL_BURST,
+		"A3 impact burst": FxArt.IMPACT_BURST, "B3 collect flecks": FxArt.COLLECT_FLECKS,
+		"leaf ring": FxArt.LEAF_RING,
+	}
+	for label in stills:
+		var texture: Texture2D = stills[label]
+		if texture == null or texture.get_width() < 64:
+			failures.append("fx still %s did not load" % label)
+	var smoke := FxArt.needle_smoke()
+	if smoke.size() != 16:
+		failures.append("needle smoke loaded %d overlays, expected 16 (one per action frame)" % smoke.size())
+	elif smoke[0].get_size() != AnimLibrary.canvas_px(AnimLibrary.warden_folder(UnitCatalog.Warden.NEEDLE)):
+		failures.append("needle smoke is not on the Needle Spitter canvas (%s)" % smoke[0].get_size())
+	if FxArt.lobber_spin().size() != FxArt.LOBBER_SPIN_COUNT:
+		failures.append("seed lobber spin did not load 8 frames")
+	if FxArt.lobber_burst().size() != FxArt.LOBBER_BURST_COUNT:
+		failures.append("seed lobber burst did not load 20 frames")
+	var sky_drop := WaterDrop.new()
+	sky_drop.setup(UnitCatalog.DEW_AMOUNT, 3.5, 2.0, true)
+	if sky_drop.art() != FxArt.WATER_PARACHUTE:
+		failures.append("a falling sky drop did not use the parachute drop")
+	for _tick in 20:
+		sky_drop.tick(0.5)
+	if sky_drop.falling or sky_drop.art() != FxArt.WATER_DROP_MEDIUM:
+		failures.append("a landed sky drop did not fold to the medium drop")
+	sky_drop.free()
+	var dew := WaterDrop.new()
+	dew.setup(UnitCatalog.DEW_AMOUNT, 3.5, 2.0, false)
+	if dew.art() != FxArt.WATER_DROP_MEDIUM:
+		failures.append("a dew drop did not use the medium drop")
+	dew.free()

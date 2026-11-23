@@ -20,6 +20,11 @@ var _anchor_canvas := Vector2.INF
 ## Extra motion (idle bob, chew lean, squash, flash) is on by default. The
 ## anim preview turns it off so the drawings show exactly as authored.
 var _motion := true
+## Optional per-frame overlay (the Needle Spitter's smoke): one texture per
+## frame of `_overlay_base` animations, drawn on the same canvas as the clip.
+var _overlay: Sprite2D
+var _overlay_base := ""
+var _overlay_frames: Array[Texture2D] = []
 
 
 ## Replaces the current clip. Safe to call more than once.
@@ -27,6 +32,7 @@ func use(frames: SpriteFrames) -> void:
 	if _sprite != null:
 		_sprite.free()
 		_sprite = null
+		_overlay = null
 	_anim = ""
 	_squash = 0.0
 	_flash = 0.0
@@ -47,6 +53,32 @@ func setup(frames: SpriteFrames) -> void:
 		play("idle_100")
 	elif not names.is_empty():
 		play(names[0])
+
+
+## Draws [param frames][i] over frame i of every [param anim_base] animation
+## (any damage state), e.g. the Needle Spitter's smoke over its action frames.
+## The overlay shares the clip's canvas, anchor, scale, and squash.
+func set_overlay(anim_base: String, frames: Array[Texture2D]) -> void:
+	_overlay_base = anim_base
+	_overlay_frames = frames
+	if _sprite == null or frames.is_empty():
+		return
+	if _overlay == null:
+		_overlay = Sprite2D.new()
+		_overlay.name = "Overlay"
+		_overlay.centered = true
+		_sprite.add_child(_overlay)
+		# Follow the clip's own frame clock so smoke never lags a frame behind.
+		_sprite.frame_changed.connect(_refresh_overlay)
+		_sprite.animation_changed.connect(_refresh_overlay)
+	_refresh_overlay()
+
+
+## The overlay texture showing right now, or null when none is drawn.
+func overlay_texture() -> Texture2D:
+	if _overlay == null or not _overlay.visible:
+		return null
+	return _overlay.texture
 
 
 ## Changes clip only when the name changes, so a looping walk is not restarted.
@@ -135,6 +167,17 @@ func tick(delta: float, bounds: Vector2) -> void:
 	_squash = maxf(0.0, _squash - delta * 5.0)
 	_flash = maxf(0.0, _flash - delta * 4.0)
 	_fit(bounds)
+	_refresh_overlay()
+
+
+func _refresh_overlay() -> void:
+	if _overlay == null:
+		return
+	var index := _sprite.frame
+	var drawn := not _anim.is_empty() and _anim_base() == _overlay_base and index < _overlay_frames.size()
+	_overlay.visible = drawn
+	if drawn:
+		_overlay.texture = _overlay_frames[index]
 
 
 ## Animation name without a damage-state suffix, so `idle_66` still reads as

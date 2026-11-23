@@ -35,7 +35,13 @@ var _lob_multi_events := 0
 var _lob_single_events := 0
 
 
+## Every board in this probe replays one match seed, so the bee's wander, the
+## seed volleys, sky drops, and grub rolls are identical run to run.
+const PROBE_SEED := 4242
+
+
 func _make_board(level: int) -> Node:
+	GardenBoard.forced_match_seed = PROBE_SEED
 	LevelCatalog.index = level
 	var packed := load("res://src/prototype/garden_board.tscn") as PackedScene
 	var board := packed.instantiate()

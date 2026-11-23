@@ -13,7 +13,10 @@ const SKY_ROWS := 0.85
 ## from that file through atlas regions instead of a cropped copy (the art
 ## stays untouched). Source-pixel rects measured from the PNG: the outer
 ## dark-green frame, and the 12x5 felt grid inside it (79 x 69.6 px cells).
-const BOARD_FRAME_SRC := Rect2(149.0, 334.0, 962.0, 363.0)
+## The frame ends at x 1103 / y 687: one pixel more pulls in the compost heap's
+## brown edge (the old 962 x 363 rect showed it as a dark sliver at the top-right
+## corner) and a band of plain lawn under the bottom edge (GW-AA pass 2).
+const BOARD_FRAME_SRC := Rect2(149.0, 334.0, 955.0, 354.0)
 const BOARD_GRID_SRC := Rect2(153.0, 337.0, 948.0, 348.0)
 ## Soil kinds have no felt art of their own yet; a translucent wash over the
 ## felt keeps sand and stone readable without mixing in the old tile style.

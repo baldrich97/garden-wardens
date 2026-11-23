@@ -16,7 +16,9 @@ static func area(center: Vector2i, columns: int, rows: int) -> Array[Vector2i]:
 
 
 ## The landing tile, plus up to [param extras] random tiles from the rest of the 3 by 3.
-static func pick(center: Vector2i, columns: int, rows: int, extras: int) -> Array[Vector2i]:
+## Pass the match's seeded [param rng] (MatchSeed channel "seed_burst") so a seed
+## replays the same volleys; without one it falls back to the global generator.
+static func pick(center: Vector2i, columns: int, rows: int, extras: int, rng: RandomNumberGenerator = null) -> Array[Vector2i]:
 	var chosen: Array[Vector2i] = []
 	if center.x < 0 or center.y < 0 or center.x >= columns or center.y >= rows:
 		return chosen
@@ -25,7 +27,7 @@ static func pick(center: Vector2i, columns: int, rows: int, extras: int) -> Arra
 	ring.erase(center)
 	var left := extras
 	while left > 0 and not ring.is_empty():
-		var index := randi() % ring.size()
+		var index := (rng.randi() if rng != null else randi()) % ring.size()
 		chosen.append(ring[index])
 		ring.remove_at(index)
 		left -= 1

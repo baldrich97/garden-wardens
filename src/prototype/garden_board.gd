@@ -2,7 +2,8 @@
 class_name GardenBoard
 extends Control
 
-const WATER_ICON: Texture2D = preload("res://assets/sprites/board/water.png")
+## The top-bar water counter icon: the small drop from the origami water set.
+const WATER_ICON: Texture2D = FxArt.WATER_DROP_SMALL
 const CARD_SCENE := preload("res://src/ui/warden_card.tscn")
 ## Card faces for the bottom bar, index-aligned with UnitCatalog.Warden.
 const SEED_PACKETS := [
@@ -15,10 +16,15 @@ const SEED_PACKETS := [
 const _PORCH_TEXTURE: Texture2D = preload("res://assets/art/environment/board/player_end_porch.png")
 const _VERMIN_END_TEXTURE: Texture2D = preload("res://assets/art/environment/board/vermin_end_compost_eyes.png")
 const _WIN_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_A.png")
+## Brandon liked both win banners "interchangeably"; the match seed picks one.
+const _WIN_BANNER_B_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_B.png")
 const _LOSS_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/loss_banner.png")
 ## Normalized rects of the clean cream plaque inside each banner art, measured
 ## from the PNG pixels (GW-P1), where the headline text gets drawn.
 const _WIN_PLATE_RECT := Rect2(0.245, 0.425, 0.50, 0.105)
+## Banner B's cream plaque is drawn slightly tilted; this is the level box
+## inside it (x 152-307, y 94-127 of 415 x 239 px, measured GW-AA pass 2).
+const _WIN_B_PLATE_RECT := Rect2(0.366, 0.393, 0.373, 0.138)
 const _LOSS_PLATE_RECT := Rect2(0.20, 0.315, 0.53, 0.20)
 const DRAG_SLOP := 18.0
 ## Cells of snail travel between slime puddles (presentation only).
@@ -27,6 +33,14 @@ const TRAIL_SPACING := 0.22
 const GOLDEN_HOUR_NAME := "Golden Hour"
 ## The F8 damage-art cycle: normal, then the three authored damage states.
 const DAMAGE_CYCLE: Array[String] = ["", "100", "66", "33"]
+## Turns per second of the leaf ring under the placement ghost (slow, per Brandon).
+const LEAF_RING_SPIN := 0.06
+## Leaf ring size as a share of one cell.
+const LEAF_RING_SIZE := 0.98
+
+## Headless probes pin the match seed here (>= 0) so every gameplay roll (bee
+## wander, seed volleys, sky drops, grubs) replays exactly. -1 = --seed or a roll.
+static var forced_match_seed := -1
 
 @onready var _margin: MarginContainer = %SafeMargin
 @onready var _top: TopBar = %TopBar
@@ -97,12 +111,23 @@ var _win_banner: TextureRect
 var _loss_banner: TextureRect
 ## [TextureRect, Label, plate Rect2] per banner, for headline relayouts.
 var _banner_layouts: Array = []
+## Gameplay dice, one MatchSeed channel each, so a seed replays the whole match.
+var _bee_rng: RandomNumberGenerator
+var _lob_rng: RandomNumberGenerator
+var _sky_rng: RandomNumberGenerator
+var _grub_rng: RandomNumberGenerator
+## The rotating leaf ring under the placement ghost.
+var _leaf_ring: TextureRect
 
 
 func _ready() -> void:
 	_read_level_arg()
 	_level = LevelCatalog.current()
 	_match_seed = _read_match_seed()
+	_bee_rng = _match_seed.rng("bee_path")
+	_lob_rng = _match_seed.rng("seed_burst")
+	_sky_rng = _match_seed.rng("sky_drops")
+	_grub_rng = _match_seed.rng("grub_roll")
 	_wallet = WaterWallet.new(_level.water)
 	_bind_slot_keys()
 	_apply_content_scale()
@@ -153,6 +178,8 @@ func _process(delta: float) -> void:
 		_roster.tick(visual)
 	_refresh_hud()
 	_refresh_cursor()
+	if _leaf_ring != null and _leaf_ring.visible:
+		_leaf_ring.rotation = fmod(_leaf_ring.rotation + delta * TAU * LEAF_RING_SPIN, TAU)
 	if not _play_shot.is_empty() and _time >= 1.2:
 		_save_shot(_play_shot)
 		_play_shot = ""
@@ -342,6 +369,7 @@ func _tick_shots(delta: float) -> void:
 				continue
 			if RowTarget.shot_reaches(previous, shot.column_pos, vermin.column_pos):
 				vermin.take_damage(shot.damage)
+				_spawn_fx_still(FxArt.SMALL_BURST, vermin.position + vermin.size * Vector2(0.3, 0.5), 0.5, 0.3)
 				hit = true
 				break
 		if hit or shot.column_pos > float(_lawn.column_count()) + 0.4:
@@ -439,6 +467,7 @@ func _tick_bee(vermin: VerminActor, delta: float) -> void:
 		LawnView.ROWS,
 		vermin.bee_since_forward,
 		vermin.bee_since_backward,
+		_bee_rng,
 	)
 	_apply_bee_step(vermin, step)
 	vermin.tick(delta, VerminActor.Mode.MOVE)
@@ -499,7 +528,7 @@ func _add_lob(warden: WardenActor, spots: Array[Vector2]) -> void:
 	lob.setup(
 		Vector2(float(warden.column) + 0.5, float(warden.row)),
 		target,
-		SeedBurst.pick(target, _lawn.column_count(), LawnView.ROWS, UnitCatalog.LOB_EXTRA),
+		SeedBurst.pick(target, _lawn.column_count(), LawnView.ROWS, UnitCatalog.LOB_EXTRA, _lob_rng),
 	)
 	_lawn.add_child(lob)
 	_lobs.append(lob)
@@ -508,7 +537,10 @@ func _add_lob(warden: WardenActor, spots: Array[Vector2]) -> void:
 func _tick_lobs(delta: float) -> void:
 	var kept: Array[LobActor] = []
 	for lob in _lobs:
-		if lob.tick(delta):
+		var landed := lob.tick(delta)
+		if lob.take_burst():
+			_spawn_seed_burst(lob.target_cell())
+		if landed:
 			_apply_seed_hits(lob.cells, UnitCatalog.SEED_DAMAGE)
 		if lob.finished():
 			lob.queue_free()
@@ -525,6 +557,7 @@ func _apply_seed_hits(cells: Array[Vector2i], damage: int) -> void:
 				continue
 			if SeedBurst.covers(vermin.column_pos, vermin.row, cell):
 				vermin.take_damage(damage)
+				_spawn_fx_still(FxArt.IMPACT_BURST, vermin.position + vermin.size * 0.5, 0.62, 0.35)
 				used.append(vermin)
 				break
 	_drop_dead_vermin()
@@ -557,7 +590,7 @@ func push_grub_roll(roll: float) -> void:
 
 func _next_grub_roll() -> float:
 	if _grub_rolls.is_empty():
-		return randf()
+		return _grub_rng.randf()
 	return _grub_rolls.pop_front()
 
 
@@ -584,6 +617,29 @@ func _drop_dead_vermin() -> void:
 	_vermin = kept
 	for birth in births:
 		spawn_vermin(UnitCatalog.Vermin.GRUB, int(birth.y), birth.x)
+
+
+## A papercraft still (impact burst, collect flecks) that pops and fades at
+## [param at] in lawn pixels, [param size_cells] cells across.
+func _spawn_fx_still(texture: Texture2D, at: Vector2, size_cells: float, duration: float, rise_cells: float = 0.0) -> void:
+	var cell := _lawn.cell_size_px()
+	if cell <= 0.0:
+		return
+	var fx := FxActor.new()
+	_lawn.add_child(fx)
+	fx.play_still(texture, at, cell * size_cells, duration, cell * rise_cells)
+
+
+## The Seed Lobber's landing burst: the fluff ball bursting into seed fluff,
+## centred on the landing tile; the 480 px canvas covers about the 3 by 3.
+func _spawn_seed_burst(target: Vector2i) -> void:
+	var cell := _lawn.cell_size_px()
+	if cell <= 0.0:
+		return
+	var at := _lawn.grid_origin() + Vector2((float(target.x) + 0.5) * cell, (float(target.y) + 0.5) * cell)
+	var fx := FxActor.new()
+	_lawn.add_child(fx)
+	fx.play_frames(FxArt.lobber_burst(), at, cell * 2.4, 30.0)
 
 
 ## Plays out the death poses (bounded), then poofs at the actor and frees it.
@@ -680,7 +736,10 @@ func _layout_actors() -> void:
 		lob.place_on_lawn(origin, cell)
 	for drop in _drops:
 		if is_instance_valid(drop):
-			_place_box(drop, origin, cell, drop.column_pos, drop.row_pos, 0.63)
+			# Bottom-align the parachute box with the landed drop's box so the
+			# drop does not jump when the chute folds away on landing.
+			var lift := (drop.box_scale() - WaterDrop.LANDED_BOX) * 0.5
+			_place_box(drop, origin, cell, drop.column_pos, drop.row_pos - lift, drop.box_scale())
 	_place_hint()
 	_layout_board_ends()
 	_layout_sky()
@@ -842,8 +901,9 @@ func _refresh_cursor() -> void:
 		_lawn.show_aim(Vector2i(-1, -1), false)
 		_hide_ghost()
 		return
-	_lawn.show_aim(aim, _can_place(kind, aim.x, aim.y))
-	_refresh_ghost(aim, kind)
+	var allowed := _can_place(kind, aim.x, aim.y)
+	_lawn.show_aim(aim, allowed)
+	_refresh_ghost(aim, kind, allowed)
 
 
 ## The snail's slime trail: a pooled node on the lawn, under the vermin.
@@ -862,6 +922,15 @@ func _build_ghost() -> void:
 	_ghost_clip = ClipView.new()
 	_ghost_clip.set_motion_enabled(false)
 	_ghost.add_child(_ghost_clip)
+	_leaf_ring = TextureRect.new()
+	_leaf_ring.name = "LeafRing"
+	_leaf_ring.texture = FxArt.LEAF_RING
+	_leaf_ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_leaf_ring.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_leaf_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_leaf_ring.z_index = 5
+	_leaf_ring.visible = false
+	_lawn.add_child(_leaf_ring)
 	_lawn.add_child(_ghost)
 	_lawn.mouse_entered.connect(_on_lawn_mouse_entered)
 	_lawn.mouse_exited.connect(_on_lawn_mouse_exited)
@@ -876,8 +945,9 @@ func _on_lawn_mouse_exited() -> void:
 
 
 ## Shows the selected Warden on the hovered tile at a quarter of its strength,
-## so a placed Warden and the green or red tile cursor still read on top.
-func _refresh_ghost(aim: Vector2i, kind: int) -> void:
+## so a placed Warden and the green or red tile cursor still read on top, on
+## the slowly turning leaf ring (dimmed red when the plant cannot go there).
+func _refresh_ghost(aim: Vector2i, kind: int, allowed: bool = true) -> void:
 	var cell := _lawn.cell_size_px()
 	if cell <= 0.0:
 		_hide_ghost()
@@ -892,11 +962,17 @@ func _refresh_ghost(aim: Vector2i, kind: int) -> void:
 	_place_box(_ghost, _lawn.grid_origin(), cell, float(aim.x) + 0.5, float(aim.y), 1.0)
 	_ghost_clip.tick(0.0, _ghost.size)
 	_ghost.visible = true
+	_place_box(_leaf_ring, _lawn.grid_origin(), cell, float(aim.x) + 0.5, float(aim.y), LEAF_RING_SIZE)
+	_leaf_ring.pivot_offset = _leaf_ring.size * 0.5
+	_leaf_ring.modulate = Color(1, 1, 1, 0.9) if allowed else Color(1.0, 0.55, 0.5, 0.75)
+	_leaf_ring.visible = true
 
 
 func _hide_ghost() -> void:
 	if _ghost != null:
 		_ghost.visible = false
+	if _leaf_ring != null:
+		_leaf_ring.visible = false
 
 
 ## Idle clip for the preview, anchored and scaled the way a planted Warden is.
@@ -1040,8 +1116,11 @@ func _read_level_arg() -> void:
 		LevelCatalog.index = clampi(int(args[index + 1]) - 1, 0, LevelCatalog.count() - 1)
 
 
-## The match's visual dice cup. --seed N on the command line replays a look.
+## The match's dice cup. --seed N on the command line (or forced_match_seed
+## from a headless probe) replays a look and every gameplay roll.
 func _read_match_seed() -> MatchSeed:
+	if forced_match_seed >= 0:
+		return MatchSeed.with_value(forced_match_seed)
 	var args := OS.get_cmdline_user_args()
 	var index := args.find("--seed")
 	if index >= 0 and index + 1 < args.size() and args[index + 1].is_valid_int():
@@ -1296,15 +1375,15 @@ func _vermin_blurb(kind: UnitCatalog.Vermin) -> String:
 
 
 func _schedule_sky() -> void:
-	_next_sky = _time + UnitCatalog.SKY_INTERVAL + randf_range(-UnitCatalog.SKY_JITTER, UnitCatalog.SKY_JITTER)
+	_next_sky = _time + UnitCatalog.SKY_INTERVAL + _sky_rng.randf_range(-UnitCatalog.SKY_JITTER, UnitCatalog.SKY_JITTER)
 
 
 func _spawn_sky() -> void:
 	if _time < _next_sky:
 		return
 	_schedule_sky()
-	var column := randi_range(0, _lawn.column_count() - 1)
-	var row := randi_range(0, LawnView.ROWS - 1)
+	var column := _sky_rng.randi_range(0, _lawn.column_count() - 1)
+	var row := _sky_rng.randi_range(0, LawnView.ROWS - 1)
 	_spawn_drop(float(column) + 0.5, float(row), true)
 
 
@@ -1322,6 +1401,8 @@ func _spawn_drop(column: float, row: float, from_sky: bool) -> void:
 func _on_drop_collected(amount: int, drop: WaterDrop) -> void:
 	_wallet.add(amount)
 	_drops.erase(drop)
+	if is_instance_valid(drop):
+		_spawn_fx_still(FxArt.COLLECT_FLECKS, drop.position + drop.size * 0.5, 0.7, 0.45, 0.25)
 
 
 func _tick_drops(delta: float) -> void:
@@ -1392,7 +1473,12 @@ func _build_result() -> void:
 	box.add_theme_stylebox_override("panel", FlatStyle.panel(FlatStyle.PANEL, FlatStyle.GOLD, 18, 4))
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 12)
-	_win_banner = _make_banner(_WIN_BANNER_TEXTURE, "VICTORY!", _WIN_PLATE_RECT)
+	var banner_b := _match_seed.rng("win_banner").randi_range(0, 1) == 1
+	_win_banner = _make_banner(
+		_WIN_BANNER_B_TEXTURE if banner_b else _WIN_BANNER_TEXTURE,
+		"VICTORY!",
+		_WIN_B_PLATE_RECT if banner_b else _WIN_PLATE_RECT,
+	)
 	_win_banner.name = "WinBanner"
 	_win_banner.visible = false
 	column.add_child(_win_banner)

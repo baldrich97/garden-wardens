@@ -59,7 +59,12 @@ func _observe_drop_press(event: InputEvent) -> void:
 		_gui_hits += 1
 
 
+## The match seed the probe pins, so sky drops and every other roll replay.
+const PROBE_SEED := 1
+
+
 func _ready() -> void:
+	GardenBoard.forced_match_seed = PROBE_SEED
 	var board_scene := load("res://src/prototype/garden_board.tscn") as PackedScene
 	assert(board_scene != null)
 	_board = board_scene.instantiate()
@@ -78,7 +83,8 @@ func _ready() -> void:
 func _run() -> void:
 	var vp := get_viewport_rect().size
 	print("PROBE viewport=%s content_scale=%s" % [vp, get_window().content_scale_mode])
-	if not await _wait_until(180, func() -> bool: return _lawn() != null and _lawn().size.x > 200.0 and _lawn().cell_size_px() > 8.0):
+	print("PROBE refresh=%.0fHz max_fps=%d vsync=%d (waits are wall-clock, not frames)" % [DisplayServer.screen_get_refresh_rate(), Engine.max_fps, DisplayServer.window_get_vsync_mode()])
+	if not await _wait_until(3.0, func() -> bool: return _lawn() != null and _lawn().size.x > 200.0 and _lawn().cell_size_px() > 8.0):
 		_finish("lawn never laid out")
 		return
 	print("PROBE lawn=%s cell=%.1f" % [_lawn().size, _lawn().cell_size_px()])
@@ -100,6 +106,7 @@ func _finish(abort: String) -> void:
 	if not abort.is_empty():
 		_fails.append(abort)
 	if _fails.is_empty():
+		print("PROBE measured_fps=%.0f" % Engine.get_frames_per_second())
 		print("INPUT_PROBE_OK")
 		get_tree().quit(0)
 	else:
@@ -247,8 +254,12 @@ func _result() -> int:
 
 # ---------- waits (every frame pumped through the sampler) ----------
 
-func _wait_until(max_frames: int, cond: Callable) -> bool:
-	for _i in max_frames:
+## Waits up to [param seconds] of wall-clock time (not a frame count, so the
+## probe paces the same on a 60, 144, or 180 Hz display: the match clock runs on
+## delta time). Every frame in between still runs the sampler.
+func _wait_until(seconds: float, cond: Callable) -> bool:
+	var until_usec := Time.get_ticks_usec() + int(seconds * 1000000.0)
+	while Time.get_ticks_usec() < until_usec:
 		_sample()
 		if cond.call():
 			return true
@@ -341,7 +352,7 @@ func _step1_select_card() -> bool:
 func _step2_ghost() -> bool:
 	var label := "hover empty tile shows ghost + highlight"
 	await _move(_tile_center(HOVER_CELL))
-	var ok := await _wait_until(8, func() -> bool: return _ghost_live())
+	var ok := await _wait_until(0.15, func() -> bool: return _ghost_live())
 	if not ok:
 		return _step_fail(2, label, "hover=%s mouse_over_lawn=%s ghost=%s cursor=%s allowed=%s" % [
 				_lawn().get("_aim"), _board.get("_mouse_over_lawn"), (_board.get("_ghost") as Node).visible,
@@ -370,11 +381,11 @@ func _step3_click_place() -> bool:
 		return _step_fail(3, label, "water %d after placing a %d-cost warden" % [_water(), UnitCatalog.WARDEN_COST[DEW]])
 	if _started_at_first_place:
 		return _step_fail(3, label, "board auto-started on the first placement")
-	var place_ok := await _wait_until(30, func() -> bool: return _anim_name(actor).begins_with("place"))
+	var place_ok := await _wait_until(0.5, func() -> bool: return _anim_name(actor).begins_with("place"))
 	if not place_ok:
-		return _step_fail(3, label, "clip never showed place* within 30 frames (showing '%s')" % _anim_name(actor))
+		return _step_fail(3, label, "clip never showed place* within 0.5 s (showing '%s')" % _anim_name(actor))
 	await _shot("gw_p3_placed.png")
-	var ok_idle := await _wait_until(120, func() -> bool: return _anim_name(actor).begins_with("idle"))
+	var ok_idle := await _wait_until(2.0, func() -> bool: return _anim_name(actor).begins_with("idle"))
 	if not ok_idle:
 		return _step_fail(3, label, "place clip did not hand back to idle within the authored hold (showing '%s')" % _anim_name(actor))
 	_step_pass(3, label, "water %d->%d, actor at %s played place then idle (clip '%s'); _started stayed false" \
@@ -423,8 +434,8 @@ func _step6_start_and_drops() -> bool:
 	if not bool(_board.get("_started")):
 		return _step_fail(6, label, "_started still false after clicking StartButton")
 	# The dew cooldown froze with the clock before Start; a human waits it out.
-	if not await _wait_until(420, func() -> bool: return (_board.get("_cooldowns")[DEW]).is_ready()):
-		return _step_fail(6, label, "dew card cooldown never came off (420 frames)")
+	if not await _wait_until(7.0, func() -> bool: return (_board.get("_cooldowns")[DEW]).is_ready()):
+		return _step_fail(6, label, "dew card cooldown never came off (7 s)")
 	var before := _water()
 	if int(_board.get("_selected")) != DEW:
 		await _tap(_center_of(_cards()[DEW]))
@@ -435,8 +446,8 @@ func _step6_start_and_drops() -> bool:
 				(_board.get("_cooldowns")[DEW]).remaining])
 	await _move(PARK)
 	# First droplet: hover it. Prove the water moves on the MOTION event.
-	if not await _wait_until(500, func() -> bool: return _landed_drop_on_dropper() != null):
-		return _step_fail(6, label, "no dew drop landed on the dropper tile within 500 frames")
+	if not await _wait_until(8.5, func() -> bool: return _landed_drop_on_dropper() != null):
+		return _step_fail(6, label, "no dew drop landed on the dropper tile within 8.5 s")
 	var drop: Node = _landed_drop_on_dropper()
 	var drop_center := _center_of(drop)
 	var w0 := _water()
@@ -445,7 +456,7 @@ func _step6_start_and_drops() -> bool:
 	if _water() != w0 or not is_instance_valid(drop):
 		return _step_fail(6, label, "water moved before hovering the drop (%d vs %d)" % [_water(), w0])
 	await _move(drop_center)
-	var hovered := await _wait_until(3, func() -> bool: return _water() == w0 + UnitCatalog.DEW_AMOUNT)
+	var hovered := await _wait_until(0.1, func() -> bool: return _water() == w0 + UnitCatalog.DEW_AMOUNT)
 	if not hovered:
 		return _step_fail(6, label, "hovering the drop did not collect (water %d, expected %d)" % [_water(), w0 + UnitCatalog.DEW_AMOUNT])
 	# Second droplet: click it. No motion is sent first — the press itself is
@@ -454,7 +465,8 @@ func _step6_start_and_drops() -> bool:
 	await _move(PARK)
 	var drop2_center := Vector2.INF
 	var found2 := false
-	for _frame in 500:
+	var drop2_until := Time.get_ticks_msec() + 8500
+	while Time.get_ticks_msec() < drop2_until:
 		await get_tree().process_frame
 		var d: Node = _landed_drop_on_dropper()
 		if d != null:
@@ -466,10 +478,10 @@ func _step6_start_and_drops() -> bool:
 			found2 = true
 			break
 	if not found2:
-		return _step_fail(6, label, "second dew drop never landed within 500 frames")
+		return _step_fail(6, label, "second dew drop never landed within 8.5 s")
 	var w1 := _water()
 	await _btn_at(drop2_center, MOUSE_BUTTON_LEFT, true)
-	var clicked := await _wait_until(3, func() -> bool: return _water() == w1 + UnitCatalog.DEW_AMOUNT)
+	var clicked := await _wait_until(0.1, func() -> bool: return _water() == w1 + UnitCatalog.DEW_AMOUNT)
 	await _btn_at(drop2_center, MOUSE_BUTTON_LEFT, false)
 	await _move(PARK)
 	if not clicked:
@@ -512,17 +524,17 @@ func _step8_pause() -> bool:
 	if not bool(_board.get("_paused")):
 		return _step_fail(8, label, "_paused false after clicking Pause")
 	var t0 := _time()
-	await _wait_until(30, func() -> bool: return false)  # pump 30 frames through the sampler
+	await _wait_until(0.5, func() -> bool: return false)  # pump 0.5 s of frames through the sampler
 	var t1 := _time()
 	if t1 != t0:
 		return _step_fail(8, label, "clock ran while paused (%.3f -> %.3f)" % [t0, t1])
 	await _tap(_center_of(_by_name("PauseButton")))
 	if bool(_board.get("_paused")):
 		return _step_fail(8, label, "_paused still true after the second click")
-	var resumed := await _wait_until(30, func() -> bool: return _time() > t1)
+	var resumed := await _wait_until(0.5, func() -> bool: return _time() > t1)
 	if not resumed:
 		return _step_fail(8, label, "clock never restarted after un-pausing")
-	_step_pass(8, label, "clock held at %.2f over 30 frames, then resumed at %.2f" % [t0, _time()])
+	_step_pass(8, label, "clock held at %.2f over 0.5 s of frames, then resumed at %.2f" % [t0, _time()])
 	return true
 
 
@@ -545,12 +557,12 @@ func _step10_combat_animations() -> bool:
 	var label := "spawn / chew action / hurt states / Needle kill death->poof->freed, live"
 	# Chew bait: a second dew dropper in the t=16 row-1 lane, bought with the
 	# income collected in step 6. Click like a human, once the cooldown is off.
-	if not await _wait_until(420, func() -> bool: return (_board.get("_cooldowns")[DEW]).is_ready()):
+	if not await _wait_until(7.0, func() -> bool: return (_board.get("_cooldowns")[DEW]).is_ready()):
 		return _step_fail(10, label, "dew cooldown never came off")
 	if _water() < UnitCatalog.WARDEN_COST[DEW]:
 		return _step_fail(10, label, "only %d water left for the chew bait" % _water())
 	await _tap(_center_of(_cards()[DEW]))
-	if not await _wait_until(240, func() -> bool: return _victim_tile_clear()):
+	if not await _wait_until(4.0, func() -> bool: return _victim_tile_clear()):
 		return _step_fail(10, label, "a stray droplet sat on the chew-bait tile too long")
 	await _tap(_tile_center(VICTIM_CELL))
 	_victim = _warden_at(VICTIM_CELL)
@@ -561,7 +573,7 @@ func _step10_combat_animations() -> bool:
 		return _watch_abort != "" or (_spawn_seen >= 0.0 and _action_seen >= 0.0
 				and _victim_hurt_seen and _victim_suffixes.has("66") and _victim_suffixes.has("33")
 				and _kill_ready())
-	if not await _wait_until(1500, all_seen):
+	if not await _wait_until(25.0, all_seen):
 		if _watch_abort != "":
 			return _step_fail(10, label, _watch_abort)
 		return _step_fail(10, label, "missing: spawn=%s action=%s hurt=%s (t=%.2f, damage t=%.2f) suffixes=%s kills=%s" % [

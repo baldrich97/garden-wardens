@@ -29,6 +29,9 @@ static func legal_steps(
 	return steps
 
 
+## One random legal step. Pass the match's seeded [param rng] (MatchSeed channel
+## "bee_path") so a seed replays the same wander; without one it falls back to
+## the global generator.
 static func next_step(
 	column: int,
 	row: int,
@@ -36,6 +39,8 @@ static func next_step(
 	rows: int,
 	moves_since_forward: int,
 	moves_since_backward: int,
+	rng: RandomNumberGenerator = null,
 ) -> Vector2i:
 	var steps := legal_steps(column, row, columns, rows, moves_since_forward, moves_since_backward)
-	return steps[randi() % steps.size()]
+	var roll := rng.randi() if rng != null else randi()
+	return steps[roll % steps.size()]

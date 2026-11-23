@@ -20,8 +20,12 @@ edited or renamed by the docs close-out).
   `ladybug/frames.json` under `hop_over`.
   Contact sheets named in `frames.json` were left out on purpose.
   **Status: approved** — all ten unit clip sets load via `src/art/anim_library.gd`.
-  Unwired leftovers inside the new sets: `needle_spitter/fx/smoke/` (16 frames) and
-  `seed_lobber/fx/projectile/` burst + spin + strips (30 files) — see the inventory below.
+  New-set fx (GW-AA pass 2, 2026-11-23): `needle_spitter/fx/smoke/` (16 frames) —
+  **status: approved** (muzzle-smoke overlay synced frame-for-frame to the Needle
+  Spitter action clip, `ClipView.set_overlay`); `seed_lobber/fx/projectile/spin/` (8)
+  and `burst/` (20) — **status: approved** (`FxArt.lobber_spin()` spins the fluff ball
+  in flight, `FxArt.lobber_burst()` plays the seed burst where it lands). The two
+  projectile strips stay **unwired** (the frame folders are used instead).
 - `assets/sprites/anim/fx/poof/`: the defeat poof (8 frames + strip).
   **Status: approved** — loaded by `poof_actor.gd` and `AnimLibrary.poof()`.
 - `assets/sprites/wardens/<needle_spitter|dew_dropper|rain_catcher|seed_lobber>/`
@@ -30,9 +34,10 @@ edited or renamed by the docs close-out).
   `tests/` or `project.godot` references these four folders (only `bush.png`,
   `cactus.png` and `bark_block.png` from the same tree are used — as the BARK brace).
   Byte-identical to the work PC install. Do not overwrite them.
-- `assets/sprites/board/`: `grass.png`, `sand.png`, `stone.png` (soil), `water.png`
-  (droplets) and `background.png` — **status: approved** (board scene + droplets).
-  `dirt.png` — **status: unwired**. `backdrops/` (blight edge, flat garden, late
+- `assets/sprites/board/`: `grass.png`, `sand.png`, `stone.png` (soil) and
+  `background.png` — **status: approved** (board scene). `water.png` (the old Kenney
+  droplet) — **status: unwired** since GW-AA pass 2 (droplets and the HUD icon use the
+  origami water set). `dirt.png` — **status: unwired**. `backdrops/` (blight edge, flat garden, late
   afternoon, morning dew) — **status: unwired, non-ship drafts** (superseded by the
   seeded backdrop set under `art/environment/backdrops/`).
 - `assets/art/environment/`
@@ -65,16 +70,32 @@ edited or renamed by the docs close-out).
 - `assets/art/ui/`: logo, wave flag, loss banner, `win_banner_A` and `seed_packets/`
   (packet 2 with the stickers scaled to fit) — **status: approved** (top bar, wave
   roster, win/loss banners, seed-packet card faces). `win_banner_B.png` —
-  **status: unwired** (the chain uses banner A). `summon_bell.png` — **status: unwired**
+  **status: approved** (GW-AA pass 2: the win screen picks banner A or B from the match
+  seed, channel `win_banner`). `summon_bell.png` — **status: unwired**
   (optional, for later; the Ability button is intentionally inert).
 - `assets/art/fx/`
   - `A6` cellophane slime trail (snail) — **status: approved** (snail trail actor).
-  - `A1` paper-airplane projectile, `A3` impact burst, `A4` small burst, `A7` defeat
-    poof, `A8` small poof / paper wad, `B2` parachute gem drop, `B3` collect flecks,
-    `B5` placement hover (leaf ring with a ghost sticker), `B6` can't-place hover,
-    `leaf_ring_rotating.png`, `water/` (the origami water set) — **status: unwired**
-    (the chain's fx used the per-unit fx art and the snail trail instead; placement
-    hover shows a seed-packet ghost).
+  - Wired in GW-AA pass 2 (2026-11-23), all through `src/art/fx_art.gd` and the
+    one-shot `src/prototype/fx_actor.gd` — **status: approved**:
+    - `water/water_parachute_drop.png` — sky drops while they fall.
+    - `water/water_drop_medium.png` — landed sky drops and Dew Dropper drops.
+    - `water/water_drop_small.png` — the HUD water icon (replaces the Kenney droplet).
+    - `A3` impact burst — each Seed Lobber seed hit.
+    - `A4` small burst — each Needle Spitter spine hit.
+    - `B3` collect flecks — a collected water drop.
+    - `leaf_ring_rotating.png` — a slowly turning ring under the placement ghost,
+      tinted red when the tile can't take the selected Warden.
+  - Still **status: unwired**, with the reason:
+    - `A1` paper-airplane projectile — no Warden fires a generic projectile; the
+      Needle Spitter keeps its approved spine.
+    - `A7` defeat poof — the animated poof (`sprites/anim/fx/poof/`) already plays.
+    - `A8` small poof / paper wad — no consumer yet.
+    - `B2` parachute gem drop — same art as `water/water_parachute_drop.png`, which
+      is the one wired.
+    - `B5` placement hover / `B6` can't-place hover — composite stills with a baked
+      felt tile and a placeholder flower; the live ghost + `leaf_ring_rotating.png`
+      (+ red tint) implement the same intent.
+    - `water/water_pile_large.png` — no consumer yet (a water-amount display).
 - `assets/art/_unsure/lineup/`: Round 3 base sticker stills for all 10 units, for
   reference only — **status: unwired**. The animation folders above supersede them.
 
@@ -83,19 +104,22 @@ edited or renamed by the docs close-out).
 Verified 2026-11-22 at baseline `86efd22`: 2,417 asset files (excluding `.import`),
 2,022 referenced, **395 unwired**. GW-AA (2026-11-23) wired `board_v1_compost_eyes.png`,
 `main_noclouds_nosun.png` and `white_stick_tile_medium.png` and unwired `main_noclouds.png`,
-so the count is now **393** (rows below updated):
+so the count became **393**. GW-AA pass 2 (2026-11-23) wired needle smoke (16), lobber
+spin (8) + burst (20), `A3`, `A4`, `B3`, the leaf ring, three origami water drops and
+`win_banner_B` (52 files) and unwired the Kenney `sprites/board/water.png` (1), so the
+count is now **342** (rows below updated):
 
 | Count | Path | Note |
 | --- | --- | --- |
 | 304 | `assets/sprites/wardens/<dew_dropper 113, needle_spitter 62, rain_catcher 51, seed_lobber 78>/` | legacy pre-chain loops, superseded by `sprites/anim/` |
-| 46 | `assets/sprites/anim/wardens/needle_spitter/fx/smoke/` (16) + `seed_lobber/fx/projectile/{burst 20, spin 8, 2 strips}` | new-set fx leftovers, unused |
-| 14 | `assets/art/fx/` A1, A3, A4, A7, A8, B2, B3, B5, B6, leaf ring + `water/` x4 | pre-chain fx stills |
+| 2 | `assets/sprites/anim/wardens/seed_lobber/fx/projectile/` (2 strips) | frame folders are used instead |
+| 7 | `assets/art/fx/` A1, A7, A8, B2, B5, B6 + `water/water_pile_large.png` | see the reasons above |
 | 10 | `assets/art/_unsure/lineup/` | Round 3 stills, reference only |
 | 8 | `assets/art/sky/clouds/sticks/` x2 (small, large) + `assets/art/sky/rain/` x6 | stick tiles; unused rain stills |
 | 4 | `assets/art/environment/` (backdrops 1: `main_noclouds.png`, golden_hour 3) | helper stills |
 | 4 | `assets/sprites/board/backdrops/` | non-ship draft gardens, superseded |
-| 2 | `assets/art/ui/` (summon_bell, win_banner_B) | optional / superseded by banner A |
-| 1 | `assets/sprites/board/dirt.png` | unreferenced soil tile |
+| 1 | `assets/art/ui/summon_bell.png` | optional, for later |
+| 2 | `assets/sprites/board/dirt.png`, `water.png` | unreferenced soil tile; old Kenney droplet |
 
 ## Not included
 

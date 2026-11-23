@@ -1,11 +1,15 @@
 ## A lobbed seed bundle. It travels to a tile, then the seeds finish the trip.
-## Visuals: the Seed Lobber's fx/projectile art (fluff_ball.png bundle,
-## seed_single.png seeds); the flight and burst timing are unchanged.
+## Visuals: the Seed Lobber's fx/projectile art — the fluff ball spins through
+## its 8 spin frames in flight, the board plays the 20-frame seed burst where it
+## lands (take_burst), and seed_single.png seeds fly out to the struck tiles.
+## The flight and burst timing are unchanged.
 class_name LobActor
 extends Control
 
 const TRAVEL_TIME := 0.42
 const SEED_TIME := 0.24
+## Spin frames per second for the fluff ball in flight (8 frames, ~2.5 turns/s).
+const SPIN_FPS := 20.0
 const FLUFF: Texture2D = preload("res://assets/sprites/anim/wardens/seed_lobber/fx/projectile/fluff_ball.png")
 const SEED_PUFF: Texture2D = preload("res://assets/sprites/anim/wardens/seed_lobber/fx/projectile/seed_single.png")
 
@@ -21,6 +25,8 @@ var _seed_time := 0.0
 var _hit := false
 var _bundle: TextureRect
 var _seeds: Array[TextureRect] = []
+var _spin: Array[Texture2D] = []
+var _burst_pending := false
 
 
 func _init() -> void:
@@ -34,7 +40,8 @@ func setup(from_pos: Vector2, target: Vector2i, seed_cells: Array[Vector2i]) -> 
 	cells = seed_cells
 	column_pos = from_pos.x
 	row_pos = from_pos.y
-	_bundle = _make_puff(FLUFF)
+	_spin = FxArt.lobber_spin()
+	_bundle = _make_puff(FLUFF if _spin.is_empty() else _spin[0])
 	_bundle.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_bundle)
 	for _cell in cells:
@@ -61,9 +68,12 @@ func tick(delta: float) -> bool:
 		var t := clampf(_travel / TRAVEL_TIME, 0.0, 1.0)
 		column_pos = lerpf(_from.x, float(_target.x) + 0.5, t)
 		row_pos = lerpf(_from.y, float(_target.y), t) + sin(t * PI) * -0.8
+		if not _spin.is_empty():
+			_bundle.texture = _spin[int(_travel * SPIN_FPS) % _spin.size()]
 		if t < 1.0:
 			return false
 		_phase = 1
+		_burst_pending = true
 		column_pos = float(_target.x) + 0.5
 		row_pos = float(_target.y)
 		_bundle.visible = false
@@ -77,6 +87,18 @@ func tick(delta: float) -> bool:
 
 func finished() -> bool:
 	return _hit
+
+
+## True once, on the step the bundle lands, so the board plays the burst.
+func take_burst() -> bool:
+	var pending := _burst_pending
+	_burst_pending = false
+	return pending
+
+
+## The tile the bundle lands on.
+func target_cell() -> Vector2i:
+	return _target
 
 
 ## Places the bundle, and the seeds while they fly out from the burst.

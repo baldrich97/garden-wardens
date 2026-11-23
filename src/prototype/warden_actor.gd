@@ -60,6 +60,9 @@ func setup(p_kind: UnitCatalog.Warden, p_column: int, p_row: int, p_id: int) -> 
 	if ground != Vector2.INF and canvas != Vector2.INF:
 		_clip.set_anchor_fit(ground, canvas)
 	add_child(_clip)
+	if kind == UnitCatalog.Warden.NEEDLE and not _legacy:
+		# The spit's smoke ships as a per-frame overlay on the action canvas.
+		_clip.set_overlay("action", FxArt.needle_smoke())
 	_bar_back = ColorRect.new()
 	_bar_back.color = Color(0.08, 0.1, 0.08, 0.85)
 	_bar_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -168,6 +171,11 @@ func tick_death(delta: float) -> bool:
 ## True while the death pose is playing out before the tile frees.
 func is_dying() -> bool:
 	return _dying
+
+
+## The clip view, for probes and screenshots that inspect what is drawn.
+func clip() -> ClipView:
+	return _clip
 
 
 func play(anim_name: String) -> void:
