@@ -46,8 +46,66 @@ Read this first when picking up the project. Process rules are in
     `--play-shot <path>`.
 - Art status: docs/ASSET_SOURCES.md now carries per-asset approved/unwired statuses
   and the definitive unwired inventory (395 files, including `summon_bell.png`).
-- Checks: rules + smoke + match suites green at baseline (see ../AGENTS.md for the
-  headless commands).
+- Checks: the full gate is the 3 suites + 3 probes — see the Verification playbook
+  below (it supersedes the suites-only commands in ../AGENTS.md).
+
+## Verification playbook
+
+Binary: the MAIN exe `tools/godot/Godot_v4.6-stable_win64.exe` for every run,
+headless or windowed. Pitfalls, both learned the hard way:
+- Do NOT use `Godot_v4.6-stable_win64_console.exe` — under piped capture it
+  silently returns exit 0 with no output.
+- Do NOT pass `--quiet` — it mutes `print()`, so logs come back empty and every
+  marker check becomes a false FAIL.
+
+All commands from the repo root.
+
+### The 4-part gate (must be green before any claim)
+
+1. `tools/godot/Godot_v4.6-stable_win64.exe --headless --path . --import` — exit 0.
+   Re-run after adding/repathing any resource so `.godot/` knows about it.
+2. `... --headless --path . --script res://tests/rules_test.gd` — expect `RULES_OK`.
+3. `... --headless --path . --script res://tests/smoke.gd` — expect `SMOKE_OK`.
+4. `... --headless --path . --script res://tests/match_test.gd` — expect `MATCH_OK`.
+
+A missing marker is a FAIL even if the exit code looks fine (../AGENTS.md).
+
+### Probes — `tests/probes/` (promoted out of gitignored `build/` by GW-P4)
+
+- Playability: `... --headless --path . --script res://tests/probes/playability_probe.gd`
+  — expect `PLAYABILITY_PROBE_OK` (its missing-clip count is informational).
+  Sections: anim matrix, sandbox kill loop, rain catch (L4), bee lane change (L3),
+  economy win (L1).
+- Combat: `... --headless --path . --script res://tests/probes/combat_probe.gd`
+  — expect `COMBAT_PROBE_OK`. Live damage observation only: every vermin chews,
+  Needle single-target kill, Seed Lobber same-tick multi-hit.
+- Synthetic input: `... --path . res://tests/probes/input_probe.tscn` — WINDOWED
+  only (real frame pacing drives the animation clock and viewport picking; this
+  host has no xvfb, a brief visible window is normal and not a bug). Expect 10
+  `STEP_OK` lines then `INPUT_PROBE_OK`; each step is one synthetic click/drag
+  through `Input.parse_input_event()`.
+
+### Watching gameplay/animations
+
+Launch normally (no `--headless`), scene `res://src/prototype/garden_board.tscn`.
+- `--level N` pick a level; `--level 8` is the showcase — all five vermin in wave 1.
+- `--seed N` replays a look exactly.
+- `--shot N <path>` captures after N frames; `--play-shot <path>` mid-match shot;
+  `--result-shot win|loss <path>` banner shot (default
+  `build/screenshots/result_win.png` / `result_loss.png`); `--fall-shot <path>`
+  droplet shot. Anim-clip capture lives in `res://src/prototype/anim_preview.tscn`
+  (`--shot <path> --unit <n> --anim <clip>` — see Current snapshot).
+- F7 toggles the debug overlay + seed pill; F8 pins damage state
+  (`--damage-state 100|66|33` at startup).
+
+### Evidence + markers
+
+Evidence screenshots go to `build/screenshots/` — gitignored like all of `build/`;
+only the probe tools in `tests/probes/` are tracked. Markers: `RULES_OK` /
+`SMOKE_OK` / `MATCH_OK` = the three suites green; `PLAYABILITY_PROBE_OK` /
+`COMBAT_PROBE_OK` / `INPUT_PROBE_OK` = each probe's end-to-end pass (any
+`STEP_FAIL`/section FAIL printed before it invalidates the run); `STEP_OK n …` =
+one synthetic input interaction verified.
 
 ## Version-control authority
 
