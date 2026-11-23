@@ -85,6 +85,7 @@ func setup(p_kind: UnitCatalog.Warden, p_column: int, p_row: int, p_id: int) -> 
 		_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_child(_label)
 	_start_pose(Pose.PLACE)
+	_show_pose()
 
 
 ## Returns "shot", "lob", "water", or "" for what happened this step.
@@ -115,6 +116,17 @@ func tick(delta: float, can_shoot: bool) -> String:
 	_show_pose()
 	_clip.tick(delta, size)
 	return action
+
+
+## Visual-only step while the wave clock stands still (the pre-Start planting
+## window): carries the place hold back to idle and keeps the clip moving,
+## without the fire, produce, or action effects of the match tick.
+func idle_tick(delta: float) -> void:
+	if _dying:
+		return
+	_carry_pose(delta)
+	_show_pose()
+	_clip.tick(delta, size)
 
 
 ## The beat for a Warden doing a one-off job the match just triggered (the Rain

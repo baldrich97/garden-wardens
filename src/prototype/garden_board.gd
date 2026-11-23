@@ -143,6 +143,11 @@ func _process(delta: float) -> void:
 	var step := delta * 2.0 if _fast else delta
 	if _started:
 		advance(step)
+	elif not _paused:
+		# Planted-before-Start Wardens still animate: the place hold runs on
+		# real frames even though the match clock is stopped.
+		for warden in _wardens:
+			warden.idle_tick(step)
 	if _roster != null and _roster.visible:
 		var visual := 0.0 if _paused else step
 		_roster.tick(visual)
@@ -1094,10 +1099,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		dig(_key_aim.x, _key_aim.y)
 	elif event.is_action_pressed("ui_accept") and _selected_kind() >= 0:
 		try_place(_selected_kind(), _key_aim.x, _key_aim.y)
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		_selected = -1
-		_cancel_pointer()
-		_set_removing(false)
 
 
 func _toggle_card(index: int) -> void:
@@ -1112,6 +1113,13 @@ func _selected_kind() -> int:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		# Right-click cancels anywhere in the window. The viewport eats mouse events over
+		# STOP controls (the lawn among them), so _unhandled_input never sees them.
+		_selected = -1
+		_cancel_pointer()
+		_set_removing(false)
+		return
 	if _press_card < 0:
 		return
 	if event is InputEventMouseMotion:
@@ -1122,14 +1130,11 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		var button := event as InputEventMouseButton
-		if button.button_index == MOUSE_BUTTON_RIGHT and button.pressed:
-			_selected = -1
-			_cancel_pointer()
-			_set_removing(false)
-			get_viewport().set_input_as_handled()
-		elif button.button_index == MOUSE_BUTTON_LEFT and not button.pressed:
+		if button.button_index == MOUSE_BUTTON_LEFT and not button.pressed:
 			_release_pointer()
-			get_viewport().set_input_as_handled()
+			# Do NOT mark the release handled: the viewport needs it to drop
+			# mouse_focus. Swallowing it strands focus on the card, and every
+			# later mouse motion gets dispatched to the card instead of the lawn.
 
 
 func _release_pointer() -> void:
