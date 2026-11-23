@@ -16,6 +16,10 @@ const _PORCH_TEXTURE: Texture2D = preload("res://assets/art/environment/board/pl
 const _VERMIN_END_TEXTURE: Texture2D = preload("res://assets/art/environment/board/vermin_end_compost_eyes.png")
 const _WIN_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_A.png")
 const _LOSS_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/loss_banner.png")
+## Normalized rects of the clean cream plaque inside each banner art, measured
+## from the PNG pixels (GW-P1), where the headline text gets drawn.
+const _WIN_PLATE_RECT := Rect2(0.245, 0.425, 0.50, 0.105)
+const _LOSS_PLATE_RECT := Rect2(0.20, 0.315, 0.53, 0.20)
 const DRAG_SLOP := 18.0
 ## Cells of snail travel between slime puddles (presentation only).
 const TRAIL_SPACING := 0.22
@@ -91,6 +95,8 @@ var _damage_step := 0
 var _debug_overlay := false
 var _win_banner: TextureRect
 var _loss_banner: TextureRect
+## [TextureRect, Label, plate Rect2] per banner, for headline relayouts.
+var _banner_layouts: Array = []
 
 
 func _ready() -> void:
@@ -768,9 +774,18 @@ func _build_seed_label() -> void:
 func _refresh_seed_label() -> void:
 	if _seed_label == null or _match_seed == null:
 		return
+	# GW-P1: the pill is a debug watermark, not HUD. It shows only with the
+	# F7 debug overlay on, or while F8 pins a damage state (pinned art is
+	# itself debug-only, and the pin reads inside this pill).
+	_seed_panel.visible = _debug_overlay or not _forced_state.is_empty()
 	var look := GOLDEN_HOUR_NAME if _golden_hour != null else BackdropCatalog.NAMES[_backdrop]
 	var damage_hint := "" if _forced_state.is_empty() else ", Dmg %s" % _forced_state
 	_seed_label.text = "Seed %d, %s%s" % [_match_seed.value, look, damage_hint]
+
+
+func _set_debug_overlay(active: bool) -> void:
+	_debug_overlay = active
+	_refresh_seed_label()
 
 
 func _place_box(node: Control, origin: Vector2, cell: float, column_pos: float, row_pos: float, scale: float) -> void:
@@ -1048,6 +1063,10 @@ func _on_pause_toggled(paused: bool) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.physical_keycode == KEY_F7:
+		_set_debug_overlay(not _debug_overlay)
+		return
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.physical_keycode == KEY_F8:
 		_cycle_damage_state()
@@ -1368,11 +1387,11 @@ func _build_result() -> void:
 	box.add_theme_stylebox_override("panel", FlatStyle.panel(FlatStyle.PANEL, FlatStyle.GOLD, 18, 4))
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 12)
-	_win_banner = _make_banner(_WIN_BANNER_TEXTURE)
+	_win_banner = _make_banner(_WIN_BANNER_TEXTURE, "VICTORY!", _WIN_PLATE_RECT)
 	_win_banner.name = "WinBanner"
 	_win_banner.visible = false
 	column.add_child(_win_banner)
-	_loss_banner = _make_banner(_LOSS_BANNER_TEXTURE)
+	_loss_banner = _make_banner(_LOSS_BANNER_TEXTURE, "DEFEAT", _LOSS_PLATE_RECT)
 	_loss_banner.name = "LossBanner"
 	_loss_banner.visible = false
 	column.add_child(_loss_banner)
@@ -1412,6 +1431,8 @@ func _show_result() -> void:
 		_win_banner.visible = _result == MatchOutcome.Result.WON
 	if _loss_banner != null:
 		_loss_banner.visible = _result == MatchOutcome.Result.LOST
+	for layout in _banner_layouts:
+		_layout_banner(layout[0], layout[1], layout[2])
 	_result_layer.visible = true
 	if _next_button != null:
 		_next_button.visible = _result == MatchOutcome.Result.WON and LevelCatalog.has_next()
@@ -1422,15 +1443,45 @@ func _go_to_next_level() -> void:
 	get_tree().reload_current_scene()
 
 
-## A result-banner image: fixed box, art centered inside at its own aspect.
-func _make_banner(texture: Texture2D) -> TextureRect:
+## A result-banner image: fixed box, art centered inside at its own aspect,
+## and the headline Label painted onto the art's cream plaque (GW-P1: the
+## ribbons are text-free art, so the game draws the word itself).
+func _make_banner(texture: Texture2D, headline: String, plate: Rect2) -> TextureRect:
 	var rect := TextureRect.new()
 	rect.texture = texture
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rect.custom_minimum_size = Vector2(240, 110)
+	rect.custom_minimum_size = Vector2(320, 190)
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var label := Label.new()
+	label.name = "Headline"
+	label.text = headline
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_color_override("font_color", FlatStyle.INK)
+	rect.add_child(label)
+	rect.resized.connect(_layout_banner.bind(rect, label, plate))
+	_banner_layouts.append([rect, label, plate])
 	return rect
+
+
+## Places the headline Label over the plaque region of the drawn art and sizes
+## the font down until the word fits inside it.
+func _layout_banner(rect: TextureRect, label: Label, plate: Rect2) -> void:
+	if rect.texture == null or rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	var tex_size := rect.texture.get_size()
+	var fit := minf(rect.size.x / tex_size.x, rect.size.y / tex_size.y)
+	var drawn := tex_size * fit
+	var origin := (rect.size - drawn) * 0.5
+	var area := Rect2(origin + plate.position * drawn, plate.size * drawn)
+	label.position = area.position
+	label.size = area.size
+	var font := ThemeDB.fallback_font
+	var size := maxi(8, int(area.size.y * 0.85))
+	while size > 8 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, size).x > area.size.x:
+		size -= 1
+	label.add_theme_font_size_override("font_size", size)
 
 
 func _bind_slot_keys() -> void:
@@ -1498,6 +1549,8 @@ func _apply_safe_area() -> void:
 
 func _read_shot_args() -> void:
 	var args := OS.get_cmdline_user_args()
+	if args.has("--debug-overlay"):
+		_set_debug_overlay(true)
 	var gh_index := args.find("--golden-hour")
 	if gh_index >= 0:
 		use_golden_hour(true)

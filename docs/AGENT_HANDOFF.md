@@ -34,6 +34,8 @@ Read this first when picking up the project. Process rules are in
   loop + frame stepping, fps status line. Headless capture:
   `--shot <path> --unit <n> --anim <clip>` (clip names like `idle_100`, `move_66`).
 - Debug toggles on the garden board:
+  - F7 (or `--debug-overlay`): debug overlay on/off. Gates the seed/mood pill
+    watermark; the pill also appears while a damage pin is active (GW-P1).
   - F8 (or `--damage-state 100|66|33`): pin every visible unit's art to the next
     damage state.
   - Backdrop tour button: main -> sunny -> overcast -> dusk -> Golden Hour -> main
