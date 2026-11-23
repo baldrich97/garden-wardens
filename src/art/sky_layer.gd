@@ -1,16 +1,30 @@
 ## The drifting sky over the lawn band (GW-AW-6b): stick clouds, one sun
-## per match, and rain when the seed says so. Pure presentation: it never
+## per match, and rain when the seed says so. Every cloud hangs from a white
+## stick that runs up off the top of the screen and bobs up and down with a
+## slight tilt, as if a stagehand above the set were moving it along. Pure presentation: it never
 ## reads or changes match state, and every choice comes from SkyLook given
 ## the match seed, so a seeded match always shows the same sky.
 class_name SkyLayer
 extends Control
 
 ## Target heights, in screen pixels.
-const SUN_TARGET_H := 52.0
-const RAIN_CLOUD_TARGET_H := 32.0
-const DROP_TARGET_H := 12.0
-const SPLASH_TARGET_H := 18.0
-const CLOUD_BODY_TARGETS := [24.0, 30.0, 44.0]
+const SUN_TARGET_H := 64.0
+const RAIN_CLOUD_TARGET_H := 44.0
+const DROP_TARGET_H := 14.0
+const SPLASH_TARGET_H := 20.0
+const CLOUD_BODY_TARGETS := [36.0, 48.0, 60.0]
+
+## The stick always reaches past the top edge by at least this much, even at
+## the top of a bob, so its end is never seen.
+const STICK_OVERSHOOT := 8.0
+## The rain cloud's hand-made stick: the white stick tile, drawn this wide.
+const RAIN_STICK_TEXTURE := "res://assets/art/sky/clouds/sticks/white_stick_tile_medium.png"
+const RAIN_STICK_W := 6.0
+## Sun bob (hand-held, gentle): pixels and degrees, and their cycles.
+const SUN_BOB_PX := 3.0
+const SUN_BOB_PERIOD := 5.5
+const SUN_TILT_DEG := 2.0
+const SUN_TILT_PERIOD := 7.0
 
 ## Pools and pacing for the rain effect.
 const DROP_POOL := 10
@@ -34,6 +48,16 @@ var _rain_cloud_x_frac := 0.5
 var _rain_cloud_speed := 8.0
 var _cloud_specs: Array[Dictionary] = []
 var _cloud_speeds: Array[float] = []
+var _cloud_bobs: Array[Dictionary] = []
+## Each cloud's drift position and resting height; the bob rides on top.
+var _drift_x: Array[float] = []
+var _rest_y: Array[float] = []
+var _bob_px: Array[float] = []
+var _time := 0.0
+var _sun_rest := Vector2.ZERO
+var _rain_rest_y := 0.0
+var _rain_drift_x := 0.0
+var _rain_stick: TextureRect
 
 var _sun: TextureRect
 var _rain_cloud: TextureRect
@@ -61,6 +85,16 @@ func _init() -> void:
 		add_child(cloud)
 		_clouds.append(cloud)
 		_cloud_speeds.append(0.0)
+		_drift_x.append(0.0)
+		_rest_y.append(0.0)
+		_bob_px.append(0.0)
+	_rain_stick = TextureRect.new()
+	_rain_stick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rain_stick.texture = load(RAIN_STICK_TEXTURE) as Texture2D
+	_rain_stick.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_rain_stick.stretch_mode = TextureRect.STRETCH_SCALE
+	_rain_stick.visible = false
+	add_child(_rain_stick)
 	_rain_cloud = _make_sprite()
 	add_child(_rain_cloud)
 	for _i in DROP_POOL:
@@ -110,6 +144,8 @@ func apply_look(seed_value: int, mood_index: int) -> void:
 		SkyCatalog.class_count(2),
 	]
 	_cloud_specs = SkyLook.cloud_specs(_seed, class_counts)
+	_cloud_bobs = SkyLook.cloud_bobs(_seed, _cloud_specs.size())
+	_time = 0.0
 	_reset_pool()
 	_layout()
 
@@ -118,23 +154,81 @@ func apply_look(seed_value: int, mood_index: int) -> void:
 func tick(delta: float) -> void:
 	if _band.size.x <= 0.0:
 		return
+	_time += delta
 	for i in _clouds.size():
 		var cloud := _clouds[i]
 		if not cloud.visible:
 			continue
-		cloud.position.x -= _cloud_speeds[i] * delta
-		if cloud.position.x + cloud.size.x < _band.position.x:
-			cloud.position.x = _band.end.x
+		_drift_x[i] -= _cloud_speeds[i] * delta
+		if _drift_x[i] + cloud.size.x < _band.position.x:
+			_drift_x[i] = _band.end.x
+		_pose_cloud(i)
+	if _sun.visible:
+		_sun.position = _sun_rest + Vector2(0.0, SUN_BOB_PX * sin(TAU * _time / SUN_BOB_PERIOD))
+		_sun.rotation = deg_to_rad(SUN_TILT_DEG) * sin(TAU * _time / SUN_TILT_PERIOD)
 	if _rain:
-		_rain_cloud.position.x -= _rain_cloud_speed * delta
-		if _rain_cloud.position.x + _rain_cloud.size.x < _band.position.x:
-			_rain_cloud.position.x = _band.end.x
+		_rain_drift_x -= _rain_cloud_speed * delta
+		if _rain_drift_x + _rain_cloud.size.x < _band.position.x:
+			_rain_drift_x = _band.end.x
+		_pose_rain_cloud()
 		_update_rain(delta)
+
+
+## How far cloud i currently sits from its resting height (negative is up).
+## Exposed so tests and probes can confirm the clouds really bob.
+func cloud_bob_offset(index: int) -> float:
+	if index < 0 or index >= _cloud_specs.size():
+		return 0.0
+	return _clouds[index].position.y - _rest_y[index]
+
+
+## The bob amplitude of cloud i, in screen pixels.
+func cloud_bob_amplitude(index: int) -> float:
+	if index < 0 or index >= _cloud_specs.size():
+		return 0.0
+	return _bob_px[index]
+
+
+## Whether every visible cloud's stick runs past the top of the screen.
+func sticks_reach_top() -> bool:
+	for i in _cloud_specs.size():
+		if _clouds[i].visible and _clouds[i].position.y > -STICK_OVERSHOOT * 0.5:
+			return false
+	return true
+
+
+## The vertical bob for a cloud at the current time: a slow main swing plus a
+## small off-beat wobble, so it reads as a hand rather than a machine.
+func _bob_wave(phase: float, period: float) -> float:
+	var w := TAU * _time / period
+	return 0.75 * sin(w + phase) + 0.25 * sin(2.3 * w + 2.0 * phase)
+
+
+func _pose_cloud(i: int) -> void:
+	var cloud := _clouds[i]
+	var bob: Dictionary = _cloud_bobs[i] if i < _cloud_bobs.size() else {"period": 4.5, "phase": 0.0, "tilt_deg": 0.8}
+	var period := float(bob["period"])
+	var phase := float(bob["phase"])
+	var sway := 1.5 * sin(TAU * _time / (period * 1.3) + phase)
+	cloud.position = Vector2(_drift_x[i] + sway, _rest_y[i] + _bob_px[i] * _bob_wave(phase, period))
+	# Tilt around the stick's top end, where the unseen hand holds it.
+	cloud.pivot_offset = Vector2(cloud.size.x * 0.5, 0.0)
+	cloud.rotation = deg_to_rad(float(bob["tilt_deg"])) * sin(TAU * _time / (period * 1.7) + phase)
+
+
+func _pose_rain_cloud() -> void:
+	var dy := _rain_cloud.size.y * 0.12 * _bob_wave(1.1, 4.8)
+	_rain_cloud.position = Vector2(_rain_drift_x, _rain_rest_y + dy)
+	_rain_stick.size = Vector2(RAIN_STICK_W, _rain_cloud.position.y + _rain_cloud.size.y * 0.4 + STICK_OVERSHOOT)
+	_rain_stick.position = Vector2(
+		_rain_cloud.position.x + (_rain_cloud.size.x - RAIN_STICK_W) * 0.5,
+		-STICK_OVERSHOOT
+	)
 
 
 ## Whether the sun shows for the current mood.
 func sun_visible() -> bool:
-	return _mood != SkyLook.MOOD_OVERCAST
+	return SkyLook.mood_shows_sun(_mood)
 
 
 ## The sun texture for this match, or null if none was assigned.
@@ -215,21 +309,24 @@ func _reset_pool() -> void:
 func _layout() -> void:
 	if _band.size.x <= 0.0:
 		return
-	# Sun: one per match, hidden on the overcast mood.
-	if _mood == SkyLook.MOOD_OVERCAST:
+	# Sun: one per match, hidden on overcast and on moods that paint their own.
+	if not SkyLook.mood_shows_sun(_mood):
 		_sun.visible = false
 	else:
 		var sun_ok := _fit(_sun, SkyCatalog.SUNS[_sun_index], SUN_TARGET_H)
 		if sun_ok:
-			_sun.position = Vector2(
+			_sun_rest = Vector2(
 				_band.position.x + _band.size.x * _sun_x_frac - _sun.size.x * 0.5,
 				_band.position.y + (_band.size.y - _sun.size.y) * 0.5
 			)
+			_sun.position = _sun_rest
+			_sun.pivot_offset = _sun.size * 0.5
 			_sun.visible = true
 		else:
 			_sun.visible = false
-	# Clouds: mixed sizes drifting across the band. Stick composites rise out
-	# of the body, so a prop taller than the band is shrunk to fit it.
+	# Clouds: mixed sizes drifting across the band. The cloud body hangs in
+	# the band; its stick rises out of the body and always runs past the top
+	# of the screen (behind the top bar), like a prop held from above.
 	for i in _clouds.size():
 		var cloud := _clouds[i]
 		if i >= _cloud_specs.size():
@@ -246,36 +343,40 @@ func _layout() -> void:
 			cloud.visible = false
 			_cloud_speeds[i] = 0.0
 			continue
-		if not _fit(cloud, entry["path"], CLOUD_BODY_TARGETS[spec["size"]], float(entry["body_h"])):
+		var body_h: float = CLOUD_BODY_TARGETS[spec["size"]]
+		if not _fit(cloud, entry["path"], body_h, float(entry["body_h"])):
 			cloud.visible = false
 			_cloud_speeds[i] = 0.0
 			continue
-		if cloud.size.y > _band.size.y:
-			cloud.size *= _band.size.y / cloud.size.y
-		var bottom_y := lerpf(_band.position.y + _band.size.y * 0.15, _band.end.y, spec["height"])
-		# Keep the whole prop inside the band.
-		var top := _band.position.y
-		var bottom := maxf(_band.end.y - cloud.size.y, top)
-		cloud.position = Vector2(
-			lerpf(_band.position.x - cloud.size.x, _band.end.x, spec["phase"]),
-			clampf(bottom_y - cloud.size.y, top, bottom)
-		)
+		var bob: Dictionary = _cloud_bobs[i] if i < _cloud_bobs.size() else {"amp": 0.15}
+		_bob_px[i] = body_h * float(bob["amp"])
+		var stick_h := cloud.size.y - body_h
+		# Body top somewhere from just under the band's top edge to low in
+		# the band, then capped so the stick still clears the screen top at
+		# the highest point of the bob.
+		var body_top := lerpf(_band.position.y - body_h * 0.1, _band.end.y - body_h * 0.85, spec["height"])
+		body_top = minf(body_top, stick_h - STICK_OVERSHOOT - _bob_px[i])
+		_rest_y[i] = body_top - stick_h
+		_drift_x[i] = lerpf(_band.position.x - cloud.size.x, _band.end.x, spec["phase"])
 		_cloud_speeds[i] = spec["speed"]
 		cloud.visible = true
+		_pose_cloud(i)
 	# Rain cloud: floats high in the band so drops are visibly falling from
 	# it down to the grass.
 	if _rain:
 		var rain_ok := _fit(_rain_cloud, SkyCatalog.RAIN_CLOUDS[_rain_cloud_index], RAIN_CLOUD_TARGET_H)
 		if rain_ok:
-			_rain_cloud.position = Vector2(
-				lerpf(_band.position.x, _band.end.x - _rain_cloud.size.x, _rain_cloud_x_frac),
-				_band.position.y + _band.size.y * 0.1
-			)
+			_rain_drift_x = lerpf(_band.position.x, _band.end.x - _rain_cloud.size.x, _rain_cloud_x_frac)
+			_rain_rest_y = _band.position.y + _band.size.y * 0.05
 			_rain_cloud.visible = true
+			_rain_stick.visible = _rain_stick.texture != null
+			_pose_rain_cloud()
 		else:
 			_rain_cloud.visible = false
+			_rain_stick.visible = false
 	else:
 		_rain_cloud.visible = false
+		_rain_stick.visible = false
 
 
 func _update_rain(delta: float) -> void:

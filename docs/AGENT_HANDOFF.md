@@ -49,6 +49,27 @@ Read this first when picking up the project. Process rules are in
 - Checks: the full gate is the 3 suites + 3 probes — see the Verification playbook
   below (it supersedes the suites-only commands in ../AGENTS.md).
 
+## GW-AA asset audit (2026-11-23, creator-approved local commit)
+
+Audit of the wired art against the Asset Gen locks. Fixed:
+- **Board v1 (felt checkerboard) was never wired** — the lawn still drew the Kenney
+  grass/sand/stone tiles. `LawnView.board_texture` now draws the locked board straight
+  from `board_v1_compost_eyes.png` (frame + 60 felt cells via atlas regions, no art
+  edits). Sand and stone keep a translucent wash so soil stays readable (placeholder
+  until soil art exists). The soil-tile path remains as a fallback when no board
+  texture is set. The aim highlight is cream on the felt (green vanished on it).
+- **Clouds had no vertical motion** and were shrunk into the sky strip with their
+  sticks ending mid-sky. Every cloud now hangs from its white stick, which always runs
+  past the top of the screen; each cloud bobs up and down on its own seeded cycle
+  with a slight tilt around the unseen hand (`SkyLook.cloud_bobs`), as in the approved
+  Round 3b sky-motion preview. Clouds, sun and rain cloud are larger; the rain cloud
+  gets a white stick tile; the sun bobs gently.
+- **Double celestials**: Main now uses `main_noclouds_nosun.png` (made for the random
+  sun); Sunny and Dusk keep their painted sun/moon and skip the seeded sun
+  (`SkyLook.mood_shows_sun`).
+Open creator calls are listed in the GW-AA report (backdrop framing vs. UI, 640x360
+mood art, duplicate porch/compost ends, soil look on felt, unwired fx/water sets).
+
 ## Verification playbook
 
 Binary: the MAIN exe `tools/godot/Godot_v4.6-stable_win64.exe` for every run,
@@ -57,6 +78,9 @@ headless or windowed. Pitfalls, both learned the hard way:
   silently returns exit 0 with no output.
 - Do NOT pass `--quiet` — it mutes `print()`, so logs come back empty and every
   marker check becomes a false FAIL.
+- On a high-refresh display (this host runs 180 Hz) the windowed input probe's
+  frame-count waits run out early (steps 6 and 10 fail before and after GW-AA). Run it
+  with `--max-fps 60` (before `--path`) to get the intended timing.
 
 All commands from the repo root.
 

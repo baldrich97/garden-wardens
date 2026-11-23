@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://src/prototype/garden_board.gd" id="1_script"]
 [ext_resource type="Script" path="res://src/prototype/lawn_view.gd" id="2_lawn"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/board/grass.png" id="6_grass"]
 [ext_resource type="Texture2D" path="res://assets/sprites/board/stone.png" id="7_stone"]
 [ext_resource type="Texture2D" path="res://assets/sprites/board/sand.png" id="8_sand"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/board/board_v1_compost_eyes.png" id="9_board"]
 
 [node name="GardenBoard" type="Control"]
 layout_mode = 3
@@ -79,6 +80,7 @@ script = ExtResource("2_lawn")
 grass_texture = ExtResource("6_grass")
 stone_texture = ExtResource("7_stone")
 sand_texture = ExtResource("8_sand")
+board_texture = ExtResource("9_board")
 
 [node name="BottomBar" parent="SafeMargin/Layout" instance=ExtResource("4_bottom")]
 unique_name_in_owner = true

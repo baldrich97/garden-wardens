@@ -39,22 +39,25 @@ edited or renamed by the docs close-out).
   - `backdrops/`: main backdrop plus moods 1 sunny, 3 overcast and 4 dusk (no clouds,
     suns and moon restored). Mood 2 is Golden Hour.
     **Status: approved** (seeded backdrop catalog, `src/art/backdrop_catalog.gd`).
-    `main_noclouds_nosun.png` — **status: unwired**.
+    Main ships as `main_noclouds_nosun.png` (the sun-free copy made for the per-match
+    random sun, GW-AA 2026-11-23); `main_noclouds.png` (baked sun) — **status: unwired**.
   - `golden_hour/`: Golden Hour boss backdrop as layers (ray origin D). Draw order and
     rotation are in `golden_hour_layers.json`.
     **Status: approved** (layered composition in `src/art/golden_hour_backdrop.gd`;
     last stop of the backdrop tour). Three helper stills (`backdrop_no_rays`,
     `sun_layer_fullframe`, `with_rays_still`) — **status: unwired**.
   - `board/`: vermin end 4 (compost eyes) and player end 1 (porch) —
-    **status: approved** (board end pieces). `board_v1_compost_eyes.png` —
-    **status: unwired** (board v1 itself ships as the bush + cactus pair from
-    `sprites/wardens/`).
+    **status: approved** (board end pieces). `board_v1_compost_eyes.png` (the locked
+    Round 3b felt board, delivered only as a 1280x720 composite) — **status: approved**
+    (GW-AA 2026-11-23): `src/prototype/lawn_view.gd` draws the board frame and the
+    5x12 felt cells straight from it through atlas regions; the file is untouched.
 - `assets/art/sky/`
   - `clouds/{small,medium,large}/`: each cloud comes as `<name>.png` and
     `<name>_stick.png` (with its white stick).
     **Status: approved** (seeded sky layer; all 106 catalog `res://` paths verified on disk).
-  - `clouds/sticks/`: separate stick tiles — **status: unwired** (the stick composites
-    are the `_stick.png` cloud variants, not these tiles).
+  - `clouds/sticks/`: separate stick tiles. `white_stick_tile_medium.png` —
+    **status: approved** (the rain cloud's stick, GW-AA); small and large — **status:
+    unwired** (the stick composites are the `_stick.png` cloud variants).
   - `suns/`: suns 1, 2, 5, 6 and 8 — **status: approved** (per-match seeded sun).
   - `rain/`: the approved rain set — five clouds + `rain_08_drop_M` +
     `rain_12_ground_splash` are **approved** (the light-rain variant); six further rain
@@ -78,7 +81,9 @@ edited or renamed by the docs close-out).
 ## Unwired inventory (definitive)
 
 Verified 2026-11-22 at baseline `86efd22`: 2,417 asset files (excluding `.import`),
-2,022 referenced, **395 unwired**:
+2,022 referenced, **395 unwired**. GW-AA (2026-11-23) wired `board_v1_compost_eyes.png`,
+`main_noclouds_nosun.png` and `white_stick_tile_medium.png` and unwired `main_noclouds.png`,
+so the count is now **393** (rows below updated):
 
 | Count | Path | Note |
 | --- | --- | --- |
@@ -86,8 +91,8 @@ Verified 2026-11-22 at baseline `86efd22`: 2,417 asset files (excluding `.import
 | 46 | `assets/sprites/anim/wardens/needle_spitter/fx/smoke/` (16) + `seed_lobber/fx/projectile/{burst 20, spin 8, 2 strips}` | new-set fx leftovers, unused |
 | 14 | `assets/art/fx/` A1, A3, A4, A7, A8, B2, B3, B5, B6, leaf ring + `water/` x4 | pre-chain fx stills |
 | 10 | `assets/art/_unsure/lineup/` | Round 3 stills, reference only |
-| 9 | `assets/art/sky/clouds/sticks/` x3 + `assets/art/sky/rain/` x6 | stick tiles; unused rain stills |
-| 5 | `assets/art/environment/` (backdrops 1, board 1, golden_hour 3) | helper stills |
+| 8 | `assets/art/sky/clouds/sticks/` x2 (small, large) + `assets/art/sky/rain/` x6 | stick tiles; unused rain stills |
+| 4 | `assets/art/environment/` (backdrops 1: `main_noclouds.png`, golden_hour 3) | helper stills |
 | 4 | `assets/sprites/board/backdrops/` | non-ship draft gardens, superseded |
 | 2 | `assets/art/ui/` (summon_bell, win_banner_B) | optional / superseded by banner A |
 | 1 | `assets/sprites/board/dirt.png` | unreferenced soil tile |

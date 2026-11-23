@@ -551,6 +551,33 @@ func _sky_look(failures: PackedStringArray) -> void:
 		failures.append("cloud count %d left the %d-%d range" % [clouds, SkyLook.CLOUD_MIN, SkyLook.CLOUD_MAX])
 	if not sky.clouds_have_textures():
 		failures.append("a drifting cloud lost its texture")
+	# Stick clouds: every stick runs off the top, and every cloud bobs up and
+	# down on its own (the stagehand motion), not just sideways.
+	if not sky.sticks_reach_top():
+		failures.append("a cloud stick stopped short of the top of the screen")
+	var low: Array[float] = []
+	var high: Array[float] = []
+	for i in clouds:
+		low.append(INF)
+		high.append(-INF)
+	for _step in 60:
+		sky.tick(0.1)
+		for i in clouds:
+			var off := sky.cloud_bob_offset(i)
+			low[i] = minf(low[i], off)
+			high[i] = maxf(high[i], off)
+		if not sky.sticks_reach_top():
+			failures.append("a cloud stick dipped into view mid-bob")
+			break
+	for i in clouds:
+		if high[i] - low[i] < sky.cloud_bob_amplitude(i) or sky.cloud_bob_amplitude(i) < 3.0:
+			failures.append("cloud %d barely moved vertically (%.1f px)" % [i, high[i] - low[i]])
+	# Moods that paint their own sun or moon never get a second one.
+	for mood in [SkyLook.MOOD_SUNNY, SkyLook.MOOD_DUSK]:
+		if SkyLook.mood_shows_sun(mood):
+			failures.append("mood %d would show two celestials" % mood)
+	if not SkyLook.mood_shows_sun(0):
+		failures.append("the main look lost its per-match sun")
 	# Determinism: the same seed builds the same sky.
 	var again := SkyLayer.new()
 	root.add_child(again)

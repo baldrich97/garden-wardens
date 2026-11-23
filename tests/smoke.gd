@@ -45,6 +45,11 @@ func _check(board: Node) -> PackedStringArray:
 	var lawn := board.find_child("Lawn", true, false) as LawnView
 	if lawn == null or lawn.column_count() != LawnView.COLUMNS or lawn.tile_count() != LawnView.COLUMNS * LawnView.ROWS:
 		failures.append("lawn was not 5 by 12")
+	if lawn != null and not lawn.uses_board_art():
+		failures.append("lawn did not draw the locked felt board (board v1)")
+	var frame := board.find_child("BoardFrame", true, false) as TextureRect
+	if frame == null or frame.texture == null or frame.size.x <= 0.0:
+		failures.append("felt board frame missing from the lawn")
 	var backdrop := board.find_child("BackdropButton", true, false) as Button
 	if backdrop == null or backdrop.text.is_empty():
 		failures.append("backdrop button missing")

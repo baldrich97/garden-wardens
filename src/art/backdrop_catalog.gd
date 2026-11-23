@@ -10,8 +10,10 @@ const NAMES: Array[String] = [
 	"Dusk",
 ]
 
+## Main uses the sun-free copy Asset Gen made for the per-match random suns
+## (SkyLayer paints the sun); the moods keep their own painted sun or moon.
 const PATHS: Array[String] = [
-	"res://assets/art/environment/backdrops/main_noclouds.png",
+	"res://assets/art/environment/backdrops/main_noclouds_nosun.png",
 	"res://assets/art/environment/backdrops/mood_1_sunny_noclouds.png",
 	"res://assets/art/environment/backdrops/mood_3_overcast_noclouds.png",
 	"res://assets/art/environment/backdrops/mood_4_dusk_noclouds.png",

@@ -7,9 +7,16 @@
 class_name SkyLook
 extends RefCounted
 
-## Index of the "Overcast" look in BackdropCatalog.NAMES: the only mood
-## that hides the sun, and the one where rain is likely.
+## Index of the "Overcast" look in BackdropCatalog.NAMES: the one mood with
+## no sun at all, and the one where rain is likely.
 const MOOD_OVERCAST := 2
+## Moods whose backdrop art already paints its own sun or moon (Sunny's sun,
+## Dusk's moon). The seeded sun stays off on these so a look never shows two
+## celestials. Main uses the sun-free copy of its backdrop, so it keeps the
+## per-match sun.
+const MOOD_SUNNY := 1
+const MOOD_DUSK := 3
+const BAKED_CELESTIAL_MOODS: Array[int] = [MOOD_SUNNY, MOOD_DUSK]
 
 ## Clouds per match, and their size classes (0 small, 1 medium, 2 large).
 const CLOUD_MIN := 3
@@ -20,8 +27,19 @@ const CLOUD_SIZE_CLASSES := 3
 const CLOUD_SPEED_MIN := 10.0
 const CLOUD_SPEED_MAX := 34.0
 
-## Share of clouds that use a stick variant (the craft-prop look).
-const CLOUD_STICK_SHARE := 0.7
+## Share of clouds that use a stick variant (the craft-prop look). Brandon's
+## sky direction (Asset Gen Round 3/3b): every cloud hangs from a white stick
+## that runs off the top of the screen, so this is all of them.
+const CLOUD_STICK_SHARE := 1.0
+
+## Stagehand bob: each stick cloud rises and dips on its own slow cycle, with
+## a slight tilt around the hidden hand, as in the approved Round 3b sky
+## motion preview. Amplitude is a share of the cloud body's on-screen height.
+const BOB_AMP_MIN := 0.13
+const BOB_AMP_MAX := 0.2
+const BOB_PERIOD_MIN := 3.6
+const BOB_PERIOD_MAX := 5.6
+const BOB_TILT_MAX_DEG := 1.5
 
 ## Rain chances: likely on overcast, occasional elsewhere.
 const RAIN_CHANCE_OVERCAST := 0.8
@@ -38,6 +56,12 @@ static func sun_index(seed_value: int, sun_count: int) -> int:
 ## Where the sun sits across the band, 0..1.
 static func sun_x_frac(seed_value: int) -> float:
 	return MatchSeed.with_value(seed_value).rng("sky_sun_pos").randf_range(0.15, 0.85)
+
+
+## Whether the seeded sun shows on this mood: never on overcast, and not on
+## a mood whose backdrop already has its own sun or moon.
+static func mood_shows_sun(mood_index: int) -> bool:
+	return mood_index != MOOD_OVERCAST and not BAKED_CELESTIAL_MOODS.has(mood_index)
 
 
 ## Whether this mood rains, from the seed. Each mood rolls on its own
@@ -84,3 +108,20 @@ static func cloud_specs(seed_value: int, class_counts: Array[int]) -> Array[Dict
 			"phase": rng.randf(),
 		})
 	return specs
+
+
+## The stagehand bob for each cloud, from the seed on its own channel (so the
+## drift spec above is unchanged). Each entry carries {amp, period, phase,
+## tilt_deg}: bob amplitude as a share of the body height, the cycle length in
+## seconds, the start phase in radians, and the peak tilt in degrees.
+static func cloud_bobs(seed_value: int, count: int) -> Array[Dictionary]:
+	var rng := MatchSeed.with_value(seed_value).rng("sky_cloud_bob")
+	var bobs: Array[Dictionary] = []
+	for _i in count:
+		bobs.append({
+			"amp": rng.randf_range(BOB_AMP_MIN, BOB_AMP_MAX),
+			"period": rng.randf_range(BOB_PERIOD_MIN, BOB_PERIOD_MAX),
+			"phase": rng.randf_range(0.0, TAU),
+			"tilt_deg": rng.randf_range(0.4, BOB_TILT_MAX_DEG),
+		})
+	return bobs
