@@ -122,7 +122,28 @@ const CLOUD_LARGE_PLAIN: Array[Dictionary] = [
 	{"path": "res://assets/art/sky/clouds/large/torn_L5.png", "body_h": 214},
 	{"path": "res://assets/art/sky/clouds/large/torn_L6.png", "body_h": 195},
 ]
-## Rain-cloud composites (cloud with a little baked-in drizzle).
+## Rain-cloud composites (cloud with a little baked-in drizzle). Only the grey
+## felt ones hang on Overcast (GW-AA pass 4: grey/rainy clouds only there);
+## RAIN_CLOUD_BODY_H is each one's cloud-body height in source pixels, so the
+## rain cloud scales in the same family as the drifting clouds.
+const OVERCAST_RAIN_CLOUDS: Array[String] = [
+	"res://assets/art/sky/rain/rain_01_felt_cloud_3_strands.png",
+	"res://assets/art/sky/rain/rain_03_felt_cloud_dense.png",
+]
+const RAIN_CLOUD_BODY_H := {
+	"res://assets/art/sky/rain/rain_01_felt_cloud_3_strands.png": 127.0,
+	"res://assets/art/sky/rain/rain_03_felt_cloud_dense.png": 129.0,
+}
+## Main's sun (GW-AA pass 4): the layered paper sun from the Golden Hour set,
+## with a soft paper drop shadow cut from the same sprite, instead of the
+## small flat sticker suns.
+const MAIN_SUN := "res://assets/art/environment/golden_hour/golden_hour_sun_sprite.png"
+const MAIN_SUN_SHADOW := "res://assets/art/sky/suns/main_sun_shadow.png"
+## Cloud families by file-name prefix: cotton is the white puffy set, felt the
+## grey set, torn the flat streaky orange set.
+const FAMILY_COTTON := "cotton"
+const FAMILY_FELT := "felt"
+const FAMILY_TORN := "torn"
 const RAIN_CLOUDS: Array[String] = [
 	"res://assets/art/sky/rain/rain_01_felt_cloud_3_strands.png",
 	"res://assets/art/sky/rain/rain_03_felt_cloud_dense.png",
@@ -169,3 +190,31 @@ static func plain_at(size: int, index: int) -> Dictionary:
 			return CLOUD_LARGE_PLAIN[index]
 		_:
 			return {}
+
+
+## The entries of one size class that belong to one cloud family (cotton,
+## felt, torn), stick or plain.
+static func family_entries(size: int, family: String, stick: bool) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for index in class_count(size):
+		var entry := stick_at(size, index) if stick else plain_at(size, index)
+		var path: String = entry.get("path", "")
+		if path.get_file().begins_with(family + "_"):
+			out.append(entry)
+	return out
+
+
+## Every texture path the sky can show, for the startup preload.
+static func all_paths() -> Array[String]:
+	var out: Array[String] = []
+	out.append_array(SUNS)
+	out.append(MAIN_SUN)
+	out.append(MAIN_SUN_SHADOW)
+	for size in 3:
+		for index in class_count(size):
+			out.append(String(stick_at(size, index)["path"]))
+			out.append(String(plain_at(size, index)["path"]))
+	out.append_array(RAIN_CLOUDS)
+	out.append(RAIN_DROP)
+	out.append(RAIN_SPLASH)
+	return out

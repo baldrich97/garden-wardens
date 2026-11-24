@@ -572,7 +572,38 @@ func _step8_pause() -> bool:
 	var resumed := await _wait_until(0.5, func() -> bool: return _time() > t1)
 	if not resumed:
 		return _step_fail(8, label, "clock never restarted after un-pausing")
-	_step_pass(8, label, "clock held at %.2f over 0.5 s of frames, then resumed at %.2f" % [t0, _time()])
+	# Space toggles the same pause (the Pause button follows), a held key's
+	# echo repeats are ignored, and the focused Pause button never sees Space.
+	var pause_btn := _by_name("PauseButton") as Button
+	var down := InputEventKey.new()
+	down.keycode = KEY_SPACE
+	down.physical_keycode = KEY_SPACE
+	down.pressed = true
+	Input.parse_input_event(down)
+	await get_tree().process_frame
+	if not bool(_board.get("_paused")) or not pause_btn.button_pressed:
+		return _step_fail(8, label, "Space did not pause (paused=%s, button=%s)" % [_board.get("_paused"), pause_btn.button_pressed])
+	var echo := down.duplicate() as InputEventKey
+	echo.echo = true
+	for _i in 3:
+		Input.parse_input_event(echo)
+		await get_tree().process_frame
+	if not bool(_board.get("_paused")):
+		return _step_fail(8, label, "Space key-repeat echoes flipped pause back")
+	var up := down.duplicate() as InputEventKey
+	up.pressed = false
+	Input.parse_input_event(up)
+	await get_tree().process_frame
+	var t2 := _time()
+	await _wait_until(0.3, func() -> bool: return false)
+	if _time() != t2:
+		return _step_fail(8, label, "clock ran while Space-paused")
+	await _key(KEY_SPACE)
+	if bool(_board.get("_paused")) or pause_btn.button_pressed:
+		return _step_fail(8, label, "second Space did not unpause in step with the button")
+	if not await _wait_until(0.5, func() -> bool: return _time() > t2):
+		return _step_fail(8, label, "clock never restarted after the Space un-pause")
+	_step_pass(8, label, "clock held at %.2f over 0.5 s of frames, then resumed at %.2f; Space paused/unpaused in step with the button, echoes ignored" % [t0, t1])
 	return true
 
 

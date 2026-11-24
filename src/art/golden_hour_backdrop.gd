@@ -55,12 +55,19 @@ var _rays_shadow: Sprite2D
 var _sun: Sprite2D
 var _rays_material: ShaderMaterial
 var _shadow_material: ShaderMaterial
+## Whether the composition draws its own foreground plate (fence, porch,
+## heap). The stage's shared set plates replace it (GW-AA pass 4).
+var _with_foreground := true
+## One compiled mask shader for every composition (and the startup warmup),
+## instead of a fresh Shader per wheel per look switch.
+static var _mask_shader: Shader
 
 
 ## Builds the composition over its parent and returns it. Free the node to undo.
-static func compose(parent: Node) -> GoldenHourBackdrop:
+static func compose(parent: Node, with_foreground: bool = true) -> GoldenHourBackdrop:
 	var layer := GoldenHourBackdrop.new()
 	layer.name = "GoldenHour"
+	layer._with_foreground = with_foreground
 	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	parent.add_child(layer)
@@ -73,9 +80,10 @@ func _ready() -> void:
 	_add_fullframe("sky_base")
 	_rays_shadow = _add_wheel("rays_shadow_wheel")
 	_rays = _add_wheel("rays_wheel")
-	_add_fullframe("foreground")
+	if _with_foreground:
+		_add_fullframe("foreground")
 	_add_fullframe("sun_shadow")
-	var sun := load(LAYER_PATHS["sun_sprite"]) as Texture2D
+	var sun := BackdropCatalog.cached(LAYER_PATHS["sun_sprite"])
 	if sun == null:
 		push_error("Golden Hour is missing its sun sprite.")
 		return
@@ -114,7 +122,7 @@ func _read_spec() -> bool:
 
 
 func _add_fullframe(key: String) -> void:
-	var texture := load(LAYER_PATHS[key]) as Texture2D
+	var texture := BackdropCatalog.cached(LAYER_PATHS[key])
 	if texture == null:
 		push_error("Golden Hour is missing layer %s." % key)
 		return
@@ -129,15 +137,13 @@ func _add_fullframe(key: String) -> void:
 
 
 func _add_wheel(key: String) -> Sprite2D:
-	var texture := load(LAYER_PATHS[key]) as Texture2D
+	var texture := BackdropCatalog.cached(LAYER_PATHS[key])
 	if texture == null:
 		push_error("Golden Hour is missing layer %s." % key)
 		return null
 	var material := ShaderMaterial.new()
-	var shader := Shader.new()
-	shader.code = _MASK_SHADER
-	material.shader = shader
-	material.set_shader_parameter("fade_mask", load(LAYER_PATHS["rays_fade_mask"]))
+	material.shader = mask_shader()
+	material.set_shader_parameter("fade_mask", BackdropCatalog.cached(LAYER_PATHS["rays_fade_mask"]))
 	if key == "rays_shadow_wheel":
 		_shadow_material = material
 	else:
@@ -183,3 +189,19 @@ func _feed_mask_uniforms(material: ShaderMaterial, wheel: Sprite2D, offset: Vect
 	material.set_shader_parameter("frame_size", _canvas * scale)
 	material.set_shader_parameter("wheel_origin", wheel.position)
 	material.set_shader_parameter("wheel_scale", scale)
+
+
+## The shared ray-mask shader (built once).
+static func mask_shader() -> Shader:
+	if _mask_shader == null:
+		_mask_shader = Shader.new()
+		_mask_shader.code = _MASK_SHADER
+	return _mask_shader
+
+
+## Every texture the composition can draw, for the startup preload.
+static func all_paths() -> Array[String]:
+	var out: Array[String] = []
+	for key in LAYER_PATHS:
+		out.append(String(LAYER_PATHS[key]))
+	return out

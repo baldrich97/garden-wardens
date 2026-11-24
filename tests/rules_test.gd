@@ -23,6 +23,7 @@ func _init() -> void:
 	_fx_art(failures)
 	_lawn_geometry(failures)
 	_responsive(failures)
+	_paper_pop(failures)
 	if failures.is_empty():
 		print("RULES_OK")
 		quit(0)
@@ -616,19 +617,36 @@ func _sky_look(failures: PackedStringArray) -> void:
 		failures.append("the sun showed on the overcast mood")
 	sky.free()
 	again.free()
-	# Rain: a seeded match where it falls shows drops, then splashes at the grass.
+	_mood_clouds(failures)
+	# Rain (pass 4): only the Overcast mood ever rains; a seeded Overcast
+	# match where it falls shows drops, then splashes at the grass.
+	for mood in [SkyLook.MOOD_MAIN, SkyLook.MOOD_SUNNY, SkyLook.MOOD_DUSK, SkyLook.MOOD_GOLDEN_HOUR]:
+		for probe in 64:
+			if SkyLook.rain_active(probe, mood):
+				failures.append("mood %d rained (seed %d); rain is Overcast-only" % [mood, probe])
+				break
 	var rainy := -1
 	for probe in 64:
-		if SkyLook.rain_active(probe, 0):
+		if SkyLook.rain_active(probe, SkyLook.MOOD_OVERCAST):
 			rainy = probe
 			break
 	if rainy < 0:
-		failures.append("64 seeds never rained on a clear mood")
+		failures.append("64 seeds never rained on the Overcast mood")
 		return
 	var shower := SkyLayer.new()
 	root.add_child(shower)
 	shower.set_band(Rect2(100.0, 40.0, 1080.0, 120.0))
-	shower.apply_look(rainy, 0)
+	shower.apply_look(rainy, SkyLook.MOOD_OVERCAST)
+	# The rain cloud is a full-size stick cloud: its body matches the largest
+	# drifting-cloud class, not a thumbnail; drops stay small and subtle.
+	if shower.rain_cloud() == null or not shower.rain_cloud().visible:
+		failures.append("the Overcast rain cloud did not show")
+	elif absf(shower.rain_cloud_body_height() - SkyLayer.RAIN_CLOUD_BODY_TARGET) > 1.5:
+		failures.append("rain cloud body %.1f px, want %.0f (largest cloud class)" % [shower.rain_cloud_body_height(), SkyLayer.RAIN_CLOUD_BODY_TARGET])
+	if SkyLayer.RAIN_CLOUD_BODY_TARGET < float(SkyLayer.CLOUD_BODY_TARGETS.max()):
+		failures.append("the rain cloud is smaller than the drifting clouds")
+	if shower.drop_height() > SkyLayer.DROP_TARGET_H + 0.5:
+		failures.append("rain drops %.1f px tall; keep them subtle" % shower.drop_height())
 	if not shower.raining():
 		failures.append("a seeded rainy match stayed dry")
 		shower.free()
@@ -748,3 +766,78 @@ func _responsive(failures: PackedStringArray) -> void:
 	for window: Vector2i in cases:
 		if GardenBoard.layout_for_window(window) != cases[window]:
 			failures.append("window %s picked the %s layout" % [window, GardenBoard.layout_for_window(window)])
+
+
+## Pass 4: each mood shows one cloud family only (no mixed white/grey/orange),
+## tinted per mood; the Main sun is the big layered paper sun with a shadow.
+func _mood_clouds(failures: PackedStringArray) -> void:
+	var want := {
+		SkyLook.MOOD_MAIN: "cotton", SkyLook.MOOD_SUNNY: "cotton",
+		SkyLook.MOOD_OVERCAST: "felt", SkyLook.MOOD_DUSK: "cotton",
+		SkyLook.MOOD_GOLDEN_HOUR: "cotton" if SkyLook.GOLDEN_HOUR_CLOUDS == "tinted" else "",
+	}
+	for mood in want:
+		if SkyLook.cloud_family(mood) != want[mood]:
+			failures.append("mood %d cloud family '%s', want '%s'" % [mood, SkyLook.cloud_family(mood), want[mood]])
+		var sky := SkyLayer.new()
+		root.add_child(sky)
+		sky.set_band(Rect2(100.0, 40.0, 1080.0, 120.0))
+		sky.apply_look(4242, mood)
+		for path in sky.cloud_paths():
+			var file := path.get_file()
+			if file.begins_with("torn_") or (want[mood] != "" and not file.begins_with(want[mood] + "_")):
+				failures.append("mood %d showed off-family cloud %s" % [mood, file])
+				break
+		if want[mood] == "" and sky.cloud_count() > 0:
+			failures.append("Golden Hour 'none' still drew %d clouds" % sky.cloud_count())
+		if sky.cloud_tint() != SkyLook.cloud_tint(mood):
+			failures.append("mood %d cloud tint not applied" % mood)
+		if mood == SkyLook.MOOD_MAIN:
+			if not sky.sun_has_shadow() or absf(sky.sun_height() - SkyLayer.SUN_TARGET_H) > 1.5:
+				failures.append("Main sun: want the %.0f px layered sun with a drop shadow (got %.1f px, shadow %s)" % [SkyLayer.SUN_TARGET_H, sky.sun_height(), sky.sun_has_shadow()])
+		sky.free()
+	if SkyLook.cloud_tint(SkyLook.MOOD_MAIN) != Color.WHITE:
+		failures.append("Main clouds should stay white")
+	var dusk := SkyLook.cloud_tint(SkyLook.MOOD_DUSK)
+	if not (dusk.b > dusk.r and dusk.b > dusk.g):
+		failures.append("Dusk clouds should lean lavender/slate")
+	var gold := SkyLook.cloud_tint(SkyLook.MOOD_GOLDEN_HOUR)
+	if not (gold.r > gold.g and gold.g > gold.b):
+		failures.append("Golden Hour clouds should lean warm")
+
+
+## Pass 4 entrance beats stay inside Brandon's ranges and are pure functions
+## of time (deterministic: the same t always gives the same pose).
+func _paper_pop(failures: PackedStringArray) -> void:
+	var ranges := [
+		["vermin slide time", PaperPop.SLIDE_TIME, 0.40, 0.55],
+		["vermin flat scale.y", PaperPop.FLAT_SCALE, 0.12, 0.18],
+		["vermin flip time", PaperPop.FLIP_TIME, 0.28, 0.38],
+		["vermin flip overshoot", PaperPop.FLIP_OVERSHOOT, 1.08, 1.08],
+		["warden press time", PaperPop.PRESS_TIME, 0.18, 0.24],
+		["warden pop time", PaperPop.POP_TIME, 0.22, 0.28],
+		["warden pressed scale.y", PaperPop.PRESS_SCALE, 0.12, 0.12],
+		["warden pop overshoot", PaperPop.POP_OVERSHOOT, 1.12, 1.12],
+		["tooltip grace", GameTooltip.GRACE, 0.25, 0.30],
+		["tooltip ring fill", GameTooltip.CHARGE, 0.55, 0.65],
+		["dew buildup", WardenActor.DEW_BUILDUP, 1.5, 2.5],
+	]
+	for r in ranges:
+		if float(r[1]) < float(r[2]) - 0.0001 or float(r[1]) > float(r[3]) + 0.0001:
+			failures.append("%s %.3f outside %.2f-%.2f" % r)
+	if not is_equal_approx(PaperPop.entrance(0.0)["scale"].y, PaperPop.FLAT_SCALE) or PaperPop.entrance(0.0)["offset_cells"] <= 0.0:
+		failures.append("vermin entrance does not start flat, right of its spot")
+	if PaperPop.entrance(PaperPop.entrance_time())["phase"] != PaperPop.Phase.DONE:
+		failures.append("vermin entrance never finishes")
+	if PaperPop.entrance(0.3) != PaperPop.entrance(0.3) or PaperPop.placement(0.3) != PaperPop.placement(0.3):
+		failures.append("paper beats are not deterministic")
+	var peak := 0.0
+	for i in 200:
+		peak = maxf(peak, PaperPop.placement(i * PaperPop.placement_time() / 200.0)["scale"].y)
+	if absf(peak - PaperPop.POP_OVERSHOOT) > 0.01:
+		failures.append("warden pop peaks at %.3f" % peak)
+	# The pivot transform keeps the feet planted.
+	var feet := Vector2(40.0, 100.0)
+	var xf := PaperPop.pivot_transform(Vector2(1.0, 0.15), -0.3, feet, Vector2.ZERO)
+	if not (xf * feet).is_equal_approx(feet):
+		failures.append("the flip does not pivot at the feet")

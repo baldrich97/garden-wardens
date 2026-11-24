@@ -82,6 +82,16 @@ func _on_speed_toggled(pressed: bool) -> void:
 	speed_toggled.emit(pressed)
 
 
+## Presses or releases Pause as if clicked (Space uses this, so the button
+## and the board never disagree).
+func set_paused(paused: bool) -> void:
+	_pause_button.button_pressed = paused
+
+
+func pause_shown() -> bool:
+	return _pause_button.button_pressed
+
+
 func _on_pause_toggled(pressed: bool) -> void:
 	_pause_button.text = "Paused" if pressed else "Pause"
 	pause_toggled.emit(pressed)

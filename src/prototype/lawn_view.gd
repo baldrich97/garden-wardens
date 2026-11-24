@@ -19,6 +19,12 @@ const ROWS := 5
 ## old 962 x 363 rect showed it as a dark sliver at the top-right corner) and
 ## a band of plain lawn under the bottom edge (GW-AA pass 2).
 const BOARD_FRAME_SRC := Rect2(149.0, 334.0, 955.0, 354.0)
+## The cleaned felt (GW-AA pass 4, tools/art/clean_felt.py): the same frame
+## cut from the composite with a 4 px margin, at 2x, fibre noise smoothed and
+## seams re-sharpened. FELT_SRC_ORIGIN is its top-left in composite pixels.
+const FELT_CLEAN: Texture2D = preload("res://assets/art/environment/board/felt_board_clean.png")
+const FELT_SRC_ORIGIN := Vector2(145.0, 330.0)
+const FELT_SRC_SCALE := 2.0
 const BOARD_GRID_SRC := Rect2(153.0, 337.0, 948.0, 348.0)
 ## Soil kinds have no felt art of their own yet; a translucent wash over the
 ## felt keeps sand and stone readable without mixing in the old tile style.
@@ -28,7 +34,12 @@ const STONE_WASH := Color(0.58, 0.58, 0.62, 0.6)
 const LIP_PX := 7.0
 const LIP_COLOR := Color8(58, 92, 32)
 const LIP_HIGHLIGHT := Color8(95, 135, 55)
-const SHADOW_COLOR := Color(0.1, 0.18, 0.04, 0.09)
+## Soft perimeter shadow: many faint rings (a smooth falloff instead of six
+## stacked bands), plus a thin darker contact line where felt meets grass.
+const SHADOW_COLOR := Color(0.06, 0.12, 0.03, 0.045)
+const SHADOW_RINGS := 12
+const SHADOW_STEP_PX := 1.6
+const CONTACT_COLOR := Color(0.05, 0.1, 0.02, 0.28)
 ## Draw order inside the lawn (units use LawnGeometry.z_for_row, 10 and up).
 const Z_FELT := 0
 const Z_WASH := 0
@@ -117,6 +128,17 @@ func uses_board_art() -> bool:
 	return board_texture != null and _board_frame != null
 
 
+## Tints the felt for the look (half the set light; see BackdropCatalog).
+func set_felt_tint(tint: Color) -> void:
+	if _board_frame != null:
+		_board_frame.self_modulate = tint
+
+
+## The felt's current tint.
+func felt_tint() -> Color:
+	return _board_frame.self_modulate if _board_frame != null else Color.WHITE
+
+
 ## The felt shader's inputs, for tests (stage->source basis and frame rect).
 func felt_material() -> ShaderMaterial:
 	return _board_frame.material as ShaderMaterial if _board_frame != null else null
@@ -146,8 +168,10 @@ func _build_board() -> void:
 		felt_mat.set_shader_parameter("frame_src", Vector4(
 			BOARD_FRAME_SRC.position.x, BOARD_FRAME_SRC.position.y,
 			BOARD_FRAME_SRC.end.x, BOARD_FRAME_SRC.end.y))
-		felt_mat.set_shader_parameter("texture_px", board_texture.get_size())
-		felt_mat.set_shader_parameter("felt", board_texture)
+		felt_mat.set_shader_parameter("felt_origin", FELT_SRC_ORIGIN)
+		felt_mat.set_shader_parameter("felt_scale", FELT_SRC_SCALE)
+		felt_mat.set_shader_parameter("texture_px", FELT_CLEAN.get_size())
+		felt_mat.set_shader_parameter("felt", FELT_CLEAN)
 		_board_frame.material = felt_mat
 		add_child(_board_frame)
 	for row in ROWS:
@@ -188,14 +212,16 @@ func _draw() -> void:
 	var far_r := quad[1]
 	var near_r := quad[2]
 	var near_l := quad[3]
-	for step in 6:
-		var grow := 3.0 + float(step) * 3.0
+	for step in SHADOW_RINGS:
+		var grow := 1.0 + float(SHADOW_RINGS - step) * SHADOW_STEP_PX
 		draw_colored_polygon(PackedVector2Array([
-			far_l + Vector2(-grow * 0.4, 4.0),
-			far_r + Vector2(grow * 0.4, 4.0),
-			near_r + Vector2(grow, LIP_PX + grow),
-			near_l + Vector2(-grow, LIP_PX + grow),
+			far_l + Vector2(-grow * 0.5, -grow * 0.25 + 2.0),
+			far_r + Vector2(grow * 0.5, -grow * 0.25 + 2.0),
+			near_r + Vector2(grow, LIP_PX + grow * 0.9),
+			near_l + Vector2(-grow, LIP_PX + grow * 0.9),
 		]), SHADOW_COLOR)
+	# Contact line: the felt's edge pressing into the grass.
+	draw_polyline(PackedVector2Array([near_l + Vector2(0, LIP_PX), far_l, far_r, near_r + Vector2(0, LIP_PX)]), CONTACT_COLOR, 2.0, true)
 	draw_colored_polygon(PackedVector2Array([
 		near_l, near_r, near_r + Vector2(-1.0, LIP_PX), near_l + Vector2(1.0, LIP_PX),
 	]), LIP_COLOR)

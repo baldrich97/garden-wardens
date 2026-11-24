@@ -8,10 +8,19 @@ class_name SkyLayer
 extends Control
 
 ## Target heights, in screen pixels.
-const SUN_TARGET_H := 64.0
-const RAIN_CLOUD_TARGET_H := 44.0
-const DROP_TARGET_H := 14.0
-const SPLASH_TARGET_H := 20.0
+## Main's paper sun (GW-AA pass 4): the big layered Golden Hour sun, centred
+## this far below the band's top, with its soft paper shadow nudged down-right.
+const SUN_TARGET_H := 116.0
+const SUN_CENTER_DROP := 40.0
+const SUN_SHADOW_OFFSET := Vector2(7.0, 9.0)
+## The rain cloud's body is sized like a large drifting cloud (same family);
+## its baked strands hang below and tuck behind the fence layer.
+const RAIN_CLOUD_BODY_TARGET := 60.0
+## Falling rain is a quiet backdrop effect: small, see-through drops that land
+## behind the fence (the sky props slot draws under the fence slot).
+const DROP_TARGET_H := 8.0
+const DROP_ALPHA := 0.55
+const SPLASH_TARGET_H := 12.0
 const CLOUD_BODY_TARGETS := [36.0, 48.0, 60.0]
 
 ## The stick always reaches past the top edge by at least this much, even at
@@ -60,6 +69,10 @@ var _rain_drift_x := 0.0
 var _rain_stick: TextureRect
 
 var _sun: TextureRect
+var _sun_shadow: TextureRect
+var _family := ""
+var _tint := Color.WHITE
+var _rain_cloud_path := ""
 var _rain_cloud: TextureRect
 var _clouds: Array[TextureRect] = []
 var _drops: Array[TextureRect] = []
@@ -78,6 +91,8 @@ func _init() -> void:
 	anchor_right = 1.0
 	anchor_bottom = 1.0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sun_shadow = _make_sprite()
+	add_child(_sun_shadow)
 	_sun = _make_sprite()
 	add_child(_sun)
 	for _i in SkyLook.CLOUD_MAX:
@@ -90,7 +105,7 @@ func _init() -> void:
 		_bob_px.append(0.0)
 	_rain_stick = TextureRect.new()
 	_rain_stick.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_rain_stick.texture = load(RAIN_STICK_TEXTURE) as Texture2D
+	_rain_stick.texture = BackdropCatalog.cached(RAIN_STICK_TEXTURE)
 	_rain_stick.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_rain_stick.stretch_mode = TextureRect.STRETCH_SCALE
 	_rain_stick.visible = false
@@ -100,6 +115,7 @@ func _init() -> void:
 	for _i in DROP_POOL:
 		var drop := _make_sprite()
 		_fit(drop, SkyCatalog.RAIN_DROP, DROP_TARGET_H)
+		drop.modulate = Color(0.92, 0.95, 1.0, DROP_ALPHA)
 		add_child(drop)
 		_drops.append(drop)
 	for _i in SPLASH_POOL:
@@ -133,7 +149,10 @@ func apply_look(seed_value: int, mood_index: int) -> void:
 	_sun_index = SkyLook.sun_index(_seed, SkyCatalog.SUNS.size())
 	_sun_x_frac = SkyLook.sun_x_frac(_seed)
 	_rain = SkyLook.rain_active(_seed, _mood)
-	_rain_cloud_index = SkyLook.rain_cloud_index(_seed, SkyCatalog.RAIN_CLOUDS.size())
+	_rain_cloud_index = SkyLook.rain_cloud_index(_seed, SkyCatalog.OVERCAST_RAIN_CLOUDS.size())
+	_rain_cloud_path = SkyCatalog.OVERCAST_RAIN_CLOUDS[_rain_cloud_index]
+	_family = SkyLook.cloud_family(_mood)
+	_tint = SkyLook.cloud_tint(_mood)
 	_rain_cloud_x_frac = SkyLook.rain_cloud_x_frac(_seed)
 	_rain_cloud_speed = MatchSeed.with_value(_seed).rng("sky_rain_cloud_move").randf_range(
 		RAIN_CLOUD_SPEED_MIN, RAIN_CLOUD_SPEED_MAX
@@ -170,6 +189,7 @@ func tick(delta: float) -> void:
 	if _sun.visible:
 		_sun.position = _sun_rest + Vector2(0.0, SUN_BOB_PX * sin(TAU * _time / SUN_BOB_PERIOD))
 		_sun.rotation = deg_to_rad(SUN_TILT_DEG) * sin(TAU * _time / SUN_TILT_PERIOD)
+		_pose_sun_shadow()
 	if _rain:
 		_rain_drift_x -= _rain_cloud_speed * delta
 		if _rain_drift_x + _rain_cloud.size.x < _band.position.x:
@@ -223,11 +243,20 @@ func _pose_cloud(i: int) -> void:
 func _pose_rain_cloud() -> void:
 	var dy := _rain_cloud.size.y * 0.12 * _bob_wave(1.1, 4.8)
 	_rain_cloud.position = Vector2(_rain_drift_x, _rain_rest_y + dy)
-	_rain_stick.size = Vector2(RAIN_STICK_W, _rain_cloud.position.y + _rain_cloud.size.y * 0.4 + STICK_OVERSHOOT)
+	_rain_stick.size = Vector2(RAIN_STICK_W, _rain_cloud.position.y + _rain_body_bottom() * 0.5 + STICK_OVERSHOOT)
 	_rain_stick.position = Vector2(
 		_rain_cloud.position.x + (_rain_cloud.size.x - RAIN_STICK_W) * 0.5,
 		-STICK_OVERSHOOT
 	)
+
+
+## Where the rain cloud's body ends, in pixels below its top edge.
+func _rain_body_bottom() -> float:
+	if _rain_cloud.texture == null:
+		return 0.0
+	var tex_h := _rain_cloud.texture.get_size().y
+	var body: float = SkyCatalog.RAIN_CLOUD_BODY_H.get(_rain_cloud_path, tex_h * 0.85)
+	return _rain_cloud.size.y * minf(body / tex_h, 1.0)
 
 
 ## Whether the sun shows for the current mood.
@@ -238,6 +267,53 @@ func sun_visible() -> bool:
 ## The sun texture for this match, or null if none was assigned.
 func sun_texture() -> Texture2D:
 	return _sun.texture
+
+
+## The cloud family the current mood draws ("cotton", "felt", or "" for none).
+func cloud_family() -> String:
+	return _family
+
+
+## The tint laid over the current mood's clouds.
+func cloud_tint() -> Color:
+	return _tint
+
+
+## Texture paths of the clouds showing right now.
+func cloud_paths() -> Array[String]:
+	var out: Array[String] = []
+	for i in _cloud_specs.size():
+		if _clouds[i].visible and _clouds[i].texture != null:
+			out.append(_clouds[i].texture.resource_path)
+	return out
+
+
+## The rain cloud's sprite (hidden when it is not raining), for tests.
+func rain_cloud() -> TextureRect:
+	return _rain_cloud
+
+
+## The rain cloud's on-screen body height (0 when hidden).
+func rain_cloud_body_height() -> float:
+	if not _rain_cloud.visible or _rain_cloud.texture == null:
+		return 0.0
+	var body: float = SkyCatalog.RAIN_CLOUD_BODY_H.get(_rain_cloud_path, _rain_cloud.texture.get_size().y)
+	return body * _rain_cloud.size.y / _rain_cloud.texture.get_size().y
+
+
+## The drop sprites' on-screen height, for tests.
+func drop_height() -> float:
+	return _drops[0].size.y if not _drops.is_empty() else 0.0
+
+
+## The sun's on-screen height (0 when hidden).
+func sun_height() -> float:
+	return _sun.size.y if _sun.visible else 0.0
+
+
+## Whether the sun has its paper drop shadow showing.
+func sun_has_shadow() -> bool:
+	return _sun.visible and _sun_shadow.visible and _sun_shadow.texture != null
 
 
 ## Whether rain is active for the current mood.
@@ -291,7 +367,7 @@ func _make_sprite() -> TextureRect:
 ## target_h screen pixels (for stick clouds, source_h is the cloud body;
 ## 0 means the whole texture).
 func _fit(sprite: TextureRect, path: String, target_h: float, source_h: float = 0.0) -> bool:
-	var tex := load(path) as Texture2D
+	var tex := BackdropCatalog.cached(path)
 	if tex == null:
 		push_error("SkyLayer could not load %s" % path)
 		return false
@@ -316,18 +392,24 @@ func _layout() -> void:
 	# Sun: one per match, hidden on overcast and on moods that paint their own.
 	if not SkyLook.mood_shows_sun(_mood):
 		_sun.visible = false
+		_sun_shadow.visible = false
 	else:
-		var sun_ok := _fit(_sun, SkyCatalog.SUNS[_sun_index], SUN_TARGET_H)
+		var sun_ok := _fit(_sun, SkyCatalog.MAIN_SUN, SUN_TARGET_H)
 		if sun_ok:
 			_sun_rest = Vector2(
 				_band.position.x + _band.size.x * _sun_x_frac - _sun.size.x * 0.5,
-				_band.position.y + (_band.size.y - _sun.size.y) * 0.5
+				_band.position.y + SUN_CENTER_DROP - _sun.size.y * 0.5
 			)
 			_sun.position = _sun_rest
 			_sun.pivot_offset = _sun.size * 0.5
 			_sun.visible = true
+			var sprite_size := _sun.texture.get_size()
+			var shadow_ok := _fit(_sun_shadow, SkyCatalog.MAIN_SUN_SHADOW, SUN_TARGET_H * (sprite_size.y + 40.0) / sprite_size.y)
+			_sun_shadow.visible = shadow_ok
+			_pose_sun_shadow()
 		else:
 			_sun.visible = false
+			_sun_shadow.visible = false
 	# Clouds: mixed sizes drifting across the band. The cloud body hangs in
 	# the band; its stick rises out of the body and always runs past the top
 	# of the screen (behind the top bar), like a prop held from above.
@@ -338,11 +420,12 @@ func _layout() -> void:
 			_cloud_speeds[i] = 0.0
 			continue
 		var spec := _cloud_specs[i]
-		var entry: Dictionary
-		if spec["stick"]:
-			entry = SkyCatalog.stick_at(spec["size"], spec["variant"])
-		else:
-			entry = SkyCatalog.plain_at(spec["size"], spec["variant"])
+		var entry: Dictionary = {}
+		if not _family.is_empty():
+			var choices := SkyCatalog.family_entries(spec["size"], _family, spec["stick"])
+			if not choices.is_empty():
+				entry = choices[int(spec["variant"]) % choices.size()]
+		cloud.modulate = _tint
 		if entry.get("path", "") == "":
 			cloud.visible = false
 			_cloud_speeds[i] = 0.0
@@ -368,10 +451,11 @@ func _layout() -> void:
 	# Rain cloud: floats high in the band so drops are visibly falling from
 	# it down to the grass.
 	if _rain:
-		var rain_ok := _fit(_rain_cloud, SkyCatalog.RAIN_CLOUDS[_rain_cloud_index], RAIN_CLOUD_TARGET_H)
+		var body_src: float = SkyCatalog.RAIN_CLOUD_BODY_H.get(_rain_cloud_path, 0.0)
+		var rain_ok := _fit(_rain_cloud, _rain_cloud_path, RAIN_CLOUD_BODY_TARGET, body_src)
 		if rain_ok:
 			_rain_drift_x = lerpf(_band.position.x, _band.end.x - _rain_cloud.size.x, _rain_cloud_x_frac)
-			_rain_rest_y = _band.position.y + _band.size.y * 0.05
+			_rain_rest_y = _band.position.y + _band.size.y * 0.02
 			_rain_cloud.visible = true
 			_rain_stick.visible = _rain_stick.texture != null
 			_pose_rain_cloud()
@@ -381,6 +465,16 @@ func _layout() -> void:
 	else:
 		_rain_cloud.visible = false
 		_rain_stick.visible = false
+
+
+func _pose_sun_shadow() -> void:
+	if not _sun_shadow.visible or _sun.texture == null:
+		return
+	# The shadow PNG pads the sprite by 20 source px on every side.
+	var pad := 20.0 * _sun.size.y / _sun.texture.get_size().y
+	_sun_shadow.position = _sun.position - Vector2(pad, pad) + SUN_SHADOW_OFFSET
+	_sun_shadow.pivot_offset = _sun_shadow.size * 0.5
+	_sun_shadow.rotation = _sun.rotation
 
 
 func _update_rain(delta: float) -> void:
@@ -415,7 +509,8 @@ func _spawn_drop() -> void:
 		return
 	var span := _rain_cloud.size.x * 0.7
 	drop.position.x = _rain_cloud.position.x + _rain_cloud.size.x * 0.15 + _fx_rng.randf() * span
-	var spawn_y := _rain_cloud.position.y + _rain_cloud.size.y * 0.85
+	# Drops leave the bottom of the cloud body (the baked strands hang lower).
+	var spawn_y := _rain_cloud.position.y + _rain_body_bottom()
 	drop.position.y = minf(spawn_y, _ground_y - drop.size.y)
 	drop.visible = true
 

@@ -75,3 +75,17 @@ static func _sequence(pattern: String, count: int) -> Array[Texture2D]:
 		frames.append(texture)
 	_cache[pattern] = frames
 	return frames
+
+
+## Every PNG the effect sequences use, for the startup preload.
+static func sequence_paths() -> Array[String]:
+	var out: Array[String] = []
+	var needle := AnimLibrary.warden_folder(UnitCatalog.Warden.NEEDLE)
+	var seed_folder := AnimLibrary.warden_folder(UnitCatalog.Warden.SEED)
+	for index in _action_frame_count(needle, 16):
+		out.append((needle + NEEDLE_SMOKE_DIR) % (index + 1))
+	for index in LOBBER_SPIN_COUNT:
+		out.append((seed_folder + LOBBER_SPIN_DIR) % (index + 1))
+	for index in LOBBER_BURST_COUNT:
+		out.append((seed_folder + LOBBER_BURST_DIR) % (index + 1))
+	return out

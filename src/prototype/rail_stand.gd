@@ -5,6 +5,9 @@
 class_name RailStand
 extends RefCounted
 
+## GW-AA pass 4: Brandon asked for no health bars under units. HP still
+## drives the damage-state art (100 / 66 / 33); flip this to bring bars back.
+const SHOW_HEALTH_BARS := false
 const BAR_WIDTH_CELLS := 0.6
 const BAR_HEIGHT_CELLS := 0.07
 const BAR_GAP_PX := 3.0
@@ -44,6 +47,7 @@ static func make_shadow() -> TextureRect:
 static func style_bar(rect: ColorRect) -> void:
 	rect.z_as_relative = true
 	rect.z_index = 0
+	rect.visible = SHOW_HEALTH_BARS
 
 
 ## Places the shadow (centered on the foot, flattened to the ground) and the

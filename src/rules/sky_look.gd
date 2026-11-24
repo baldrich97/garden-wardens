@@ -14,9 +14,23 @@ const MOOD_OVERCAST := 2
 ## Dusk's moon). The seeded sun stays off on these so a look never shows two
 ## celestials. Main uses the sun-free copy of its backdrop, so it keeps the
 ## per-match sun.
+const MOOD_MAIN := 0
 const MOOD_SUNNY := 1
 const MOOD_DUSK := 3
-const BAKED_CELESTIAL_MOODS: Array[int] = [MOOD_SUNNY, MOOD_DUSK]
+## The composed Golden Hour look (the backdrop cycle's last stop). Not a
+## BackdropCatalog index; the sky treats it as its own mood.
+const MOOD_GOLDEN_HOUR := 4
+const BAKED_CELESTIAL_MOODS: Array[int] = [MOOD_SUNNY, MOOD_DUSK, MOOD_GOLDEN_HOUR]
+
+## Mood-exclusive clouds (GW-AA pass 4). Each mood draws one cloud family:
+## Main, Sunny, Dusk and Golden Hour the white puffy cotton set, Overcast the
+## grey felt set. The flat streaky orange "torn" set is never used.
+## Golden Hour's clouds: "tinted" (puffy, warm golden-peach) or "none".
+## Flip this one constant to switch; Brandon's pick is still open.
+const GOLDEN_HOUR_CLOUDS := "tinted"
+const GOLDEN_HOUR_CLOUD_TINT := Color(1.0, 0.84, 0.66)
+## Dusk's puffy clouds: a subtle lavender/slate tint, never orange.
+const DUSK_CLOUD_TINT := Color(0.78, 0.76, 0.9)
 
 ## Clouds per match, and their size classes (0 small, 1 medium, 2 large).
 const CLOUD_MIN := 3
@@ -41,9 +55,10 @@ const BOB_PERIOD_MIN := 3.6
 const BOB_PERIOD_MAX := 5.6
 const BOB_TILT_MAX_DEG := 1.5
 
-## Rain chances: likely on overcast, occasional elsewhere.
+## Rain chances: likely on overcast and nowhere else (GW-AA pass 4: the rain
+## cloud is an Overcast-only prop, never on Main).
 const RAIN_CHANCE_OVERCAST := 0.8
-const RAIN_CHANCE_NORMAL := 0.3
+const RAIN_CHANCE_NORMAL := 0.0
 
 
 ## Picks the match's sun variant once, from the seed.
@@ -67,6 +82,8 @@ static func mood_shows_sun(mood_index: int) -> bool:
 ## Whether this mood rains, from the seed. Each mood rolls on its own
 ## channel, so cycling looks does not reshuffle the other moods.
 static func rain_active(seed_value: int, mood_index: int) -> bool:
+	if mood_index != MOOD_OVERCAST:
+		return false
 	var chance := RAIN_CHANCE_OVERCAST if mood_index == MOOD_OVERCAST else RAIN_CHANCE_NORMAL
 	return MatchSeed.with_value(seed_value).rng("sky_rain_%d" % mood_index).randf() < chance
 
@@ -81,6 +98,26 @@ static func rain_cloud_index(seed_value: int, cloud_count: int) -> int:
 ## Where the rain cloud sits across the band, 0..1.
 static func rain_cloud_x_frac(seed_value: int) -> float:
 	return MatchSeed.with_value(seed_value).rng("sky_rain_pos").randf_range(0.1, 0.9)
+
+
+## Which cloud family a mood draws (SkyCatalog.FAMILY_*), or "" for none.
+static func cloud_family(mood_index: int) -> String:
+	if mood_index == MOOD_OVERCAST:
+		return SkyCatalog.FAMILY_FELT
+	if mood_index == MOOD_GOLDEN_HOUR and GOLDEN_HOUR_CLOUDS == "none":
+		return ""
+	return SkyCatalog.FAMILY_COTTON
+
+
+## The tint a mood lays over its clouds (white = untinted).
+static func cloud_tint(mood_index: int) -> Color:
+	match mood_index:
+		MOOD_DUSK:
+			return DUSK_CLOUD_TINT
+		MOOD_GOLDEN_HOUR:
+			return GOLDEN_HOUR_CLOUD_TINT
+		_:
+			return Color.WHITE
 
 
 ## How many clouds drift this match, from the seed.

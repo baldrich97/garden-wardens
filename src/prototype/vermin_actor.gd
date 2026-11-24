@@ -60,6 +60,8 @@ var _forced_state := ""
 var _dying := false
 ## Which flutter clip the board asked for this step (the hop base name).
 var _flutter_base := FlutterHop.PHASE_AIR
+## Entrance beat (PaperPop): seconds since spawning. Visual only.
+var _entry_t := 0.0
 
 
 func _init() -> void:
@@ -122,7 +124,55 @@ func tick(delta: float, mode: Mode) -> void:
 		return
 	_advance_mode(mode, delta)
 	_show_pose()
+	if _entry_t < PaperPop.entrance_time():
+		_entry_t += delta
+		_apply_entry()
 	_clip.tick(delta, size)
+
+
+## The entrance beat's phase right now (PaperPop.Phase).
+func entrance_phase() -> int:
+	return int(PaperPop.entrance(_entry_t)["phase"])
+
+
+## The clip's current scale (the entrance lays it flat, then flips it up).
+func clip_scale() -> Vector2:
+	return _clip.scale if _clip != null else Vector2.ONE
+
+
+## Where the clip is drawn relative to its stand (the entrance slide), px.
+func clip_offset() -> Vector2:
+	if _clip == null:
+		return Vector2.ZERO
+	var pivot := _entry_pivot()
+	return _clip.transform * pivot - pivot
+
+
+## Whether a health bar shows under this Vermin (never, since pass 4).
+func health_bar_shown() -> bool:
+	return _bar != null and _bar.visible
+
+
+func _entry_pivot() -> Vector2:
+	return _foot if _foot.is_finite() else Vector2(size.x * 0.5, size.y)
+
+
+## Lays the clip flat and slides it in from the right, then flips it up on
+## its feet (PaperPop.entrance). The contact shadow slides along, stretched
+## while the cut-out lies flat.
+func _apply_entry() -> void:
+	if _clip == null:
+		return
+	var beat := PaperPop.entrance(_entry_t)
+	var cell := _rail_cell if _rail_cell > 0.0 else size.x
+	var offset := Vector2(float(beat["offset_cells"]) * cell, 0.0)
+	_clip.transform = PaperPop.pivot_transform(beat["scale"], float(beat["skew"]), _entry_pivot(), offset)
+	if _shadow != null and _foot.is_finite():
+		var flat := 1.0 - clampf((float(beat["scale"].y) - PaperPop.FLAT_SCALE) / (1.0 - PaperPop.FLAT_SCALE), 0.0, 1.0)
+		var w := _shadow.size.x
+		_shadow.scale = Vector2(1.0 + 0.35 * flat, 1.0)
+		_shadow.pivot_offset = Vector2(w * 0.5, _shadow.size.y * 0.5)
+		_shadow.position.x = _foot.x - w * 0.5 + offset.x
 
 
 func play(anim_name: String) -> void:
@@ -226,6 +276,7 @@ func refresh_bar() -> void:
 	var fraction := 0.0 if max_hp <= 0 else clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	if _foot != Vector2.INF:
 		RailStand.layout(_shadow, _bar_back, _bar, _foot, _rail_cell, is_flying(), fraction)
+		_apply_entry()
 	else:
 		var width := size.x
 		var height := maxf(5.0, size.y * 0.08)

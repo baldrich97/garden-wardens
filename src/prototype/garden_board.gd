@@ -13,7 +13,6 @@ const SEED_PACKETS := [
 	preload("res://assets/art/ui/seed_packets/seed_packet_rain_catcher.png"),
 	preload("res://assets/art/ui/seed_packets/seed_packet_seed_lobber.png"),
 ]
-const STAGE_FILL_SHADER := preload("res://src/prototype/stage_fill.gdshader")
 const _WIN_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_A.png")
 ## Brandon liked both win banners "interchangeably"; the match seed picks one.
 const _WIN_BANNER_B_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_B.png")
@@ -75,6 +74,20 @@ const Z_RESULT := 100
 const Z_DRAG := 110
 ## Forces the layout ("horizontal" / "vertical"); tests and --layout set it.
 static var forced_layout := ""
+## Ultrawide framing (GW-AA pass 4): how the 16:9 stage fills a window of a
+## different shape. MATTE letterboxes/pillarboxes the whole stage on a crisp
+## dark forest-green matte (the default); COVER zooms the stage until it fills
+## the width and crops the bottom instead. Flip FRAMING_DEFAULT, or pass
+## --framing cover / --framing matte. Vertical (side bar) layout always mattes.
+enum Framing { MATTE, COVER }
+const FRAMING_DEFAULT := Framing.MATTE
+const MATTE_COLOR := Color(0.09, 0.16, 0.1)
+static var framing := FRAMING_DEFAULT
+## Startup preload + GPU warmup (StartupPreload, GpuWarmup). On by default;
+## --no-preload turns it off (the startup probe measures both ways).
+static var preload_enabled := true
+## Main-thread milliseconds per frame the preload may spend collecting loads.
+const PRELOAD_BUDGET_MS := 4.0
 
 @onready var _margin: MarginContainer = %SafeMargin
 @onready var _top: TopBar = %TopBar
@@ -82,7 +95,10 @@ static var forced_layout := ""
 @onready var _bottom: BottomBar = %BottomBar
 @onready var _background: TextureRect = %Background
 @onready var _stage: Control = %Stage
-@onready var _stage_fill: ColorRect = $StageFill
+## The matte behind the stage (the old blurred StageFill node, now a flat
+## colour: the blur smeared and its edges showed as white seams).
+@onready var _matte: ColorRect = $StageFill
+@onready var _sky_fill: ColorRect = $Sky
 @onready var _body: HBoxContainer = $SafeMargin/Layout/Body
 
 var _wallet: WaterWallet
@@ -123,6 +139,9 @@ var _layout_mode := ""
 var _layout_key := []
 var _golden_hour: GoldenHourBackdrop
 var _sky_layer: SkyLayer
+## The stage's layer slots (sky backdrop, sky props, fence, shack, compost, lawn).
+var _layers: StageLayers
+var _warmed := false
 var _started := false
 var _press_card := -1
 var _press_pos := Vector2.ZERO
@@ -178,7 +197,10 @@ func _ready() -> void:
 	if window != null and window != get_viewport() and not window.size_changed.is_connected(_on_viewport_resized):
 		window.size_changed.connect(_on_viewport_resized)
 	_margin.z_index = Z_HUD
-	_build_stage_fill()
+	_run_preload()
+	_read_framing_arg()
+	_build_matte()
+	_build_stage_layers()
 	_lawn.cell_pressed.connect(_on_cell_pressed)
 	_lawn.cell_hovered.connect(_on_cell_hovered)
 	_top.pause_toggled.connect(_on_pause_toggled)
@@ -221,9 +243,13 @@ func _process(delta: float) -> void:
 	if _roster != null and _roster.visible:
 		var visual := 0.0 if _paused else step
 		_roster.tick(visual)
+	_emit_place_puffs()
+	_preload_tick()
 	_refresh_hud()
 	_refresh_cursor()
 	_relayout_if_needed()
+	if _layers != null:
+		_layers.tick(delta)
 	if _leaf_ring != null and _leaf_ring.visible:
 		_leaf_ring.rotation = fmod(_leaf_ring.rotation + delta * TAU * LEAF_RING_SPIN, TAU)
 	if not _play_shot.is_empty() and _time >= 1.2:
@@ -283,6 +309,20 @@ func try_place(kind: int, column: int, row: int) -> bool:
 		_hint.visible = false
 	_layout_actors()
 	return true
+
+
+## The placement pop (PaperPop): a small puff at the base of each Warden the
+## moment it springs up from its pressed-flat sticker.
+func _emit_place_puffs() -> void:
+	for warden in _wardens:
+		if not warden.consume_pop_cue():
+			continue
+		var cell := _lawn.geometry.rail_cell_width(float(warden.row))
+		var poof := PoofActor.new()
+		poof.name = "PlacePuff"
+		_lawn.add_child(poof)
+		poof.z_index = LawnGeometry.z_for_row(warden.row) + 3
+		poof.play_at(_lawn.geometry.rail_point(float(warden.column) + 0.5, float(warden.row)) - Vector2(0.0, cell * 0.12), cell * 0.8)
 
 
 ## Plants the level's pre-set Wardens (LevelDef.pre_placed) for free, before
@@ -849,8 +889,8 @@ func _place_drop(drop: WaterDrop) -> void:
 ## backdrop and under the lawn, so actors always draw over it.
 func _build_sky() -> void:
 	_sky_layer = SkyLayer.new()
-	_stage.add_child(_sky_layer)
-	_stage.move_child(_sky_layer, _lawn.get_index())
+	_sky_layer.name = "SkyLayer"
+	_layers.sky_props.add_child(_sky_layer)
 	_layout_sky()
 
 
@@ -1111,8 +1151,6 @@ func _cycle_backdrop() -> void:
 		return
 	if _backdrop == BackdropCatalog.count() - 1:
 		use_golden_hour(true)
-		_bottom.set_backdrop_name(GOLDEN_HOUR_NAME)
-		_refresh_seed_label()
 		return
 	use_backdrop(_backdrop + 1)
 
@@ -1121,11 +1159,19 @@ func _apply_backdrop() -> void:
 	var texture := BackdropCatalog.texture_at(_backdrop)
 	if texture != null:
 		_background.texture = texture
-	_refresh_stage_fill()
+	_apply_set_light(_backdrop)
 	_bottom.set_backdrop_name(BackdropCatalog.NAMES[_backdrop])
 	_refresh_seed_label()
 	if _sky_layer != null:
 		_sky_layer.apply_look(_match_seed.value, _backdrop)
+
+
+## Lights the shared set (fence, porch, heap, lawn ground, felt) for a look;
+## [param look] -1 is Golden Hour.
+func _apply_set_light(look: int) -> void:
+	if _layers != null:
+		_layers.apply_look(look)
+	_lawn.set_felt_tint(BackdropCatalog.felt_tint(look))
 
 
 ## The value this match's look was picked from. Shown on the debug label.
@@ -1139,16 +1185,35 @@ func visual_seed() -> int:
 ## paints its own sky and sun, and two skies would double the celestials.
 func use_golden_hour(enabled: bool) -> void:
 	if enabled and _golden_hour == null:
-		_golden_hour = GoldenHourBackdrop.compose(_stage)
-		_stage.move_child(_golden_hour, _background.get_index() + 1)
+		# Golden Hour's sky (base, ray wheels, sun) fills the sky backdrop
+		# slot; the shared set plates stand in front of it, warmly lit. Its
+		# own foreground plate is left out (the set plates replace it).
+		_golden_hour = GoldenHourBackdrop.compose(_layers.sky_backdrop, false)
+		_apply_set_light(-1)
 		if _sky_layer != null:
-			_sky_layer.visible = false
+			_sky_layer.apply_look(_match_seed.value, SkyLook.MOOD_GOLDEN_HOUR)
+		# The look button names whatever look is showing, however it was set.
+		_bottom.set_backdrop_name(GOLDEN_HOUR_NAME)
 	elif not enabled and _golden_hour != null:
 		_golden_hour.queue_free()
 		_golden_hour = null
-		if _sky_layer != null:
-			_sky_layer.visible = true
+		_apply_backdrop()
 	_refresh_seed_label()
+
+
+## Whether the composed Golden Hour look is showing.
+func golden_hour_active() -> bool:
+	return _golden_hour != null
+
+
+## The stage's layer slots, for tests and probes.
+func stage_layers() -> StageLayers:
+	return _layers
+
+
+## The sky props layer, for tests and probes.
+func sky_layer() -> SkyLayer:
+	return _sky_layer
 
 
 ## F8 (and --damage-state): pin every visible unit's art to the next damage
@@ -1209,6 +1274,17 @@ func _on_pause_toggled(paused: bool) -> void:
 		_paused = paused
 
 
+## Flips pause the same way the top bar's Pause button does (Space).
+func toggle_pause() -> void:
+	if _result != MatchOutcome.Result.ONGOING:
+		return
+	_top.set_paused(not _paused)
+
+
+func is_paused() -> bool:
+	return _paused
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo \
 			and event.physical_keycode == KEY_F7:
@@ -1255,6 +1331,14 @@ func _selected_kind() -> int:
 
 
 func _input(event: InputEvent) -> void:
+	# Space pauses and un-pauses (GW-AA pass 4), through the top bar's Pause
+	# button so the two always agree. Taken in _input so a focused button can
+	# never turn the key into its own press; key repeat is ignored.
+	if event is InputEventKey and event.pressed and not event.echo \
+			and (event as InputEventKey).physical_keycode == KEY_SPACE:
+		toggle_pause()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		# Right-click cancels anywhere in the window. The viewport eats mouse events over
 		# STOP controls (the lawn among them), so _unhandled_input never sees them.
@@ -1318,7 +1402,7 @@ func _begin_drag() -> void:
 	_drag_ghost.z_index = Z_DRAG
 	_set_drops_locked(true)
 	if _tip != null:
-		_tip.hide_tip()
+		_tip.dismiss()
 	_move_drag(get_global_mouse_position())
 
 
@@ -1381,6 +1465,7 @@ func _nudge_aim(column_step: int, row_step: int) -> void:
 
 func _build_hud_extras() -> void:
 	_tip = GameTooltip.new()
+	_tip.avoid_provider = _tip_avoid_rects
 	add_child(_tip)
 	_roster = WaveRoster.new()
 	# The pre-wave panel is a slim strip in the sky's top-right corner, under
@@ -1389,7 +1474,28 @@ func _build_hud_extras() -> void:
 	_roster.z_index = Z_HUD
 	_roster.fill(_tip, _level.wave)
 	_roster.start_requested.connect(start_wave)
-	_lawn.mouse_exited.connect(func() -> void: _tip.hide_tip())
+	_lawn.mouse_exited.connect(func() -> void: _tip.cancel())
+
+
+## What a locked tooltip must never cover: the pre-wave hint banner and the
+## wave roster, while they show (global pixels).
+func _tip_avoid_rects() -> Array:
+	var out: Array = []
+	if _hint != null and _hint.is_visible_in_tree():
+		out.append(_hint.get_global_rect())
+	if _roster != null and _roster.is_visible_in_tree():
+		out.append(_roster.get_global_rect())
+	return out
+
+
+## The tooltip, for tests and probes.
+func tooltip() -> GameTooltip:
+	return _tip
+
+
+## The pre-wave hint banner, for tests and probes.
+func hint_banner() -> Control:
+	return _hint
 
 
 func _bind_tooltips() -> void:
@@ -1422,8 +1528,8 @@ func _show_cell_tip(cell: Vector2i) -> void:
 				text += "\n" + _vermin_blurb(vermin.kind)
 				break
 	# In the sky just above the felt's far edge (board pixels), never over tiles.
-	var far_edge := (_lawn.get_global_transform() * LawnGeometry.FAR_LEFT).y - global_position.y
-	_tip.show_text(text, maxf(far_edge - 6.0, 80.0))
+	var far_edge := (_lawn.get_global_transform() * LawnGeometry.FAR_LEFT).y
+	_tip.request("cell:%d,%d" % [cell.x, cell.y], text, maxf(far_edge - 6.0, 80.0))
 
 
 func _warden_blurb(kind: UnitCatalog.Warden) -> String:
@@ -1729,16 +1835,20 @@ func _layout_stage() -> void:
 		var side := _bottom.get_global_rect()
 		var left := side.end.x + SIDEBAR_GAP - global_position.x
 		area = Rect2(left, 0.0, maxf(size.x - left, 1.0), size.y)
-	var s := minf(area.size.x / LawnGeometry.REF_SIZE.x, area.size.y / LawnGeometry.REF_SIZE.y)
+	var fit_x := area.size.x / LawnGeometry.REF_SIZE.x
+	var fit_y := area.size.y / LawnGeometry.REF_SIZE.y
+	var s := minf(fit_x, fit_y)
+	if framing == Framing.COVER and _layout_mode != LAYOUT_VERTICAL:
+		s = maxf(fit_x, fit_y)
 	s = maxf(s, 0.05)
 	var stage_size := LawnGeometry.REF_SIZE * s
 	_stage.size = LawnGeometry.REF_SIZE
 	_stage.scale = Vector2(s, s)
 	# Top-aligned: the stage's top edge is the screen's top edge, so the cloud
-	# sticks always run up behind the top bar to y = 0. Any spare height goes
-	# below the lawn, where the fill continues the grass.
-	_stage.position = Vector2(area.position.x + (area.size.x - stage_size.x) * 0.5, area.position.y)
-	_refresh_stage_fill()
+	# sticks always run up behind the top bar to y = 0. Spare width or height
+	# shows the matte; cover framing crops the overflow instead. Whole pixels,
+	# so no hairline of the window background shows at the stage's edges.
+	_stage.position = Vector2(roundf(area.position.x + (area.size.x - stage_size.x) * 0.5), roundf(area.position.y))
 	_place_roster()
 
 
@@ -1747,20 +1857,65 @@ func stage_rect() -> Rect2:
 	return Rect2(_stage.position, LawnGeometry.REF_SIZE * _stage.scale)
 
 
-func _build_stage_fill() -> void:
-	var fill_material := ShaderMaterial.new()
-	fill_material.shader = STAGE_FILL_SHADER
-	_stage_fill.material = fill_material
+## The matte: one flat colour behind the stage, and the stage clips its own
+## contents (Golden Hour's ray wheels, drifting clouds, the backdrop) so
+## nothing ever spills onto it.
+func _build_matte() -> void:
+	_matte.material = null
+	_matte.color = MATTE_COLOR
+	_sky_fill.color = MATTE_COLOR
+	_stage.clip_contents = true
 
 
-func _refresh_stage_fill() -> void:
-	if _stage_fill == null or not (_stage_fill.material is ShaderMaterial):
+## The matte colour (tests check the margins against it).
+func matte_color() -> Color:
+	return MATTE_COLOR
+
+
+func _read_framing_arg() -> void:
+	var args := OS.get_cmdline_user_args()
+	var index := args.find("--framing")
+	if index >= 0 and index + 1 < args.size():
+		framing = Framing.COVER if args[index + 1] == "cover" else Framing.MATTE
+
+
+## Loads every clip, effect, look and shader before the first frame, then
+## warms the renderer on frames 0-1 (see StartupPreload for the root causes).
+func _run_preload() -> void:
+	if OS.get_cmdline_user_args().has("--no-preload"):
+		preload_enabled = false
+	if not preload_enabled:
 		return
-	var fill_material := _stage_fill.material as ShaderMaterial
-	var rect := stage_rect()
-	fill_material.set_shader_parameter("backdrop", _background.texture)
-	fill_material.set_shader_parameter("fill_size", size)
-	fill_material.set_shader_parameter("stage_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
+	if not StartupPreload.threaded_ok():
+		return  # Headless tests: no GPU and no player waiting on a first click.
+	# Start loading once the first frame is up, so the board shows at once.
+	await RenderingServer.frame_post_draw
+	if is_inside_tree():
+		StartupPreload.begin()
+
+
+func _exit_tree() -> void:
+	# Quitting mid-preload: stop and join the loader threads.
+	if not StartupPreload.is_done():
+		StartupPreload.cancel()
+
+
+## Collects preloaded files a few ms per frame; once everything is in, warms
+## the renderer for two frames (GpuWarmup).
+func _preload_tick() -> void:
+	if not preload_enabled or _warmed or not StartupPreload.threaded_ok() or not StartupPreload.begun():
+		return
+	if StartupPreload.poll(PRELOAD_BUDGET_MS):
+		_warmed = true
+		var warmup := GpuWarmup.new()
+		add_child(warmup)
+		move_child(warmup, 0)
+
+
+## Builds the six layer slots inside the stage (see StageLayers).
+func _build_stage_layers() -> void:
+	_layers = StageLayers.new()
+	_layers.build(_stage, _background, _lawn)
 
 
 ## The wave roster sits top-right, just under the top bar.

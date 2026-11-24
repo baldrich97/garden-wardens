@@ -211,6 +211,37 @@ static func poof_pivot() -> Vector2:
 	return _poof_pivot
 
 
+## Every frame PNG a unit folder's manifest names (all anims, all states),
+## for the startup preload. Empty when the manifest is missing or malformed.
+static func frame_paths(folder: String) -> Array[String]:
+	var out: Array[String] = []
+	var animations: Variant = manifest_for_folder(folder).get("animations")
+	if not (animations is Dictionary):
+		return out
+	for anim_name in animations:
+		var anim: Variant = animations[anim_name]
+		var states: Variant = anim.get("states") if anim is Dictionary else null
+		if not (states is Dictionary):
+			continue
+		for state_key in states:
+			var state_dict: Variant = states[state_key]
+			var paths: Variant = state_dict.get("frames") if state_dict is Dictionary else null
+			if paths is Array:
+				for path in paths:
+					out.append(folder + "/" + String(path))
+	return out
+
+
+## The poof's frame PNGs, for the startup preload.
+static func poof_paths() -> Array[String]:
+	var out: Array[String] = []
+	var paths: Variant = manifest_for_folder(POOF_FOLDER).get("frames")
+	if paths is Array:
+		for path in paths:
+			out.append(POOF_FOLDER + "/" + String(path))
+	return out
+
+
 static func _build_clip(folder: String) -> SpriteFrames:
 	var manifest := manifest_for_folder(folder)
 	var animations: Variant = manifest.get("animations")

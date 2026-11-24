@@ -9,6 +9,17 @@ extends Control
 const DEATH_CAP := 2.5
 ## Longest a looping action clip holds before falling back to idle.
 const ACTION_HOLD_CAP := 1.6
+## Dew Dropper buildup (GW-AA pass 4, "like the PvZ Sunflower"): the produce
+## clip's fill phase (frames 14-34 at 10 fps: water gathers and swells on the
+## leaf) now plays BEFORE the match's water tick, so the drop pops out at the
+## moment the leaf tips it (frame 35), then the startle/settle tail plays.
+## The match timer is untouched: the clip is simply started early.
+const DEW_FILL_FRAME := 13
+const DEW_POP_FRAME := 34
+const DEW_FPS := 10.0
+const DEW_BUILDUP := (DEW_POP_FRAME - DEW_FILL_FRAME) / DEW_FPS
+## The buildup brightens the plant a touch, peaking as the drop pops.
+const DEW_GLOW := 0.14
 
 ## Which lifecycle animation is showing right now.
 enum Pose { IDLE, PLACE, ACTION, HURT, DEATH }
@@ -45,6 +56,12 @@ var _return_wait := 0.0
 var _hp_state := "100"
 var _forced_state := ""
 var _dying := false
+## Placement beat (PaperPop): seconds since planting, and the one-shot cue
+## the board turns into a puff at the base when the pop starts.
+var _entry_t := 0.0
+var _pop_cue := false
+var _pop_cued := false
+var _dew_building := false
 
 
 func _init() -> void:
@@ -120,17 +137,27 @@ func tick(delta: float, can_shoot: bool) -> String:
 		if produce_wait <= 0.0:
 			produce_wait += UnitCatalog.DEW_INTERVAL
 			action = "water"
+		elif not _dew_building and produce_wait <= DEW_BUILDUP:
+			_start_dew_buildup()
 	elif kind == UnitCatalog.Warden.SEED:
 		fire_wait = maxf(0.0, fire_wait - delta)
 		if can_shoot and fire_wait <= 0.0:
 			fire_wait = UnitCatalog.LOB_INTERVAL
 			action = "lob"
-	if action == "shot" or action == "lob" or action == "water":
+	if action == "water" and _dew_building:
+		# The drop leaves the leaf now: let the clip run on into its startle
+		# and settle tail instead of restarting it.
+		_dew_building = false
+		_pose_wait = _dew_tail()
+		_clip.pulse()
+	elif action == "shot" or action == "lob" or action == "water":
 		_start_pose(Pose.ACTION)
 		_clip.pulse()
 	else:
 		_carry_pose(delta)
 	_show_pose()
+	_sync_dew()
+	_advance_entry(delta)
 	_clip.tick(delta, size)
 	return action
 
@@ -143,7 +170,96 @@ func idle_tick(delta: float) -> void:
 		return
 	_carry_pose(delta)
 	_show_pose()
+	_advance_entry(delta)
 	_clip.tick(delta, size)
+
+
+## The placement beat's phase right now (PaperPop.Phase).
+func placement_phase() -> int:
+	return int(PaperPop.placement(_entry_t)["phase"])
+
+
+## The clip's current scale (the placement beat squashes it).
+func clip_scale() -> Vector2:
+	return _clip.scale if _clip != null else Vector2.ONE
+
+
+## True once, when the pop starts: the board puffs at the base.
+func consume_pop_cue() -> bool:
+	if _pop_cue:
+		_pop_cue = false
+		return true
+	return false
+
+
+## Whether the Dew Dropper is gathering its next drop right now.
+func dew_building() -> bool:
+	return _dew_building
+
+
+func _advance_entry(delta: float) -> void:
+	if _entry_t >= PaperPop.placement_time():
+		return
+	_entry_t += delta
+	if not _pop_cued and _entry_t >= PaperPop.PRESS_TIME:
+		_pop_cued = true
+		_pop_cue = true
+	_apply_entry()
+
+
+## Squashes the clip about the feet for the press-and-pop beat.
+func _apply_entry() -> void:
+	if _clip == null:
+		return
+	var beat := PaperPop.placement(_entry_t)
+	var pivot := _foot if _foot.is_finite() else Vector2(size.x * 0.5, size.y)
+	_clip.transform = PaperPop.pivot_transform(beat["scale"], 0.0, pivot, Vector2.ZERO)
+
+
+## Starts the produce clip early, at the fill frame that lands the leaf's tip
+## exactly on the match's water tick.
+func _start_dew_buildup() -> void:
+	if _pose == Pose.HURT or _pose == Pose.DEATH or _legacy:
+		return
+	var clip_name := _clip_name("action")
+	if clip_name.is_empty() or _frames.get_frame_count(clip_name) <= DEW_POP_FRAME:
+		return
+	_dew_building = true
+	_pose = Pose.ACTION
+	_pose_wait = produce_wait + _dew_tail()
+	_show_pose()
+	_seek_dew_frame()
+
+
+## Seconds of the produce clip after the drop leaves (startle and settle).
+func _dew_tail() -> float:
+	var clip_name := _clip_name("action")
+	if clip_name.is_empty():
+		return 0.0
+	return float(_frames.get_frame_count(clip_name) - DEW_POP_FRAME) / DEW_FPS
+
+
+## Keeps the buildup clip on the frame the match clock calls for (a hurt
+## flinch or a damage-state swap can knock it off), and the glow on it.
+func _sync_dew() -> void:
+	if not _dew_building:
+		if _clip != null and _clip.modulate != Color.WHITE:
+			_clip.modulate = Color.WHITE
+		return
+	if _pose == Pose.ACTION:
+		_seek_dew_frame()
+	var k := clampf(1.0 - produce_wait / DEW_BUILDUP, 0.0, 1.0)
+	var glow := 1.0 + DEW_GLOW * k * k
+	_clip.modulate = Color(glow, glow, glow * 1.04, 1.0)
+
+
+func _seek_dew_frame() -> void:
+	var sprite := _clip.sprite()
+	if sprite == null:
+		return
+	var want := clampi(DEW_POP_FRAME - int(ceil(produce_wait * DEW_FPS)), 0, DEW_POP_FRAME)
+	if absi(sprite.frame - want) > 1:
+		sprite.frame = want
 
 
 ## The beat for a Warden doing a one-off job the match just triggered (the Rain
@@ -164,6 +280,7 @@ func die() -> void:
 	if _dying:
 		return
 	_dying = true
+	_dew_building = false
 	_pose = Pose.DEATH
 	_bar.visible = false
 	_bar_back.visible = false
@@ -231,6 +348,11 @@ func take_damage(amount: float) -> bool:
 	return false
 
 
+## Whether a health bar shows under this Warden (never, since pass 4).
+func health_bar_shown() -> bool:
+	return _bar != null and _bar.visible
+
+
 func refresh_bar() -> void:
 	if _clip != null:
 		_clip.tick(0.0, size)
@@ -239,6 +361,7 @@ func refresh_bar() -> void:
 	var fraction := 0.0 if max_hp <= 0 else clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	if _foot != Vector2.INF:
 		RailStand.layout(_shadow, _bar_back, _bar, _foot, _rail_cell, is_flying(), fraction)
+		_apply_entry()
 	else:
 		var width := size.x
 		var height := maxf(5.0, size.y * 0.08)

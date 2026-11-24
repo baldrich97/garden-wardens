@@ -103,6 +103,48 @@ edited or renamed by the docs close-out).
 - `assets/art/_unsure/lineup/`: Round 3 base sticker stills for all 10 units, for
   reference only — **status: unwired**. The animation folders above supersede them.
 
+## Stage layer slots (GW-AA pass 4) — contract for Asset Gen
+
+The 1280x720 stage is built from six slots, back to front (`src/art/stage_layers.gd`);
+the lawn (felt + units) draws on top of all of them. All coordinates are stage pixels
+(origin top-left, 1280x720 design size; the stage is scaled uniformly and letterboxed
+with a forest-green matte, so nothing outside 0..1280 x 0..720 is ever shown).
+Every plate is a straight-alpha PNG at 1x stage resolution, placed with its top-left at
+the offset below (no anchors or scaling; to replace one, keep the size and offset or
+update the spec in `src/art/backdrop_catalog.gd`).
+
+| # | Slot | File(s) | Offset | Size | Notes |
+|---|---|---|---|---|---|
+| 0 | `SkyBackdrop` | per look: `environment/backdrops/*` (via `BackdropCatalog.PATHS`), Golden Hour layers in `environment/golden_hour/` | 0,0 | 1280x720 (stretched) | The only thing a look switch swaps. Sky must be clean above y ~300; the set covers the rest. |
+| 1 | `SkyProps` | `sky/clouds/*`, `sky/rain/*`, `sky/suns/*`, sticks | - | - | Code-placed: clouds and sun in band y 76-172, sticks run to y 0; Overcast rain falls to y 334. |
+| 2 | `FenceLayer` | `environment/stage/stage_fence.png` | 145,166 | 1135x137 | Fence, sunflowers, grass strip; feathered 0.7 px. |
+| 3 | `ShackLayer` | `environment/stage/stage_shack.png` | 0,0 | 173x372 | Porch, left edge. |
+| 4 | `CompostLayer` | `environment/stage/stage_compost.png` + `environment/board/compost_eyes_overlay.png` | 1069,221 / 1139,313 | 211x213 / 76x43 | Eyes are only the dark hollow + eyes (ellipse centre 1177,334, rx 36, ry 19, feathered), never a second pile. |
+| 5 | `LawnLayer` | `environment/stage/stage_lawn_ground.png` | 0,297 | 1280x423 | Ground around the felt; the felt trapezoid (far 168..1104 @ y 334, near 40..1240 @ y 584) sits on it. |
+
+Each look tints slots 2-5 (`BackdropCatalog.SET_TINTS`, Golden Hour
+`GOLDEN_HOUR_SET_TINT`); new per-mood plates would replace the tint. Plates 2-5 were cut
+from `environment/backdrops/main_noclouds_nosun` by `tools/art/cut_stage_plates.py`
+(Pillow/numpy/scipy; fence line y 219, ground y 300, polygons in the script). The eyes
+were cropped from `board_v1_compost_eyes.png`.
+
+New pass 4 files (all **status: approved**, referenced from `src/`):
+- `environment/stage/stage_fence.png`, `stage_shack.png`, `stage_compost.png`,
+  `stage_lawn_ground.png` — the set plates above.
+- `environment/board/compost_eyes_overlay.png` — the glowing eyes in the heap's hollow.
+- `environment/board/felt_board_clean.png` — the felt play surface, rebuilt from the
+  board_v1 composite region (145,330)-(1108,692) at 2x (`tools/art/clean_felt.py`:
+  Lanczos, 3 bilateral passes, light unsharp, seeded grain); imported with mipmaps.
+  Replaces direct sampling of the composite (which looked patchy).
+- `sky/suns/main_sun_shadow.png` — soft drop shadow for the Main sun (the Golden Hour
+  layered paper sun, `environment/golden_hour/golden_hour_sun_sprite.png`).
+
+Sky families by mood (pass 4): Main/Sunny `sky/clouds/<small|medium|large>/cotton_*` (white), Overcast
+`felt_*` (grey) + rain cloud `sky/rain/rain_01_felt_cloud_3_strands.png` /
+`rain_03_felt_cloud_dense.png` on a stick, Dusk cotton tinted lavender, Golden Hour cotton
+tinted warm (or none). The flat orange `torn_*` clouds stay listed in `SkyCatalog`
+but no mood picks them since pass 4 (kept for a possible Golden Hour art pass).
+
 ## Unwired inventory (definitive)
 
 Verified 2026-11-22 at baseline `86efd22`: 2,417 asset files (excluding `.import`),

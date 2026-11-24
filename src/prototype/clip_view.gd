@@ -131,10 +131,8 @@ func _apply_overlay_boost() -> void:
 	if _overlay_gain != 1.0 or _overlay_lift != 0.0:
 		var boost := _overlay.material as ShaderMaterial
 		if boost == null:
-			var shader := Shader.new()
-			shader.code = _OVERLAY_SHADER_CODE
 			boost = ShaderMaterial.new()
-			boost.shader = shader
+			boost.shader = overlay_shader()
 			_overlay.material = boost
 		boost.set_shader_parameter("gain", _overlay_gain)
 		boost.set_shader_parameter("lift", _overlay_lift)
@@ -301,3 +299,15 @@ func _fit(bounds: Vector2) -> void:
 	_sprite.rotation = lean
 	_sprite.scale = Vector2(fitted * stretch_x, fitted * stretch_y)
 	_sprite.modulate = Color.WHITE.lerp(Color(1.8, 1.8, 1.8), _flash)
+
+
+## The overlay boost shader, compiled once and shared by every clip (it was a
+## fresh Shader per Needle Spitter before pass 4).
+static var _overlay_shader: Shader
+
+
+static func overlay_shader() -> Shader:
+	if _overlay_shader == null:
+		_overlay_shader = Shader.new()
+		_overlay_shader.code = _OVERLAY_SHADER_CODE
+	return _overlay_shader
