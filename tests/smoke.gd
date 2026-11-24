@@ -97,6 +97,9 @@ func _check_layouts(board: GardenBoard, failures: PackedStringArray) -> void:
 		failures.append("side bar layout did not apply")
 	elif bottom.get_parent().name != "Body":
 		failures.append("side bar did not move beside the stage")
+	# The stage stays top-aligned so cloud sticks run up behind the top bar.
+	if absf(board.stage_rect().position.y) > 0.5:
+		failures.append("stage left a gap above it (cloud sticks would stop mid-sky)")
 	for card: WardenCard in cards:
 		if not card.is_large():
 			failures.append("side bar cards were not enlarged")

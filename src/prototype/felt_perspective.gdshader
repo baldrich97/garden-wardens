@@ -12,6 +12,15 @@ uniform vec2 texture_px = vec2(1280.0, 720.0);
 // The felt PNG (same as the TextureRect's texture; sampled by hand here).
 uniform sampler2D felt : filter_linear, repeat_disable;
 
+// The node's modulate (vertex colour) only. In fragment(), COLOR already
+// holds the node's own TEXTURE sampled flat at UV; multiplying by it laid the
+// unwarped felt grid over the warped one (the pass 3 "double grid" bug).
+varying vec4 modulate_color;
+
+void vertex() {
+	modulate_color = COLOR;
+}
+
 vec4 felt_at(vec2 p) {
 	vec3 s = stage_to_source * vec3(p, 1.0);
 	vec2 src = s.xy / s.z;
@@ -29,5 +38,5 @@ void fragment() {
 		+ felt_at(p + ex * 0.125 + ey * -0.375)
 		+ felt_at(p + ex * 0.375 + ey * 0.125)
 		+ felt_at(p + ex * -0.125 + ey * 0.375);
-	COLOR = c * 0.25 * COLOR;
+	COLOR = c * 0.25 * modulate_color;
 }

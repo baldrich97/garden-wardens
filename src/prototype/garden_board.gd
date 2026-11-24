@@ -60,8 +60,11 @@ const FLYER_HOVER_CELLS := 0.5
 ## Where the needle leaves the Needle Spitter's mouth, as a share of the art
 ## canvas height above the ground point.
 const NEEDLE_MOUTH_HEIGHT := 0.34
-## Sky band in stage pixels: under the top bar, down to the lawn's far edge.
-const SKY_BAND := Rect2(0.0, 76.0, 1280.0, 258.0)
+## Sky band in stage pixels: the open sky under the top bar and above the
+## fence and sunflower heads (Option B mockup clouds sit about y 85-185).
+const SKY_BAND := Rect2(0.0, 76.0, 1280.0, 96.0)
+## Rain falls past the band down to the lawn's far edge.
+const RAIN_FLOOR_Y := 334.0
 ## Falling sky drops start here (stage y) and fall to their landing spot.
 const SKY_DROP_TOP := 120.0
 ## HUD and overlay z (absolute): over every unit, bar and lob.
@@ -851,13 +854,13 @@ func _build_sky() -> void:
 	_layout_sky()
 
 
-## The sky band in stage pixels: under the top bar, down to the lawn's far
-## edge (rain lands on the far edge of the felt). Cloud and sun tuning is
-## untouched; only the band moved with the Option B layout.
+## The sky band in stage pixels: clouds and the sun stay in the open sky
+## above the fence; rain still falls to the lawn's far edge. Cloud and sun
+## tuning (sizes, bob, speed) is untouched; only the band moved.
 func _layout_sky() -> void:
 	if _sky_layer == null:
 		return
-	_sky_layer.set_band(SKY_BAND)
+	_sky_layer.set_band(SKY_BAND, RAIN_FLOOR_Y)
 
 
 ## A small watermark naming the visual seed and look, so a match can be
@@ -1716,7 +1719,7 @@ func _relayout_if_needed() -> void:
 ## Fits the 1280x720 stage (backdrop, sky, lawn, units) into the area the HUD
 ## leaves: the whole screen in horizontal mode (the tray and top bar float
 ## over the painted sky and the porch step, as in Option B), right of the side
-## bar in vertical mode. Uniform scale, centred, bottom-aligned; any gap shows
+## bar in vertical mode. Uniform scale, centred, top-aligned; any gap shows
 ## a soft, blurred extension of the backdrop.
 func _layout_stage() -> void:
 	if _stage == null:
@@ -1731,7 +1734,10 @@ func _layout_stage() -> void:
 	var stage_size := LawnGeometry.REF_SIZE * s
 	_stage.size = LawnGeometry.REF_SIZE
 	_stage.scale = Vector2(s, s)
-	_stage.position = Vector2(area.position.x + (area.size.x - stage_size.x) * 0.5, area.end.y - stage_size.y)
+	# Top-aligned: the stage's top edge is the screen's top edge, so the cloud
+	# sticks always run up behind the top bar to y = 0. Any spare height goes
+	# below the lawn, where the fill continues the grass.
+	_stage.position = Vector2(area.position.x + (area.size.x - stage_size.x) * 0.5, area.position.y)
 	_refresh_stage_fill()
 	_place_roster()
 

@@ -39,11 +39,16 @@ const _OVERLAY_SHADER_CODE := """
 shader_type canvas_item;
 uniform float gain = 1.0;
 uniform float lift = 0.0;
+// Vertex colour only (modulate); fragment COLOR already includes TEXTURE.
+varying vec4 modulate_color;
+void vertex() {
+	modulate_color = COLOR;
+}
 void fragment() {
 	vec4 c = texture(TEXTURE, UV);
 	c.rgb = mix(c.rgb, vec3(1.0), lift);
 	c.a = clamp(c.a * gain, 0.0, 1.0);
-	COLOR = c * COLOR;
+	COLOR = c * modulate_color;
 }
 """
 

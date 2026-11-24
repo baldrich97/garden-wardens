@@ -115,9 +115,13 @@ func _process(delta: float) -> void:
 
 
 ## Sets the band the sky lays out in (board-local coordinates).
-func set_band(rect: Rect2) -> void:
+##
+## [param rain_floor_y] (optional) is where rain lands when it should fall
+## past the band (the Option B lawn's far edge); by default rain lands at the
+## band's bottom edge.
+func set_band(rect: Rect2, rain_floor_y: float = NAN) -> void:
 	_band = rect
-	_ground_y = rect.position.y + rect.size.y - 4.0
+	_ground_y = (rect.position.y + rect.size.y if is_nan(rain_floor_y) else rain_floor_y) - 4.0
 	_layout()
 
 

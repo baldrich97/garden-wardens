@@ -108,7 +108,8 @@ mood art, duplicate porch/compost ends, soil look on felt, unwired fx/water sets
   roster portraits keep the bob. Soft contact shadows (`src/prototype/rail_stand.gd`).
 - **Stage.** Backdrop, Golden Hour, sky and lawn live in a 1280x720 `Stage` that is
   uniformly scaled into the area the HUD leaves (whole screen in horizontal mode, right
-  of the side bar in vertical mode), centred and bottom-aligned; `StageFill`
+  of the side bar in vertical mode), centred and top-aligned (so cloud sticks always run
+  up behind the top bar to the screen top); `StageFill`
   (`stage_fill.gdshader`) extends the backdrop softly into any gap. The porch and
   compost heap painted into the Main backdrop frame the lawn; the cutout end pieces
   are removed (parked in docs/ASSET_SOURCES.md).
@@ -124,6 +125,12 @@ mood art, duplicate porch/compost ends, soil look on felt, unwired fx/water sets
   flip above the pointer near the bottom.
 - **Needle smoke.** The muzzle smoke overlay is scaled x1.7 about the mouth, alpha x2.1
   and lifted 35% toward white (`ClipView.set_overlay_boost`).
+- **Pass 3 follow-up fixes:** (1) the felt was double-rendered: in a canvas_item
+  `fragment()`, `COLOR` already holds the node's own TEXTURE sampled flat at UV, so
+  `c * COLOR` multiplied the warped felt by the unwarped composite (a straight 12x5
+  grid over the slanted one). Both custom shaders now take the modulate from
+  `vertex()` via a varying instead (the needle smoke overlay had the same bug, which
+  had squared its alpha). (2) Stage is top-aligned. (3) Sky band kept above the fence.
 - **Fixed on the way:** fliers (bee, fly) had a NaN clip fit (an INF anchor passed the
   `> 1.0` test), which hid their art; ClipView now tests for a finite anchor.
 - **Caveats.** The framing is tuned to the Main backdrop. Sunny/overcast/dusk (640x360,
@@ -131,7 +138,8 @@ mood art, duplicate porch/compost ends, soil look on felt, unwired fx/water sets
   their fence/porch until the moods are recomposed (parked Asset Gen work). The grid is
   12x5 (60 cells), not 10x5. Far-rail cells are about 80x40 px at 1280x720 (under the
   64 px touch guideline in depth); the stretch scale enlarges them on bigger windows.
-  Cloud/sun tuning is still tabled; only the sky band moved (stage y 76 to 334).
+  Cloud/sun tuning is still tabled; only the sky band moved: clouds and sun lay out in
+  stage y 76 to 172 (open sky above the fence), rain falls to the far edge (y 334).
 - New checks: rules (homography round trip on all 60 cells plus corner probes, frame
   corners, rail y/scale/z monotonic, breakpoints), smoke (cutouts absent, felt shader,
   live layout switch), input probe step 11 (hover all 60 cells plus corner-cell corners).
