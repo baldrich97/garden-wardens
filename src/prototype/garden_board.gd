@@ -1930,6 +1930,8 @@ func _refresh_side_plates() -> void:
 		var texture := BackdropCatalog.side_plate(_side_look, BackdropCatalog.SIDE_NAMES[i])
 		rect.texture = texture
 		rect.visible = texture != null and framing == Framing.MATTE
+		if _layers != null and _layers.side_fronts.size() == 2:
+			_layers.set_side_front(_stage, i, BackdropCatalog.side_front(_side_look, BackdropCatalog.SIDE_NAMES[i]), rect.visible)
 		if texture == null:
 			continue
 		# Height matches the stage; width keeps the plate's aspect.

@@ -178,7 +178,8 @@ shared file. A missing file is never an error (`BackdropCatalog.optional`).
 | Compost plate | `stage/<mood key>/stage_compost.png` | 211x213 at 1069,221, or 1280x720 | all six installed (batch2, pass 6) |
 | Lawn-ground plate | `stage/<mood key>/stage_lawn_ground.png` | 1280x423 at 0,297, or 1280x720 | all six installed (batch2, pass 6) |
 | Sky backdrop (batch2) | `stage/<mood key>/sky_backdrop.png` | 1280x720, replaces the look's `BackdropCatalog.PATHS` backdrop | all six installed (pass 6) |
-| Side panels (batch3_v2) | `stage/<mood key>/side_left.png`, `side_right.png` | height 720 (stage pixels), any width (960 shipped); drawn just outside the stage's left/right edge at the stage's scale; the window edge does the inner crop | all six installed (pass 7); matte past 960 stage px per side and on taller-than-16:9 windows |
+| Side panels (batch3_v3) | `stage/<mood key>/side_left.png`, `side_right.png` | height 720 (stage pixels), any width (960 shipped); drawn just outside the stage's left/right edge at the stage's scale; the window edge does the inner crop | all six installed (v2 in pass 7, v3 in pass 7b); matte past 960 stage px per side and on taller-than-16:9 windows |
+| Side fronts | `stage/<mood key>/side_left_front.png`, `side_right_front.png` | same size as the panel; the panel's own pixels where it is ground / shack / compost, clear in the open sky; drawn over the sky props | all six built locally (pass 7b, `tools/art/make_side_fronts.py`); optional |
 | Sunset clouds | `sky/clouds/<small\|medium\|large>/cotton_sunset_<code>.png` + `_stick.png` | listed explicitly in `SkyCatalog.SUNSET_CLOUDS` with `body_h` | installed (batch1), Golden Hour's family |
 | Soil tiles | `environment/board/felt_<sand\|stone>_<light\|dark>.png` | square (160 px used); mapped per cell through the felt's perspective; light/dark follow the felt checker (light = even col+row) | installed |
 | Roster portraits | `ui/roster/roster_<fly\|bee\|ladybug\|snail\|grub>.png` | square (128 px plain cutout) | installed, all 5 |
@@ -389,6 +390,85 @@ Other seam findings:
 - **Dusk Moonlit side lawn is lighter than the stage lawn** near both seams.
 - The sky, hills and fence rows (y 0-300) are pixel-identical across both seams in every
   look; the in-game side pixels match the kit files exactly.
+
+## Pass 7b: Asset Gen batch3_v3 side panels (GW-AA pass 7b, 2026-11-24)
+
+Source: `stage_kit/batch3_v3/<scene>/` (60 files, sha256 verified against the new
+`manifest.json` and `manifest.tsv`: 60/60 match). The 12 960x720 panels replace the v2
+files (same names and placement); installed bytes are identical to the kit. The Pass 7
+section above describes v2 and is kept as history.
+
+| File | sha256 (left / right) | Status |
+| --- | --- | --- |
+| `stage/main/side_{left,right}.png` | `154c7707…` / `b25a6240…` | **approved**, wired |
+| `stage/sunny/side_{left,right}.png` | `5d878184…` / `e4788667…` | **approved**, wired |
+| `stage/overcast/side_{left,right}.png` | `f7b04722…` / `29af8659…` | **approved**, wired (leftovers below) |
+| `stage/dusk_twilight/side_{left,right}.png` | `b92f98df…` / `633457f6…` | **approved**, wired |
+| `stage/dusk_moonlit/side_{left,right}.png` | `ea5c74d6…` / `cae9811a…` | **approved**, wired (leftovers below: needs a colour pass) |
+| `stage/golden_hour/side_{left,right}.png` | `8f098088…` / `73a72b3e…` | **approved**, wired |
+| `stage/<same six>/side_{left,right}_front.png` (12) | local, built by `tools/art/make_side_fronts.py` from the kit's `_ground` splits | **local**, wired |
+
+Why the fronts: v3 continues the shack ~240 px left of x 0, and the runtime clouds (which
+reach over the visible side sky since pass 7) drew over its roof, while on the stage they
+pass behind the shack. The front layer sits just above the sky props and repeats the
+panel's own pixels, so clouds now pass behind the side shack too. Asset Gen's `_ground`
+split alone left holes in the shack (eave row, y ~115-125), where a cloud showed through,
+so the script fills the shack silhouette (roof edge from Main's split, wall at panel
+x 735) and keeps only the shack above the lawn line. Rebuild after any new panels:
+`python tools/art/make_side_fronts.py <batch3 kit dir> .`
+
+Asset Gen's claimed fixes, checked in game (stage pixels; left panel x -960..0, right
+panel x 1280..2240; 3200x720 native, 3840x1080 and 2560x1080):
+1. **Shack and compost continue: holds.** The shack continues to about x -245 and the
+   compost tail to about x 1375-1450 (it tapers into the tufts; ~100-170 px rather than the
+   150-200 claimed), with no hard vertical cut. A tone step remains at the
+   seam: the side roof is 11-29 grey levels darker than the stage's (worst Sunny,
+   Golden Hour), the wall up to 21 (Sunny, Golden Hour), Moonlit's side shack is more
+   purple. Mild-moderate, a soft line at 21:9 and wider.
+2. **Right canopy rebuilt, Twilight and Moonlit dark: holds.** The night canopies now
+   meet (Twilight 59/67, Moonlit 29/33). The side cap is still 9-16 levels lighter on
+   Main, Sunny, Overcast and Golden Hour, and it carries a blurred, out-of-focus disc
+   at about x 1280-1330, y 100-200 in every scene. Mild.
+3. **Left dark band gone, grain to the edge: holds, mostly.** The band is gone (side
+   now 0-8 levels lighter than the stage's x 0 column). Grain runs to the seam but is
+   softer than the stage felt (about 60% of its fine contrast), so a faint texture
+   change shows at 3x zoom. Mild, not noticeable at 1:1.
+4. **Lawn lines and streaks: partly.** y 419-421 and y ~397 are gone (row steps under
+   1 grey level) and the far-left lawn has no vertical streaks. **New: a 1 px black line
+   at y 297** across the whole left panel (x -960..0, ~730 of 960 px under 40 grey) with
+   a 5 px coloured band under it (y 298-303: green on Sunny, mauve on Overcast, purple
+   on Moonlit). Visible at 1:1 at 21:9 and wider, in every scene. Moderate.
+5. **Moonlit side lawn tone matches: holds** (left 76/76, right 88/85).
+6. **Right pickets match: holds for size, not colour.** Width, spacing and tip height
+   now match. But the stamps are drawn as rectangles over the old AI pickets, so the
+   right fence alternates colours (stamped official-colour boards between blue AI boards
+   on Overcast and Moonlit, red on Twilight), and the stamp rectangles reach down into
+   the tufts and the compost tail (x 1290-1340, y 280-345: hard-edged boxes on Sunny,
+   Overcast, Twilight, Moonlit, Golden Hour). Moderate (Moonlit strong).
+
+Asset Gen's known leftovers:
+- (a) **Compost-tail scraps: visible.** Moonlit's tail (x 1280-1450, y 230-320) is bright
+  blue paper, strong; Overcast's has blue-grey scraps, mild-moderate; Twilight's tail is
+  pinker than the pile, mild.
+- (b) **Canopy join at x 1280 on Overcast and Golden Hour: visible, mild** (see 2; Main
+  and Sunny show the same lighter cap).
+- (c) **Moonlit sides too blue, hills maroon: visible, strong.** Both Moonlit fences are
+  saturated royal blue, the left tree trunk is blue, the right tree's canopy reads
+  olive-lit, and the far hills are dark olive/maroon instead of night-blue. The most
+  off-looking scene on wide screens.
+- (d) **First dusk/overcast picket past the seam: visible, mild-moderate** (the
+  alternating-colour fence in 6).
+- Clouds and the shack: before the fronts, clouds drew over the side shack's roof on
+  Main, Sunny, Overcast and Golden Hour (and through the eave gap). Fixed by the front
+  layer; clouds now pass behind it. Cloud bottoms still overlap the side fence tips by
+  ~10 px left of the shack, unchanged from pass 7 and not near the shack.
+
+New in v3, not on Asset Gen's list:
+- **Block edge at x -640** (left panel x 320), y ~110-300, all six scenes: the inner 640 px
+  is a separately graded patch, with a hard vertical edge through the tree trunk, fence
+  and tufts and a horizontal edge at about y 140. It sits exactly at the window edge at
+  32:9, so it shows only wider than 32:9 (5120x1080, 3200x720). Moderate there.
+- Tufts along y ~280-300 on both panels are cut flat at the split line in places.
 
 ## Unwired inventory (definitive)
 

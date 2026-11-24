@@ -367,6 +367,24 @@ below; all are presentation only (combat_probe identical 5/5 to the p3fix refere
   a look whose side art goes away falls back to the matte; every stage layer clips; the
   SkyProps clip and the cloud wrap match the visible side reach.
 
+### GW-AA pass 7b (2026-11-24): Asset Gen batch3_v3 side panels
+
+- The 12 side panels are Asset Gen's `batch3_v3` files (sha256 verified, same names and
+  placement as v2). No framing changes.
+- New front layer: `StageLayers.side_fronts` (two TextureRects just above SkyProps,
+  outside the stage rect) draw `stage/<mood>/side_{left,right}_front.png` over the
+  clouds, so clouds pass behind v3's shack continuation as they do behind the stage's
+  shack. `BackdropCatalog.side_front()` finds them, `all_paths()` preloads them, and
+  `_refresh_side_plates` shows them exactly when the panel shows. The fronts are built
+  locally by `tools/art/make_side_fronts.py` from the kit's `_ground` splits (shack holes
+  filled); rebuild them whenever the panels change.
+- Fix/leftover report (v3 holds on the shack/compost cut, night canopy, dark band, lawn
+  lines 419/397 and Moonlit lawn tone; new black line at y 297 and a block edge at
+  x -640; Moonlit colours, compost-tail scraps and the alternating right pickets remain)
+  is in `docs/ASSET_SOURCES.md` ("Pass 7b").
+- New smoke checks: every look has both side fronts, on their panels' rects, ordered
+  between SkyProps and the fence; they hide with their panels.
+
 ## Verification playbook
 
 Binary: the MAIN exe `tools/godot/Godot_v4.6-stable_win64.exe` for every run,

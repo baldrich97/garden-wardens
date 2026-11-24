@@ -25,6 +25,9 @@ const EYES_PERIOD := 2.6
 
 var sky_backdrop: Control
 var sky_props: Control
+## GW-AA pass 7b: the side panels' front (ground) layers, left and right,
+## stage children just above the sky props, outside the 1280 stage rect.
+var side_fronts: Array[TextureRect] = []
 var fence_layer: TextureRect
 var shack_layer: TextureRect
 var compost_layer: Control
@@ -68,6 +71,15 @@ func build(stage: Control, background: TextureRect, lawn: Control) -> void:
 	background.reparent(sky_backdrop, false)
 	sky_props = _holder("SkyProps")
 	stage.add_child(sky_props)
+	for side_name in ["SideFrontLeft", "SideFrontRight"]:
+		var front := TextureRect.new()
+		front.name = side_name
+		front.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		front.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		front.stretch_mode = TextureRect.STRETCH_SCALE
+		front.visible = false
+		stage.add_child(front)
+		side_fronts.append(front)
 	fence_layer = _plate("FenceLayer", BackdropCatalog.FENCE_PLATE)
 	stage.add_child(fence_layer)
 	fence_lights = TextureRect.new()
@@ -92,7 +104,7 @@ func build(stage: Control, background: TextureRect, lawn: Control) -> void:
 	stage.add_child(lawn_layer)
 	_build_decor()
 	# Slots in order, then the lawn (felt and units) on top of them all.
-	var order: Array[Node] = [sky_backdrop, sky_props, fence_layer, shack_layer, compost_layer, lawn_layer]
+	var order: Array[Node] = [sky_backdrop, sky_props, side_fronts[0], side_fronts[1], fence_layer, shack_layer, compost_layer, lawn_layer]
 	for i in order.size():
 		stage.move_child(order[i], i)
 	stage.move_child(lawn, order.size())
@@ -198,6 +210,20 @@ func set_sky_reach(stage: Control, left: float, right: float) -> void:
 	for child in sky_props.get_children():
 		if child is Control:
 			(child as Control).position = Vector2(left, 0.0)
+
+
+## Shows side front [param i] (0 left, 1 right) locked to its stage edge in
+## stage pixels, or hides it. It repeats the side panel's own ground pixels
+## exactly, so the only visible effect is that sky props pass behind it.
+func set_side_front(stage: Control, i: int, texture: Texture2D, show: bool) -> void:
+	var front := side_fronts[i]
+	front.texture = texture
+	front.visible = show and texture != null
+	if texture == null:
+		return
+	var w := texture.get_width() * stage.size.y / maxf(texture.get_height(), 1.0)
+	front.size = Vector2(w, stage.size.y)
+	front.position = Vector2(-w if i == 0 else stage.size.x, 0.0)
 
 
 ## The sky props' clip rect in stage pixels (tests).

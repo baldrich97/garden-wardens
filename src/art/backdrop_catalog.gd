@@ -75,6 +75,7 @@ const PLATE_SLOTS: Array[String] = ["fence", "shack", "compost", "lawn_ground"]
 ## side_right.png, drawn outside the stage's left/right edges at the stage's
 ## scale (any width; the height should be 720). Missing = the clean matte.
 const SIDE_NAMES: Array[String] = ["side_left", "side_right"]
+const SIDE_FRONT_SUFFIX := "_front"
 ## Optional per-look sky backdrop (batch2): stage/<mood key>/sky_backdrop.png.
 const SKY_BACKDROP_NAME := "sky_backdrop.png"
 
@@ -210,6 +211,19 @@ static func fence_lights(index: int) -> Texture2D:
 	return optional(String(fence["path"]).get_base_dir() + "/stage_fence_lights.png")
 
 
+## A look's side-panel front layer ("side_left" / "side_right"): the panel's
+## own pixels where it is ground, lawn, tufts or the shack / compost
+## continuation, clear in the open sky (built from Asset Gen's `_ground`
+## splits plus the shack silhouette by tools/art/make_side_fronts.py). Drawn
+## over the sky props so clouds pass behind the side shack the way they pass
+## behind the stage's shack. Null when not shipped.
+static func side_front(index: int, side: String) -> Texture2D:
+	for dir in mood_dirs(index):
+		if optional(dir + side + ".png") != null:
+			return optional(dir + side + SIDE_FRONT_SUFFIX + ".png")
+	return null
+
+
 ## A look's wide-screen side plate ("side_left" / "side_right"), or null.
 static func side_plate(index: int, side: String) -> Texture2D:
 	for dir in mood_dirs(index):
@@ -280,6 +294,7 @@ static func all_paths() -> Array[String]:
 		var names: Array[String] = [SKY_BACKDROP_NAME, "stage_fence_lights.png"]
 		for side in SIDE_NAMES:
 			names.append(side + ".png")
+			names.append(side + SIDE_FRONT_SUFFIX + ".png")
 		for slot in PLATE_SLOTS:
 			names.append("stage_%s.png" % slot)
 		for file in names:

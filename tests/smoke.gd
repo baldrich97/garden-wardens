@@ -261,6 +261,13 @@ func _check_slots(board: GardenBoard, failures: PackedStringArray) -> void:
 			var want := sr.position.x if i == 0 else sr.end.x
 			if absf(edge - want) > 1.0 or absf(plate.size.y - sr.size.y) > 1.0 or absf(plate.position.y - sr.position.y) > 1.0:
 				failures.append("%s %s side panel is not locked to the stage edge" % [BackdropCatalog.NAMES[look], BackdropCatalog.SIDE_NAMES[i]])
+			# Pass 7b: the panel's ground layer sits over the sky props, on the
+			# same rect, so clouds pass behind the side shack.
+			var front := layers.side_fronts[i] if layers.side_fronts.size() == 2 else null
+			if front == null or not front.visible or front.texture == null:
+				failures.append("%s %s side front layer missing" % [BackdropCatalog.NAMES[look], BackdropCatalog.SIDE_NAMES[i]])
+			elif front.get_global_rect().position.distance_to(plate.get_global_rect().position) > 1.0 or front.get_index() <= layers.sky_props.get_index() or front.get_index() >= layers.fence_layer.get_index():
+				failures.append("%s %s side front layer is off its panel or out of order" % [BackdropCatalog.NAMES[look], BackdropCatalog.SIDE_NAMES[i]])
 	# A look whose side art goes away falls back to the matte.
 	var left_path := BackdropCatalog.STAGE_DIR + "main/side_left.png"
 	var shipped := BackdropCatalog.optional(left_path)
@@ -269,6 +276,8 @@ func _check_slots(board: GardenBoard, failures: PackedStringArray) -> void:
 	board.use_backdrop(0)
 	if not board.side_plates().is_empty() and board.side_plates()[0].visible:
 		failures.append("side plate stayed after its art went away")
+	if layers.side_fronts.size() == 2 and layers.side_fronts[0].visible:
+		failures.append("side front layer stayed after its panel went away")
 	BackdropCatalog.inject(left_path, shipped)
 	board.use_backdrop(0)
 	board.use_golden_hour(true)
