@@ -89,6 +89,8 @@ var _time := 0.0
 var _sun_rest := Vector2.ZERO
 var _rain_rest_y := 0.0
 var _rain_drift_x := 0.0
+var _reach_left := 0.0
+var _reach_right := 0.0
 var _rain_stick: TextureRect
 
 var _sun: TextureRect
@@ -180,6 +182,22 @@ func set_band(rect: Rect2, rain_floor_y: float = NAN) -> void:
 	_layout()
 
 
+## GW-AA pass 7: how far past the band's left and right ends clouds keep
+## drifting before they wrap (stage pixels). Zero on a 16:9 window; on a wide
+## window it is the visible side-panel width, so a cloud enters at the
+## screen's right edge and leaves at its left edge instead of popping in and
+## out at the stage edge over the painted side skies. Layout and spacing are
+## unchanged; only where the wrap happens moves.
+func set_drift_reach(left: float, right: float) -> void:
+	_reach_left = maxf(left, 0.0)
+	_reach_right = maxf(right, 0.0)
+
+
+## The current drift reach (left, right), for tests.
+func drift_reach() -> Vector2:
+	return Vector2(_reach_left, _reach_right)
+
+
 ## Applies the seeded look for the current mood: which sun, whether it
 ## rains, and the cloud spec.
 func apply_look(seed_value: int, mood_index: int) -> void:
@@ -222,8 +240,8 @@ func tick(delta: float) -> void:
 		if not cloud.visible:
 			continue
 		_drift_x[i] -= _cloud_speeds[i] * delta
-		if _drift_x[i] + cloud.size.x < _band.position.x:
-			_drift_x[i] = _band.end.x
+		if _drift_x[i] + cloud.size.x < _band.position.x - _reach_left:
+			_drift_x[i] = _band.end.x + _reach_right
 		_pose_cloud(i)
 	if _moon.visible:
 		_moon.position = _moon_rest + Vector2(0.0, MOON_BOB_PX * sin(TAU * _time / MOON_BOB_PERIOD))
@@ -236,8 +254,8 @@ func tick(delta: float) -> void:
 		_pose_sun_shadow()
 	if _rain:
 		_rain_drift_x -= _rain_cloud_speed * delta
-		if _rain_drift_x + _rain_cloud.size.x < _band.position.x:
-			_rain_drift_x = _band.end.x
+		if _rain_drift_x + _rain_cloud.size.x < _band.position.x - _reach_left:
+			_rain_drift_x = _band.end.x + _reach_right
 		_pose_rain_cloud()
 		_update_rain(delta)
 

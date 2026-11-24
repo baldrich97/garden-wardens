@@ -243,24 +243,34 @@ func _check_slots(board: GardenBoard, failures: PackedStringArray) -> void:
 	var look_name := (board.find_child("BackdropButton", true, false) as Button)
 	if look_name != null and look_name.text != "Dusk Moonlit":
 		failures.append("look button reads '%s' on Dusk Moonlit" % look_name.text)
-	# Wide-screen side plates: none shipped (clean matte); an injected one
-	# anchors to the stage edge at the stage's scale.
-	board.use_backdrop(0)
-	for plate in board.side_plates():
-		if plate.visible:
-			failures.append("a side plate shows with no art in the slot")
-	var probe_tex := ImageTexture.create_from_image(Image.create(64, 720, false, Image.FORMAT_RGBA8))
+	# GW-AA pass 7: every look ships Asset Gen's 960x720 side panels; each
+	# anchors to its stage edge at the stage's scale.
+	for look in range(BackdropCatalog.NAMES.size()):
+		board.use_backdrop(look)
+		var sides := board.side_plates()
+		if sides.size() != 2:
+			failures.append("board has %d side plates" % sides.size())
+			break
+		var sr := board.stage_rect()
+		for i in 2:
+			var plate := sides[i]
+			if not plate.visible or plate.texture == null or plate.texture.get_size() != Vector2(960, 720):
+				failures.append("%s %s side panel missing or not 960x720" % [BackdropCatalog.NAMES[look], BackdropCatalog.SIDE_NAMES[i]])
+				continue
+			var edge := plate.position.x + plate.size.x if i == 0 else plate.position.x
+			var want := sr.position.x if i == 0 else sr.end.x
+			if absf(edge - want) > 1.0 or absf(plate.size.y - sr.size.y) > 1.0 or absf(plate.position.y - sr.position.y) > 1.0:
+				failures.append("%s %s side panel is not locked to the stage edge" % [BackdropCatalog.NAMES[look], BackdropCatalog.SIDE_NAMES[i]])
+	# A look whose side art goes away falls back to the matte.
 	var left_path := BackdropCatalog.STAGE_DIR + "main/side_left.png"
-	BackdropCatalog.inject(left_path, probe_tex)
-	board.use_backdrop(0)
-	var left := board.side_plates()[0] if not board.side_plates().is_empty() else null
-	var stage_r := board.stage_rect()
-	if left == null or not left.visible or absf(left.position.x + left.size.x - stage_r.position.x) > 1.0 or absf(left.size.y - stage_r.size.y) > 1.0:
-		failures.append("an injected side_left plate does not anchor to the stage's left edge")
+	var shipped := BackdropCatalog.optional(left_path)
 	BackdropCatalog.inject(left_path, null)
+	BackdropCatalog.inject(BackdropCatalog.STAGE_DIR + "side_left.png", null)
 	board.use_backdrop(0)
 	if not board.side_plates().is_empty() and board.side_plates()[0].visible:
 		failures.append("side plate stayed after its art went away")
+	BackdropCatalog.inject(left_path, shipped)
+	board.use_backdrop(0)
 	board.use_golden_hour(true)
 	var look_button := board.find_child("BackdropButton", true, false) as Button
 	if look_button == null or look_button.text != GardenBoard.GOLDEN_HOUR_NAME:
@@ -282,9 +292,21 @@ func _check_slots(board: GardenBoard, failures: PackedStringArray) -> void:
 		failures.append("Golden Hour does not show its own untinted set plates")
 	board.use_golden_hour(false)
 	board.use_backdrop(0)
-	# Framing: flat dark matte, clipped stage, no smear shader.
-	if stage == null or not stage.clip_contents:
-		failures.append("the stage does not clip its contents")
+	# Framing: flat dark matte, every stage layer clipped at the stage edge
+	# (pass 7: per layer, so the sky props alone may reach over visible side
+	# panels), no smear shader.
+	if stage == null:
+		failures.append("no stage")
+	elif not stage.clip_contents:
+		for child in stage.get_children():
+			if child is Control and not (child as Control).clip_contents:
+				failures.append("stage layer %s does not clip" % child.name)
+		var reach := board.side_reach()
+		var sky_rect := layers.sky_reach_rect()
+		if sky_rect != Rect2(-reach.x, 0.0, LawnGeometry.REF_SIZE.x + reach.x + reach.y, LawnGeometry.REF_SIZE.y):
+			failures.append("sky props clip %s does not match the visible side reach %s" % [sky_rect, reach])
+		if board.sky_layer().drift_reach() != reach:
+			failures.append("clouds wrap at %s, not at the visible side reach %s" % [board.sky_layer().drift_reach(), reach])
 	var matte := board.find_child("StageFill", true, false) as ColorRect
 	if matte == null or matte.material != null or matte.color != GardenBoard.MATTE_COLOR:
 		failures.append("the side matte is not the flat forest-green fill")

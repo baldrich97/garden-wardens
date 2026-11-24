@@ -178,7 +178,7 @@ shared file. A missing file is never an error (`BackdropCatalog.optional`).
 | Compost plate | `stage/<mood key>/stage_compost.png` | 211x213 at 1069,221, or 1280x720 | all six installed (batch2, pass 6) |
 | Lawn-ground plate | `stage/<mood key>/stage_lawn_ground.png` | 1280x423 at 0,297, or 1280x720 | all six installed (batch2, pass 6) |
 | Sky backdrop (batch2) | `stage/<mood key>/sky_backdrop.png` | 1280x720, replaces the look's `BackdropCatalog.PATHS` backdrop | all six installed (pass 6) |
-| Side panels (batch3) | `stage/<mood key>/side_left.png`, `side_right.png` | height 720 (stage pixels), any width; drawn just outside the stage's left/right edge at the stage's scale | none yet: the clean matte shows |
+| Side panels (batch3_v2) | `stage/<mood key>/side_left.png`, `side_right.png` | height 720 (stage pixels), any width (960 shipped); drawn just outside the stage's left/right edge at the stage's scale; the window edge does the inner crop | all six installed (pass 7); matte past 960 stage px per side and on taller-than-16:9 windows |
 | Sunset clouds | `sky/clouds/<small\|medium\|large>/cotton_sunset_<code>.png` + `_stick.png` | listed explicitly in `SkyCatalog.SUNSET_CLOUDS` with `body_h` | installed (batch1), Golden Hour's family |
 | Soil tiles | `environment/board/felt_<sand\|stone>_<light\|dark>.png` | square (160 px used); mapped per cell through the felt's perspective; light/dark follow the felt checker (light = even col+row) | installed |
 | Roster portraits | `ui/roster/roster_<fly\|bee\|ladybug\|snail\|grub>.png` | square (128 px plain cutout) | installed, all 5 |
@@ -212,8 +212,8 @@ plus the additive lights layer covers it).
 ### Still to come
 
 - batch2: landed in pass 6 (see below).
-- batch3: `side_left.png` / `side_right.png` per mood folder (or in `dusk/` for both Dusks).
-  The first batch3 was rejected by Asset Gen; only `batch3_v2/` should be wired.
+- batch3: landed in pass 7 from `batch3_v2/` (see below). The first `batch3/` was
+  rejected by Asset Gen and is not used.
 - ~~A sharper `dusk/stage_fence.png`~~: landed (batch1 update, installed in pass 6).
 
 ## Pass 6: Asset Gen batch2 per-scene sets (GW-AA pass 6, 2026-11-24)
@@ -257,7 +257,7 @@ How they are drawn:
 | `sky/stars/star_{4pt_cream,4pt_gold,5pt_cream,6pt_slate}.png` (4) | **approved**, Dusk Moonlit's stars |
 | `stage/dusk/stage_fence.png`, `stage/dusk/stage_fence_lights.png` | **replaced** with batch1's updated sharp 1280 files (`stage_fence_dusk.png` = `dusk_twilight/stage_fence.png`, same sha256 `301b233f…`). Fallback only now |
 
-Not wired: anything from `batch3/` or `batch3_v2/` (Asset Gen rejected the batch3 side panels), the kit's `_work/` and `previews/`.
+Not wired in pass 6: anything from `batch3/` or `batch3_v2/` (batch3_v2 landed in pass 7, below), the kit's `_work/` and `previews/`.
 
 Old files that are now **fallback only** (still referenced, but not shown while the
 batch2 files are installed):
@@ -318,6 +318,77 @@ Asset Gen's two open questions (stage coordinates, 1280x720 frame):
   behind a real sunflower on the fence plate (at most a handful of exposed pixels, which
   are the tree trunk, not the ghost). **Not visible in game** at either size. It would
   show if the fence plate's sunflowers ever moved or were removed.
+
+## Pass 7: Asset Gen batch3_v2 wide-screen side panels (GW-AA pass 7, 2026-11-24)
+
+Source: `stage_kit/batch3_v2/<scene>/` (60 files, sha256 verified against its
+`manifest.json` and `manifest.tsv`: 60/60 match; the README carries no hashes). Only the
+960x720 combined drop-ins are installed; installed bytes are identical to the kit.
+`batch3/` (rejected) is not used.
+
+| File | sha256 (left / right) | Status |
+| --- | --- | --- |
+| `stage/main/side_{left,right}.png` | `21f727b5…` / `57d33518…` | **approved**, wired |
+| `stage/sunny/side_{left,right}.png` | `537aaea5…` / `df3bf70e…` | **approved**, wired |
+| `stage/overcast/side_{left,right}.png` | `1607cddd…` / `ad8ed6b9…` | **approved**, wired |
+| `stage/dusk_twilight/side_{left,right}.png` | `359781e3…` / `c79fc19f…` | **approved**, wired |
+| `stage/dusk_moonlit/side_{left,right}.png` | `9e4998f9…` / `2cd1baf8…` | **approved**, wired |
+| `stage/golden_hour/side_{left,right}.png` | `627dc009…` / `483df00d…` | **approved**, wired |
+
+Not installed (by choice): `side_*_320.png` / `side_*_640.png` (the window edge crops the
+960 panel, so the fixed crops add nothing) and `side_*_sky.png` / `side_*_ground.png`
+(their split runs at about y 300, under the fence, so it cannot put clouds behind the
+side fence; clouds drift over the whole side sky layer, like the stage's backdrop trees).
+Also not installed: the kit's `_work/`, `_prev/` and `previews/`.
+
+Framing (stage units = 1280x720 stage pixels, scaled with the stage):
+- 16:9: no side room, nothing changes.
+- Wider than 16:9: each panel is locked to its stage edge and shows as much as fits
+  (1700x720: 210 per side; 1920x720 / 2560x1080: 320; 3440x1440: 220; 3840x1080 (32:9): 640).
+- Past 960 per side (wider than 40:9, e.g. 5120x1080 has 1067): the matte paper shows
+  beyond the panel's outer edge.
+- Taller than 16:9 (1280x1024, 1440x1080, portrait): the stage fits by width, there is no
+  side room, the matte fills the space below.
+- Cover framing: no panels (unchanged).
+- Clouds and the Overcast rain cloud drift over the visible part of the panels and wrap
+  at the window edge (`SkyLayer.set_drift_reach`); everything else still clips at the
+  stage edge (`StageLayers.set_sky_reach`).
+
+Asset Gen's known nits, checked in game (coordinates in stage pixels; the left panel's
+x runs -960..0, the right panel's 1280..2240). Crops in
+`/workspace/gw-test-shots/pass7/nits/` (box).
+1. **Felt-grain step at the stage edge: visible, left seam only, all six looks.** The left
+   panel's lawn is smooth (no felt grain) and its last ~40 px (x -40..0, y 300-600) ramp
+   darker, ending 12-18 grey levels below the stage's x 0 column (Main 112 vs 125 at
+   y 440-560), so there is a soft dark band with a hard edge at x 0. Readable at 1:1 on
+   21:9 and wider; mild-moderate. The right seam's lawn is clean.
+2. **Horizontal line in the far-left lawn: visible on 32:9 and wider.** A row step at
+   y ~419-421 across x -960..-240 (1-3.5 grey levels), with vertically streaked lawn
+   below it (about y 420-560). Only on screen when more than ~480 px of the left panel
+   shows (3840x1080, 5120x1080, 3200x720). Moderate at 32:9, invisible at 21:9. A
+   fainter twin sits at y ~397 on the right panel, and Moonlit also shows the y ~304
+   split line as a darker edge under the far tufts.
+3. **Soft canopy join on the official right tree: visible, worst at night.** At x 1280,
+   y 40-240 the side half of the canopy is blurrier and a different shade from the
+   stage half: Main/Sunny mild (soft, ~8 grey levels), Overcast and Golden Hour moderate,
+   Dusk Twilight strong (~26 levels) and Dusk Moonlit strong (24 -> 63: the stage canopy
+   is near-black, the side canopy lit teal). The stage pixels are the official backdrop
+   (verified untinted), so the step is in the side art's recolour.
+4. **Picket boards at the seam: visible, mild.** At the right seam (x 1280, y 166-300) the
+   side pickets are wider and their tips sit ~6 px higher than the stage fence plate's,
+   so the rhythm changes at the seam. On the left the shack covers the stage fence, so
+   the pickets do not meet.
+
+Other seam findings:
+- **The shack and the compost pile are cut at the stage edges** (all six looks, every
+  wide size): the shack plate's roof, wall and porch end in a vertical line at x 0 with
+  the side fence and lawn continuing beside it; the compost pile's leaves end at x 1280.
+  This is the most noticeable seam on wide screens (the official set pieces were never
+  painted past the 16:9 frame). Fix would be art: side panels that continue the shack
+  roof/porch and the compost edge, or shack/compost plates that extend past 0 / 1280.
+- **Dusk Moonlit side lawn is lighter than the stage lawn** near both seams.
+- The sky, hills and fence rows (y 0-300) are pixel-identical across both seams in every
+  look; the in-game side pixels match the kit files exactly.
 
 ## Unwired inventory (definitive)
 

@@ -179,6 +179,32 @@ func slots() -> Array[Node]:
 	return [sky_backdrop, sky_props, fence_layer, shack_layer, compost_layer, lawn_layer]
 
 
+## GW-AA pass 7: the stage clips per layer instead of as a whole, so the
+## sky props alone can reach over the visible wide-screen side panels while
+## everything else (backdrop and Golden Hour rays, set plates, lawn, units,
+## FX) still clips at the 1280x720 stage edge exactly as before. With no
+## reach (16:9, matte, cover) the sky props clip at the stage edge too.
+func set_sky_reach(stage: Control, left: float, right: float) -> void:
+	if stage.clip_contents:
+		stage.clip_contents = false
+		for child in stage.get_children():
+			if child is Control:
+				(child as Control).clip_contents = true
+	left = maxf(roundf(left), 0.0)
+	right = maxf(roundf(right), 0.0)
+	sky_props.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	sky_props.position = Vector2(-left, 0.0)
+	sky_props.size = Vector2(stage.size.x + left + right, stage.size.y)
+	for child in sky_props.get_children():
+		if child is Control:
+			(child as Control).position = Vector2(left, 0.0)
+
+
+## The sky props' clip rect in stage pixels (tests).
+func sky_reach_rect() -> Rect2:
+	return Rect2(sky_props.position, sky_props.size)
+
+
 func _holder(slot_name: String) -> Control:
 	var holder := Control.new()
 	holder.name = slot_name

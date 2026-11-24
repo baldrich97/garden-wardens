@@ -278,6 +278,8 @@ static func all_paths() -> Array[String]:
 	keys.append(GOLDEN_HOUR_KEY)
 	for key in keys:
 		var names: Array[String] = [SKY_BACKDROP_NAME, "stage_fence_lights.png"]
+		for side in SIDE_NAMES:
+			names.append(side + ".png")
 		for slot in PLATE_SLOTS:
 			names.append("stage_%s.png" % slot)
 		for file in names:

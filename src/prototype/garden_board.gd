@@ -901,6 +901,7 @@ func _build_sky() -> void:
 	_sky_layer.name = "SkyLayer"
 	_layers.sky_props.add_child(_sky_layer)
 	_layout_sky()
+	_refresh_sky_reach()
 
 
 ## The sky band in stage pixels: clouds and the sun stay in the open sky
@@ -1900,10 +1901,16 @@ func _build_matte() -> void:
 		_matte.add_child(rect)
 
 
-## Optional wide-screen side extensions (GW-AA pass 5): the look's
-## side_left.png / side_right.png, anchored to the stage's left and right
-## edges and scaled with it, over the matte. A look without them (every look
-## until Asset Gen paints them) shows the clean matte.
+## Wide-screen side extensions (slots from GW-AA pass 5, art from Asset
+## Gen's batch3_v2 in pass 7): the look's side_left.png / side_right.png
+## (960x720 each), anchored to the stage's left and right edges and scaled
+## with it, over the matte. A window wider than 16:9 shows as much of each
+## panel as fits (the inner crop happens at the window edge); past 960 stage
+## px per side the matte shows beyond the panel. A taller-than-16:9 window
+## fits the stage by width, so there is no side room and the matte fills the
+## space below. Cover framing and looks without side art show the matte.
+## The sky props reach over the visible part of the panels so clouds drift
+## across the painted side skies instead of popping at the stage edge.
 func _refresh_side_plates() -> void:
 	if _stage == null or _matte == null:
 		return
@@ -1931,6 +1938,34 @@ func _refresh_side_plates() -> void:
 		rect.size = Vector2(w, h)
 		var x := _stage.position.x - w if i == 0 else _stage.position.x + LawnGeometry.REF_SIZE.x * s
 		rect.position = Vector2(x, _stage.position.y)
+	_refresh_sky_reach()
+
+
+## How many stage pixels of each side panel are on screen (left, right).
+func side_reach() -> Vector2:
+	var reach := Vector2.ZERO
+	if _stage == null:
+		return reach
+	var s := maxf(_stage.scale.x, 0.0001)
+	for i in _side_plates.size():
+		var rect := _side_plates[i]
+		if not rect.visible or rect.texture == null:
+			continue
+		var panel := rect.size.x / s
+		if i == 0:
+			reach.x = clampf(_stage.position.x / s, 0.0, panel)
+		else:
+			reach.y = clampf((size.x - _stage.position.x) / s - LawnGeometry.REF_SIZE.x, 0.0, panel)
+	return Vector2(ceilf(reach.x), ceilf(reach.y))
+
+
+func _refresh_sky_reach() -> void:
+	if _layers == null or _layers.sky_props == null:
+		return
+	var reach := side_reach()
+	_layers.set_sky_reach(_stage, reach.x, reach.y)
+	if _sky_layer != null:
+		_sky_layer.set_drift_reach(reach.x, reach.y)
 
 
 ## The side extension nodes (left, right), for tests and captures.

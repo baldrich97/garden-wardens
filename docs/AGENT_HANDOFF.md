@@ -336,7 +336,7 @@ below; all are presentation only (combat_probe identical 5/5 to the p3fix refere
   the two `tools/art/` patch scripts are deleted. See `docs/ASSET_SOURCES.md` ("Pass 6b"),
   which also answers Asset Gen's streak and sunflower-ghost questions (neither visible in
   game).
-- Not wired: `batch3/` (rejected by Asset Gen; wait for `batch3_v2/`).
+- Not wired: `batch3/` (rejected by Asset Gen); `batch3_v2/` landed in pass 7.
 - New checks:
   - rules: every look uses its own 1280x720 sky untinted, Golden Hour has its own sky,
     and a missing sky falls back to the tinted Dusk art; 18 lavender clouds (not leaking
@@ -345,6 +345,27 @@ below; all are presentation only (combat_probe identical 5/5 to the p3fix refere
     the compost eyes fixed; Moonlit stars are sprites and its felt is darker than
     Twilight's; Golden Hour draws its own sky, keeps the sun and rays, has no foreground
     layer, and shows its own untinted plates.
+
+### GW-AA pass 7 (2026-11-24): Asset Gen batch3_v2 wide-screen side panels
+
+- All six looks ship `stage/<mood key>/side_left.png` / `side_right.png` (960x720, from
+  `stage_kit/batch3_v2/`, sha256 verified; `batch3/` not used). `_refresh_side_plates`
+  locks them to the stage edges at the stage's scale; the window edge crops them, the
+  matte shows past 960 stage px per side and on taller-than-16:9 windows, and cover
+  framing hides them. `BackdropCatalog.all_paths` lists them, so startup preload and
+  warmup cover them.
+- Clouds over the sides: the stage no longer clips as a whole. `StageLayers.set_sky_reach`
+  turns `clip_contents` on for every stage layer (same rect as before) and widens only the
+  SkyProps clip to the visible side reach (`GardenBoard.side_reach()`), and
+  `SkyLayer.set_drift_reach` moves the cloud/rain-cloud wrap points to the window edges.
+  With no side room both are zero, so 16:9 behaves exactly as before. The sky/ground
+  splits were not wired (their split is under the side fence).
+- Combat untouched: presentation-only changes (5/5 combat hash 7C845246B4A8).
+- Seam report (nits 1-4, the shack/compost cut at the stage edges, Moonlit tone) is in
+  `docs/ASSET_SOURCES.md` ("Pass 7").
+- New checks (smoke): every look's two panels are 960x720 and locked to the stage edges;
+  a look whose side art goes away falls back to the matte; every stage layer clips; the
+  SkyProps clip and the cloud wrap match the visible side reach.
 
 ## Verification playbook
 
