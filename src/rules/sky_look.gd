@@ -16,11 +16,17 @@ const MOOD_OVERCAST := 2
 ## per-match sun.
 const MOOD_MAIN := 0
 const MOOD_SUNNY := 1
+## Dusk Twilight (the old Dusk): soft lavender puffy clouds and the moon.
 const MOOD_DUSK := 3
+## Dusk Moonlit (GW-AA pass 5): a clear night sky, the moon, a few stars and
+## no clouds. A cycle stop only; the seed never opens on it.
+const MOOD_DUSK_MOONLIT := 4
 ## The composed Golden Hour look (the backdrop cycle's last stop). Not a
 ## BackdropCatalog index; the sky treats it as its own mood.
-const MOOD_GOLDEN_HOUR := 4
-const BAKED_CELESTIAL_MOODS: Array[int] = [MOOD_SUNNY, MOOD_DUSK, MOOD_GOLDEN_HOUR]
+const MOOD_GOLDEN_HOUR := 5
+const BAKED_CELESTIAL_MOODS: Array[int] = [MOOD_SUNNY, MOOD_DUSK, MOOD_DUSK_MOONLIT, MOOD_GOLDEN_HOUR]
+## Moods that hang the paper moon (cut from the Dusk art) as a sky prop.
+const MOON_MOODS: Array[int] = [MOOD_DUSK, MOOD_DUSK_MOONLIT]
 
 ## Mood-exclusive clouds (GW-AA pass 4). Each mood draws one cloud family:
 ## Main, Sunny, Dusk and Golden Hour the white puffy cotton set, Overcast the
@@ -29,8 +35,8 @@ const BAKED_CELESTIAL_MOODS: Array[int] = [MOOD_SUNNY, MOOD_DUSK, MOOD_GOLDEN_HO
 ## Flip this one constant to switch; Brandon's pick is still open.
 const GOLDEN_HOUR_CLOUDS := "tinted"
 const GOLDEN_HOUR_CLOUD_TINT := Color(1.0, 0.84, 0.66)
-## Dusk's puffy clouds: a subtle lavender/slate tint, never orange.
-const DUSK_CLOUD_TINT := Color(0.78, 0.76, 0.9)
+## Dusk Twilight's puffy clouds: soft lavender, never orange.
+const DUSK_CLOUD_TINT := Color(0.86, 0.78, 1.0)
 
 ## Clouds per match, and their size classes (0 small, 1 medium, 2 large).
 const CLOUD_MIN := 3
@@ -104,9 +110,20 @@ static func rain_cloud_x_frac(seed_value: int) -> float:
 static func cloud_family(mood_index: int) -> String:
 	if mood_index == MOOD_OVERCAST:
 		return SkyCatalog.FAMILY_FELT
-	if mood_index == MOOD_GOLDEN_HOUR and GOLDEN_HOUR_CLOUDS == "none":
+	if mood_index == MOOD_DUSK_MOONLIT:
 		return ""
+	if mood_index == MOOD_GOLDEN_HOUR:
+		if GOLDEN_HOUR_CLOUDS == "none":
+			return ""
+		# Asset Gen's puffy sunset clouds take over as soon as they land.
+		if SkyCatalog.has_sunset():
+			return SkyCatalog.FAMILY_SUNSET
 	return SkyCatalog.FAMILY_COTTON
+
+
+## Whether a mood hangs the paper moon.
+static func mood_shows_moon(mood_index: int) -> bool:
+	return MOON_MOODS.has(mood_index)
 
 
 ## The tint a mood lays over its clouds (white = untinted).
@@ -115,7 +132,8 @@ static func cloud_tint(mood_index: int) -> Color:
 		MOOD_DUSK:
 			return DUSK_CLOUD_TINT
 		MOOD_GOLDEN_HOUR:
-			return GOLDEN_HOUR_CLOUD_TINT
+			# Painted sunset clouds already carry their colour.
+			return Color.WHITE if cloud_family(mood_index) == SkyCatalog.FAMILY_SUNSET else GOLDEN_HOUR_CLOUD_TINT
 		_:
 			return Color.WHITE
 

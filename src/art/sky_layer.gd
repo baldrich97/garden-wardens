@@ -11,6 +11,19 @@ extends Control
 ## Main's paper sun (GW-AA pass 4): the big layered Golden Hour sun, centred
 ## this far below the band's top, with its soft paper shadow nudged down-right.
 const SUN_TARGET_H := 116.0
+## The paper moon on both Dusk looks: height, where it hangs (share of the
+## band's width, px below the band's top), and a slow sway.
+const MOON_TARGET_H := 104.0
+const MOON_X_FRAC := 0.27
+const MOON_TOP := 10.0
+const MOON_BOB_PX := 2.5
+const MOON_BOB_PERIOD := 7.5
+## Dusk Moonlit's stars: how many, the band share they fill, size, twinkle.
+const STAR_COUNT := 24
+const STAR_BAND_SHARE := 0.62
+const STAR_SIZE_MIN := 1.6
+const STAR_SIZE_MAX := 3.4
+const STAR_COLOR := Color(1.0, 0.96, 0.8)
 const SUN_CENTER_DROP := 40.0
 const SUN_SHADOW_OFFSET := Vector2(7.0, 9.0)
 ## The rain cloud's body is sized like a large drifting cloud (same family);
@@ -70,6 +83,11 @@ var _rain_stick: TextureRect
 
 var _sun: TextureRect
 var _sun_shadow: TextureRect
+var _moon: TextureRect
+var _moon_rest := Vector2.ZERO
+var _stars: Node2D
+var _star_points: Array[Vector3] = []
+var _star_phase: Array[float] = []
 var _family := ""
 var _tint := Color.WHITE
 var _rain_cloud_path := ""
@@ -95,6 +113,15 @@ func _init() -> void:
 	add_child(_sun_shadow)
 	_sun = _make_sprite()
 	add_child(_sun)
+	_moon = _make_sprite()
+	_moon.name = "Moon"
+	add_child(_moon)
+	_stars = Node2D.new()
+	_stars.name = "Stars"
+	_stars.visible = false
+	_stars.draw.connect(_draw_stars)
+	add_child(_stars)
+	move_child(_stars, 0)
 	for _i in SkyLook.CLOUD_MAX:
 		var cloud := _make_sprite()
 		add_child(cloud)
@@ -186,6 +213,11 @@ func tick(delta: float) -> void:
 		if _drift_x[i] + cloud.size.x < _band.position.x:
 			_drift_x[i] = _band.end.x
 		_pose_cloud(i)
+	if _moon.visible:
+		_moon.position = _moon_rest + Vector2(0.0, MOON_BOB_PX * sin(TAU * _time / MOON_BOB_PERIOD))
+		_moon.rotation = deg_to_rad(1.2) * sin(TAU * _time / (MOON_BOB_PERIOD * 1.4))
+	if _stars.visible:
+		_stars.queue_redraw()
 	if _sun.visible:
 		_sun.position = _sun_rest + Vector2(0.0, SUN_BOB_PX * sin(TAU * _time / SUN_BOB_PERIOD))
 		_sun.rotation = deg_to_rad(SUN_TILT_DEG) * sin(TAU * _time / SUN_TILT_PERIOD)
@@ -316,6 +348,48 @@ func sun_has_shadow() -> bool:
 	return _sun.visible and _sun_shadow.visible and _sun_shadow.texture != null
 
 
+## The moon's on-screen height (0 when hidden).
+func moon_height() -> float:
+	return _moon.size.y if _moon.visible else 0.0
+
+
+## How many stars twinkle (Dusk Moonlit only).
+func star_count() -> int:
+	return _star_points.size() if _stars.visible else 0
+
+
+## Scatters Moonlit's stars from a local generator (never the match seed's
+## channels: the sky must not shift any rule roll).
+func _layout_stars() -> void:
+	_star_points.clear()
+	_star_phase.clear()
+	_stars.visible = _mood == SkyLook.MOOD_DUSK_MOONLIT
+	if not _stars.visible:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("stars_%d" % _seed)
+	for _i in STAR_COUNT:
+		var x := _band.position.x + rng.randf() * _band.size.x
+		var y := _band.position.y + rng.randf() * _band.size.y * STAR_BAND_SHARE
+		_star_points.append(Vector3(x, y, rng.randf_range(STAR_SIZE_MIN, STAR_SIZE_MAX)))
+		_star_phase.append(rng.randf() * TAU)
+	_stars.queue_redraw()
+
+
+func _draw_stars() -> void:
+	for i in _star_points.size():
+		var p := _star_points[i]
+		var twinkle := 0.55 + 0.45 * sin(_time * 1.7 + _star_phase[i])
+		var c := Color(STAR_COLOR, twinkle)
+		var r := p.z
+		var at := Vector2(p.x, p.y)
+		# A little four-point paper star.
+		_stars.draw_colored_polygon(PackedVector2Array([
+			at + Vector2(0, -r * 1.6), at + Vector2(r * 0.4, -r * 0.4), at + Vector2(r * 1.6, 0), at + Vector2(r * 0.4, r * 0.4),
+			at + Vector2(0, r * 1.6), at + Vector2(-r * 0.4, r * 0.4), at + Vector2(-r * 1.6, 0), at + Vector2(-r * 0.4, -r * 0.4),
+		]), c)
+
+
 ## Whether rain is active for the current mood.
 func raining() -> bool:
 	return _rain
@@ -410,6 +484,15 @@ func _layout() -> void:
 		else:
 			_sun.visible = false
 			_sun_shadow.visible = false
+	# The paper moon hangs on both Dusk looks; Moonlit adds a few stars.
+	if SkyLook.mood_shows_moon(_mood) and _fit(_moon, SkyCatalog.MOON, MOON_TARGET_H):
+		_moon_rest = Vector2(_band.position.x + _band.size.x * MOON_X_FRAC - _moon.size.x * 0.5, _band.position.y + MOON_TOP)
+		_moon.position = _moon_rest
+		_moon.pivot_offset = _moon.size * 0.5
+		_moon.visible = true
+	else:
+		_moon.visible = false
+	_layout_stars()
 	# Clouds: mixed sizes drifting across the band. The cloud body hangs in
 	# the band; its stick rises out of the body and always runs past the top
 	# of the screen (behind the top bar), like a prop held from above.

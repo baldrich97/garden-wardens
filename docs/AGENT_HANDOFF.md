@@ -265,6 +265,57 @@ mood art, duplicate porch/compost ends, soil look on felt, unwired fx/water sets
   `tests/probes/startup_probe.gd` (timings above; fails if the preload does not finish
   in 20 s or the warmup draws < 1,000 textures).
 
+### GW-AA pass 5 (2026-11-24): packet cards, sticker placement, Dusk pair, tiles, roster
+
+Brandon's playtest of `0460cdc` ("massive improvements overall") asked for the items
+below; all are presentation only (combat_probe identical 5/5 to the p3fix reference).
+- **Packet cards** (`src/ui/warden_card.gd/.tscn`): the seed-packet art fills the card
+  (aspect 325:412; 84x106 compact, 124x157 large); the name sits on the top lip
+  (`LIP_RECT`), the cost on the packet's blank water tag (`TAG_RECT`), both shrunk to
+  fit. On cooldown the tag shows seconds left (`%.1fs`) and a dim sweep covers the
+  remaining share from the top. Selected = gold outline; unaffordable = dimmed + clay cost.
+- **Tooltip** (`src/ui/game_tooltip.gd`): grace `GRACE` 0.45 s, fill `CHARGE` 1.2 s;
+  no ring/tip while a card is pressed or dragged or a Warden is selected
+  (`suppress_provider` = `GardenBoard._tip_suppressed`).
+- **Sticker placement** (`paper_pop.gd` + `src/prototype/sticker_decal.gd`), 1.54 s:
+  DESCEND 0.30 (full-size flat decal drops in) -> CURL 0.60 (pressed down bottom to top,
+  a curl drawn as 32 lit strips, not a scale) -> FLAT 0.12 -> SINK 0.22 (darkens and
+  sinks into the tile) -> POP 0.30 (alive, 0.12 -> 1.12 -> 1.00) with **confetti**
+  (`src/prototype/confetti_burst.gd`, 18 pieces drawn from the 12 cut shapes, local RNG) instead of
+  the old `PlacePuff`. The hand-cursor hook is unchanged (`_refresh_cursor`, drive a
+  press frame off `WardenActor.placement_phase()` during CURL).
+- **Vermin entrance**: the flier "stick" came from the bee/fly spawn clips (hung on a
+  string); the entrance now shows the idle clip. SLIDE 1.6 s (smoothstep) -> FLIP 0.9 s
+  -> SETTLE 0.3 s (0.97 dip). The SPAWN pose waits `entrance_time()`.
+- **Bees** (`vermin_actor.gd` glide, `garden_board._apply_bee_step`): each step is an
+  eased 0.75 s glide with an arc (0.32 cell forward, 0.14 for lane changes), bank 0.2
+  rad, pitch 0.24 rad up/down and faster wings while gliding; display only (the rules
+  position still jumps on the tick).
+- **Dusk Twilight + Dusk Moonlit** in the look cycle (seeded pick still the first four):
+  both use the lifted Dusk backdrop, Asset Gen's Dusk fence plate + additive string
+  lights with a shimmer, and my Dusk shack cut; Twilight keeps lavender cotton, Moonlit
+  is clear night (moon prop + 24 stars, night tint). Golden Hour uses the sunset cotton
+  family.
+- **Per-mood slots** (`BackdropCatalog.plate_for/side_plate/texture_at`): plates,
+  fence lights, `sky_backdrop.png` and `side_left/right.png` per mood folder with a
+  fallback (`dusk/` for both Dusks), then the shared plate. Clean matte stays the
+  default (now with Asset Gen's matte paper tile). Full contract and exact file names
+  in `docs/ASSET_SOURCES.md` ("Pass 5 slots and files").
+- **Board tiles**: sand/stone columns use `felt_<sand|stone>_<light|dark>.png` mapped per
+  cell through the perspective (`LawnView._map_tile`, light = even col+row, verified
+  against the felt in a capture). The flat lawn tiles were compared and not used.
+- **Roster**: "This wave" shows Asset Gen's paper-cutout portraits
+  (`src/art/roster_portraits.gd`, slot `ui/roster/roster_<vermin>.png`, falls back to
+  the idle frame), with a gentle bob. Subtle lawn-ground decor (8 props) beside the felt.
+- Tools: `tools/art/cut_confetti.py`, `tools/art/cut_dusk_stage.py`. Captures tool
+  (gitignored): `build/agent_audit/pass5_capture.gd --mode warden|vermin|bee|cards`.
+- New checks: rules (sticker order/curl/settle, 5 looks + seeded pick, mood clouds,
+  Moonlit clear + moon/stars, 24 sunset clouds not leaking into cotton, sky_backdrop
+  slot); smoke (sticker phases + confetti, idle entrance, bee glide, cards/roster/tiles/
+  matte/decor, Dusk own fence + lights, injected side plate anchoring, tooltip timing +
+  suppression); input probe step 3 (sticker then place) and step 10 (idle slide, no
+  spawn clip).
+
 ## Verification playbook
 
 Binary: the MAIN exe `tools/godot/Godot_v4.6-stable_win64.exe` for every run,

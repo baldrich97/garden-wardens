@@ -62,6 +62,8 @@ var _entry_t := 0.0
 var _pop_cue := false
 var _pop_cued := false
 var _dew_building := false
+## The flat paper sticker shown before the pop (GW-AA pass 5).
+var _decal: StickerDecal
 
 
 func _init() -> void:
@@ -88,6 +90,9 @@ func setup(p_kind: UnitCatalog.Warden, p_column: int, p_row: int, p_id: int) -> 
 	_shadow = RailStand.make_shadow()
 	add_child(_shadow)
 	add_child(_clip)
+	_decal = StickerDecal.new()
+	_decal.name = "StickerDecal"
+	add_child(_decal)
 	if kind == UnitCatalog.Warden.NEEDLE and not _legacy:
 		# The spit's smoke ships as a per-frame overlay on the action canvas.
 		_clip.set_overlay("action", FxArt.needle_smoke())
@@ -118,8 +123,11 @@ func setup(p_kind: UnitCatalog.Warden, p_column: int, p_row: int, p_id: int) -> 
 		_label.z_index = 2
 		_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_child(_label)
-	_start_pose(Pose.PLACE)
+	# The live clip waits under the sticker; the place clip plays once the
+	# Warden pops up out of the tile (see _advance_entry).
+	_start_pose(Pose.IDLE)
 	_show_pose()
+	_apply_entry()
 
 
 ## Returns "shot", "lob", "water", or "" for what happened this step.
@@ -201,19 +209,61 @@ func _advance_entry(delta: float) -> void:
 	if _entry_t >= PaperPop.placement_time():
 		return
 	_entry_t += delta
-	if not _pop_cued and _entry_t >= PaperPop.PRESS_TIME:
+	if not _pop_cued and _entry_t >= PaperPop.pop_start():
 		_pop_cued = true
 		_pop_cue = true
+		if not _dying and _pose != Pose.HURT and _pose != Pose.ACTION:
+			_start_pose(Pose.PLACE)
+			_show_pose()
 	_apply_entry()
 
 
-## Squashes the clip about the feet for the press-and-pop beat.
+## The sticker beat: before the pop the flat paper decal shows (the live clip
+## hidden); from the pop the live clip squashes and overshoots about the feet.
 func _apply_entry() -> void:
 	if _clip == null:
 		return
 	var beat := PaperPop.placement(_entry_t)
 	var pivot := _foot if _foot.is_finite() else Vector2(size.x * 0.5, size.y)
+	var decal := bool(beat["decal"]) and not _dying and _configure_decal(pivot)
+	if _decal != null:
+		_decal.visible = decal
+		_decal.set_beat(beat if decal else {})
+	_clip.visible = not decal
+	if _shadow != null:
+		_shadow.visible = not decal
 	_clip.transform = PaperPop.pivot_transform(beat["scale"], 0.0, pivot, Vector2.ZERO)
+
+
+## Points the decal at the idle frame, laid out exactly where the live clip
+## draws it. False when there is no frame to show (legacy clips).
+func _configure_decal(pivot: Vector2) -> bool:
+	if _decal == null or _legacy or size.x <= 1.0:
+		return false
+	var clip_name := _clip_name("idle")
+	if clip_name.is_empty():
+		return false
+	var texture := _frames.get_frame_texture(clip_name, 0)
+	if texture == null:
+		return false
+	var canvas := AnimLibrary.canvas_px(_folder)
+	var ground := AnimLibrary.ground_point_px(_folder)
+	if not canvas.is_finite() or canvas.y <= 1.0:
+		canvas = texture.get_size()
+	if not ground.is_finite():
+		ground = Vector2(canvas.x * 0.5, canvas.y)
+	var fitted := minf(size.x / canvas.x, size.y / canvas.y)
+	_decal.configure(texture, ground * texture.get_size() / canvas, pivot, fitted * canvas.x / texture.get_size().x)
+	return true
+
+
+## Whether the flat sticker is showing right now (before the pop).
+func sticker_showing() -> bool:
+	return _decal != null and _decal.visible
+
+
+func sticker() -> StickerDecal:
+	return _decal
 
 
 ## Starts the produce clip early, at the fill frame that lands the leaf's tip
@@ -281,6 +331,9 @@ func die() -> void:
 		return
 	_dying = true
 	_dew_building = false
+	# A Warden killed mid-sticker skips straight to its live clip.
+	_entry_t = PaperPop.placement_time()
+	_apply_entry()
 	_pose = Pose.DEATH
 	_bar.visible = false
 	_bar_back.visible = false

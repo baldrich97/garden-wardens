@@ -80,6 +80,7 @@ static var forced_layout := ""
 ## the width and crops the bottom instead. Flip FRAMING_DEFAULT, or pass
 ## --framing cover / --framing matte. Vertical (side bar) layout always mattes.
 enum Framing { MATTE, COVER }
+const MATTE_PAPER_TILE := "res://assets/art/ui/matte/matte_paper_tile.png"
 const FRAMING_DEFAULT := Framing.MATTE
 const MATTE_COLOR := Color(0.09, 0.16, 0.1)
 static var framing := FRAMING_DEFAULT
@@ -133,6 +134,8 @@ var _roster: WaveRoster
 var _play_shot := ""
 var _fall_shot := ""
 var _backdrop := 0
+var _side_plates: Array[TextureRect] = []
+var _side_look := 0
 var _match_seed: MatchSeed
 var _seed_label: Label
 var _layout_mode := ""
@@ -318,11 +321,12 @@ func _emit_place_puffs() -> void:
 		if not warden.consume_pop_cue():
 			continue
 		var cell := _lawn.geometry.rail_cell_width(float(warden.row))
-		var poof := PoofActor.new()
-		poof.name = "PlacePuff"
-		_lawn.add_child(poof)
-		poof.z_index = LawnGeometry.z_for_row(warden.row) + 3
-		poof.play_at(_lawn.geometry.rail_point(float(warden.column) + 0.5, float(warden.row)) - Vector2(0.0, cell * 0.12), cell * 0.8)
+		# GW-AA pass 5: a celebration, not the death poof.
+		var burst := ConfettiBurst.new()
+		burst.name = "PlaceConfetti"
+		_lawn.add_child(burst)
+		burst.z_index = LawnGeometry.z_for_row(warden.row) + 3
+		burst.burst_at(_lawn.geometry.rail_point(float(warden.column) + 0.5, float(warden.row)) - Vector2(0.0, cell * 0.18), cell, warden.grid_id)
 
 
 ## Plants the level's pre-set Wardens (LevelDef.pre_placed) for free, before
@@ -560,6 +564,8 @@ func _tick_bee(vermin: VerminActor, delta: float) -> void:
 
 
 func _apply_bee_step(vermin: VerminActor, step: Vector2i) -> void:
+	var from_column := vermin.column_pos
+	var from_row := vermin.row
 	if step.x < 0:
 		vermin.bee_since_forward = 0
 		vermin.bee_since_backward += 1
@@ -578,6 +584,8 @@ func _apply_bee_step(vermin: VerminActor, step: Vector2i) -> void:
 		# In-place rise (up) / drop (down) clip while the lane change happens.
 		vermin.start_lane_change(step.y < 0)
 	vermin.column_pos = float(vermin.bee_column) + 0.5
+	# Visual only (GW-AA pass 5): the drawing glides there along an arc.
+	vermin.begin_glide(from_column, from_row, step)
 
 
 ## Lays a slime puddle behind the snail once it has scooted TRAIL_SPACING
@@ -817,8 +825,9 @@ func _layout_actors() -> void:
 	for warden in _dying_wardens:
 		_stand_unit(warden, float(warden.column) + 0.5, float(warden.row), UNIT_HEIGHT_CELLS, 0.0)
 	for vermin in _vermin:
-		var lift := vermin.hop_lift_tiles * geometry.rail_cell_width(float(vermin.row))
-		_stand_unit(vermin, vermin.column_pos, float(vermin.row), UNIT_HEIGHT_CELLS * VERMIN_SIZE, lift)
+		var drawn_row := vermin.display_row()
+		var lift := (vermin.hop_lift_tiles + vermin.glide_lift_cells()) * geometry.rail_cell_width(drawn_row)
+		_stand_unit(vermin, vermin.display_column(), drawn_row, UNIT_HEIGHT_CELLS * VERMIN_SIZE, lift)
 	for vermin in _dying_vermin:
 		_stand_unit(vermin, vermin.column_pos, float(vermin.row), UNIT_HEIGHT_CELLS * VERMIN_SIZE, 0.0)
 	for shot in _shots:
@@ -1172,6 +1181,10 @@ func _apply_set_light(look: int) -> void:
 	if _layers != null:
 		_layers.apply_look(look)
 	_lawn.set_felt_tint(BackdropCatalog.felt_tint(look))
+	if _background != null:
+		_background.self_modulate = BackdropCatalog.backdrop_tint(look)
+	_side_look = look
+	_refresh_side_plates()
 
 
 ## The value this match's look was picked from. Shown on the debug label.
@@ -1466,6 +1479,7 @@ func _nudge_aim(column_step: int, row_step: int) -> void:
 func _build_hud_extras() -> void:
 	_tip = GameTooltip.new()
 	_tip.avoid_provider = _tip_avoid_rects
+	_tip.suppress_provider = _tip_suppressed
 	add_child(_tip)
 	_roster = WaveRoster.new()
 	# The pre-wave panel is a slim strip in the sky's top-right corner, under
@@ -1489,6 +1503,12 @@ func _tip_avoid_rects() -> Array:
 
 
 ## The tooltip, for tests and probes.
+## No tooltip ring while a Warden card is held or dragged, or while a Warden
+## is selected for placement (GW-AA pass 5).
+func _tip_suppressed() -> bool:
+	return _dragging or _press_card >= 0 or _selected >= 0
+
+
 func tooltip() -> GameTooltip:
 	return _tip
 
@@ -1849,6 +1869,7 @@ func _layout_stage() -> void:
 	# shows the matte; cover framing crops the overflow instead. Whole pixels,
 	# so no hairline of the window background shows at the stage's edges.
 	_stage.position = Vector2(roundf(area.position.x + (area.size.x - stage_size.x) * 0.5), roundf(area.position.y))
+	_refresh_side_plates()
 	_place_roster()
 
 
@@ -1865,6 +1886,56 @@ func _build_matte() -> void:
 	_matte.color = MATTE_COLOR
 	_sky_fill.color = MATTE_COLOR
 	_stage.clip_contents = true
+	# GW-AA pass 5: Asset Gen's seamless forest-green paper over the flat
+	# colour (which stays as the fallback and the colour tests check).
+	var paper := BackdropCatalog.optional(MATTE_PAPER_TILE)
+	if paper != null and _matte.get_node_or_null("MattePaper") == null:
+		var rect := TextureRect.new()
+		rect.name = "MattePaper"
+		rect.texture = paper
+		rect.stretch_mode = TextureRect.STRETCH_TILE
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_matte.add_child(rect)
+
+
+## Optional wide-screen side extensions (GW-AA pass 5): the look's
+## side_left.png / side_right.png, anchored to the stage's left and right
+## edges and scaled with it, over the matte. A look without them (every look
+## until Asset Gen paints them) shows the clean matte.
+func _refresh_side_plates() -> void:
+	if _stage == null or _matte == null:
+		return
+	if _side_plates.is_empty():
+		for side in BackdropCatalog.SIDE_NAMES:
+			var rect := TextureRect.new()
+			rect.name = "SideLeft" if side == "side_left" else "SideRight"
+			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			rect.stretch_mode = TextureRect.STRETCH_SCALE
+			add_child(rect)
+			move_child(rect, _matte.get_index() + 1)
+			_side_plates.append(rect)
+	var s := _stage.scale.x
+	for i in _side_plates.size():
+		var rect := _side_plates[i]
+		var texture := BackdropCatalog.side_plate(_side_look, BackdropCatalog.SIDE_NAMES[i])
+		rect.texture = texture
+		rect.visible = texture != null and framing == Framing.MATTE
+		if texture == null:
+			continue
+		# Height matches the stage; width keeps the plate's aspect.
+		var h := LawnGeometry.REF_SIZE.y * s
+		var w := texture.get_width() * h / maxf(texture.get_height(), 1.0)
+		rect.size = Vector2(w, h)
+		var x := _stage.position.x - w if i == 0 else _stage.position.x + LawnGeometry.REF_SIZE.x * s
+		rect.position = Vector2(x, _stage.position.y)
+
+
+## The side extension nodes (left, right), for tests and captures.
+func side_plates() -> Array[TextureRect]:
+	return _side_plates
 
 
 ## The matte colour (tests check the margins against it).

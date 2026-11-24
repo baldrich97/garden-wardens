@@ -57,7 +57,7 @@ func _run() -> void:
 		for _i in 30:
 			await process_frame
 	t = Time.get_ticks_usec()
-	board.use_backdrop(BackdropCatalog.NAMES.find("Dusk"))
+	board.use_backdrop(BackdropCatalog.NAMES.find("Dusk Twilight"))
 	await RenderingServer.frame_post_draw
 	_out["first_look_switch"] = _ms(t)
 	t = Time.get_ticks_usec()

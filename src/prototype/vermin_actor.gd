@@ -16,7 +16,6 @@ extends Control
 ## Longest the death pose may hold before the poof takes over.
 const DEATH_CAP := 2.5
 ## Longest the lane-entrance clip may hold before the walk takes over.
-const SPAWN_CAP := 2.5
 ## Shortest a stride shows after a Bee hops a tile, so the walk clip reads
 ## before the hover idle comes back between steps.
 const STEP_HOLD := 0.6
@@ -62,6 +61,20 @@ var _dying := false
 var _flutter_base := FlutterHop.PHASE_AIR
 ## Entrance beat (PaperPop): seconds since spawning. Visual only.
 var _entry_t := 0.0
+## Bee glide between tiles (GW-AA pass 5), visual only: the rules still move
+## the bee a whole tile at a time; the drawing eases there along an arc.
+const GLIDE_TIME := 0.75
+## Arc height mid-glide (rail cells), for a sideways hop and a lane change.
+const GLIDE_ARC := 0.32
+const GLIDE_ARC_LANE := 0.14
+## Bank into a sideways glide, pitch for a rise or dive (radians), and the
+## wing speed-up at the middle of a glide.
+const GLIDE_BANK := 0.2
+const GLIDE_PITCH := 0.24
+const GLIDE_WINGS := 0.9
+var _glide_t := INF
+var _glide_from := Vector2.ZERO
+var _glide_step := Vector2i.ZERO
 
 
 func _init() -> void:
@@ -127,7 +140,74 @@ func tick(delta: float, mode: Mode) -> void:
 	if _entry_t < PaperPop.entrance_time():
 		_entry_t += delta
 		_apply_entry()
+	if _glide_t < GLIDE_TIME:
+		_glide_t += delta
+		_apply_entry()
 	_clip.tick(delta, size)
+
+
+## Starts a glide from the tile the rules just left ([param from_column],
+## [param from_row]) along [param step] (BeePath: x -1 forward, +1 back,
+## y -1 up a lane, +1 down a lane). Visual only.
+func begin_glide(from_column: float, from_row: int, step: Vector2i) -> void:
+	_glide_from = Vector2(from_column, float(from_row))
+	_glide_step = step
+	_glide_t = 0.0
+
+
+## Glide progress 0..1 (1 when not gliding).
+func glide_progress() -> float:
+	if _glide_t >= GLIDE_TIME:
+		return 1.0
+	return clampf(_glide_t / GLIDE_TIME, 0.0, 1.0)
+
+
+func is_gliding() -> bool:
+	return _glide_t < GLIDE_TIME
+
+
+## Eased glide share: slow off, quick through the middle, soft landing.
+func _glide_ease() -> float:
+	var k := glide_progress()
+	return k * k * (3.0 - 2.0 * k)
+
+
+## Where the board draws this vermin along its rail (cells); a gliding bee
+## is between its old and new tile, everything else is at column_pos.
+func display_column() -> float:
+	if not is_gliding():
+		return column_pos
+	return lerpf(_glide_from.x, column_pos, _glide_ease())
+
+
+func display_row() -> float:
+	if not is_gliding():
+		return float(row)
+	return lerpf(_glide_from.y, float(row), _glide_ease())
+
+
+## Extra lift for the glide's arc, in rail cells.
+func glide_lift_cells() -> float:
+	if not is_gliding():
+		return 0.0
+	var arc := GLIDE_ARC if _glide_step.y == 0 else GLIDE_ARC_LANE
+	return arc * sin(PI * glide_progress())
+
+
+## The bank/pitch the glide adds to the clip right now (radians; positive is
+## clockwise). The bee faces left: a forward glide banks into the turn, a
+## backward one leans back; rising tips the nose up, diving tips it down.
+func glide_tilt() -> float:
+	if not is_gliding():
+		return 0.0
+	var env := sin(PI * glide_progress())
+	if _glide_step.y < 0:
+		return GLIDE_PITCH * env
+	if _glide_step.y > 0:
+		return -GLIDE_PITCH * env
+	if _glide_step.x < 0:
+		return -GLIDE_BANK * env
+	return GLIDE_BANK * 0.7 * env
 
 
 ## The entrance beat's phase right now (PaperPop.Phase).
@@ -166,13 +246,34 @@ func _apply_entry() -> void:
 	var beat := PaperPop.entrance(_entry_t)
 	var cell := _rail_cell if _rail_cell > 0.0 else size.x
 	var offset := Vector2(float(beat["offset_cells"]) * cell, 0.0)
-	_clip.transform = PaperPop.pivot_transform(beat["scale"], float(beat["skew"]), _entry_pivot(), offset)
+	var xf := PaperPop.pivot_transform(beat["scale"], float(beat["skew"]), _entry_pivot(), offset)
+	var tilt := glide_tilt()
+	if tilt != 0.0:
+		var center := _glide_pivot()
+		var turn := Transform2D(tilt, Vector2.ZERO)
+		turn.origin = center - turn.basis_xform(center)
+		xf = turn * xf
+	_clip.transform = xf
+	var wings := _clip.sprite()
+	if wings != null:
+		wings.speed_scale = 1.0 + GLIDE_WINGS * sin(PI * glide_progress()) if is_gliding() else 1.0
 	if _shadow != null and _foot.is_finite():
 		var flat := 1.0 - clampf((float(beat["scale"].y) - PaperPop.FLAT_SCALE) / (1.0 - PaperPop.FLAT_SCALE), 0.0, 1.0)
 		var w := _shadow.size.x
 		_shadow.scale = Vector2(1.0 + 0.35 * flat, 1.0)
 		_shadow.pivot_offset = Vector2(w * 0.5, _shadow.size.y * 0.5)
 		_shadow.position.x = _foot.x - w * 0.5 + offset.x
+
+
+## The glide turns the bee about its body, not its feet.
+func _glide_pivot() -> Vector2:
+	if _folder.is_empty():
+		return size * 0.5
+	var body := AnimLibrary.body_center_px(_folder)
+	var canvas := AnimLibrary.canvas_px(_folder)
+	if not body.is_finite() or not canvas.is_finite() or canvas.x <= 1.0:
+		return size * 0.5
+	return body * (size / canvas)
 
 
 func play(anim_name: String) -> void:
@@ -391,7 +492,7 @@ func _start_pose(next: Pose) -> void:
 	var clip_name := _clip_name(_pose_base(next))
 	match next:
 		Pose.SPAWN:
-			_pose_wait = minf(_hold_for(clip_name, 0.8), SPAWN_CAP)
+			_pose_wait = PaperPop.entrance_time()
 		Pose.HURT:
 			_pose_wait = _hold_for(clip_name, 0.5)
 		Pose.RISE, Pose.DROP:
@@ -413,7 +514,10 @@ func _pose_base(pose: Pose) -> String:
 		Pose.MOVE:
 			return "move"
 		Pose.SPAWN:
-			return "spawn"
+			# GW-AA pass 5: the entrance shows the idle frame. The authored
+			# spawn clips hang the fliers from a string and stand the ground
+			# bugs up themselves; PaperPop's slide and flip do that now.
+			return "idle"
 		Pose.ACTION:
 			return "action"
 		Pose.HURT:

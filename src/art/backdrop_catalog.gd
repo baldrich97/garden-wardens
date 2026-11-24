@@ -18,18 +18,34 @@ const NAMES: Array[String] = [
 	"Main",
 	"Sunny",
 	"Overcast",
-	"Dusk",
+	"Dusk Twilight",
+	"Dusk Moonlit",
 ]
+## Folder key per look under stage/ and stage/<key>/ (GW-AA pass 5), index
+## aligned with NAMES; Golden Hour's is GOLDEN_HOUR_KEY.
+const MOOD_KEYS: Array[String] = ["main", "sunny", "overcast", "dusk_twilight", "dusk_moonlit"]
+const GOLDEN_HOUR_KEY := "golden_hour"
+## Extra folders a look also reads plates from, after its own: both Dusks
+## share the plates cut from the Dusk art (stage/dusk/).
+const MOOD_FALLBACK_DIRS := {"dusk_twilight": ["dusk"], "dusk_moonlit": ["dusk"]}
+## How many looks the match seed picks from. The seeded pick stays on the
+## first four (Main, Sunny, Overcast, Dusk Twilight) so a seed opens on the
+## same look as before pass 5 (and Overcast's rain, and so the water drops
+## and the combat hash, never change); Dusk Moonlit is a cycle stop.
+const SEEDED_LOOKS := 4
 
 ## The sky_backdrop slot per look. Main uses the sun-free copy Asset Gen made
-## for the per-match sun (SkyLayer paints the sun); the moods keep their own
-## painted sun or moon. Each mood's own painted fence and porch sit lower in
-## its frame and end up hidden behind the shared set plates.
+## for the per-match sun (SkyLayer paints the sun); Sunny keeps its painted
+## sun. Sunny's and Overcast's own fence and porch sit lower in their frame
+## and end up hidden behind the shared set plates. Both Dusks use the Dusk
+## art lifted so its string-light fence stands on the fence line, with the
+## moon cut out into a sky prop (tools/art/cut_dusk_stage.py).
 const PATHS: Array[String] = [
 	"res://assets/art/environment/backdrops/main_noclouds_nosun.png",
 	"res://assets/art/environment/backdrops/mood_1_sunny_noclouds.png",
 	"res://assets/art/environment/backdrops/mood_3_overcast_noclouds.png",
-	"res://assets/art/environment/backdrops/mood_4_dusk_noclouds.png",
+	"res://assets/art/environment/backdrops/mood_4_dusk_stage.png",
+	"res://assets/art/environment/backdrops/mood_4_dusk_stage.png",
 ]
 
 ## Shared set plates: exact cut-outs of the Main backdrop (made by
@@ -50,30 +66,61 @@ const COMPOST_EYES := {
 	"hollow": Vector2(1177.0, 334.5),
 }
 
+## Per-mood set plates (GW-AA pass 5): stage/<mood key>/stage_<slot>.png,
+## then each MOOD_FALLBACK_DIRS folder, then the shared stage/stage_<slot>.png.
+## A per-mood plate is either the shared plate's size (drawn at the shared
+## offset) or a full 1280x720 stage canvas (drawn at 0,0).
+const PLATE_SLOTS: Array[String] = ["fence", "shack", "compost", "lawn_ground"]
+## Wide-screen side extensions per look: stage/<mood key>/side_left.png and
+## side_right.png, drawn outside the stage's left/right edges at the stage's
+## scale (any width; the height should be 720). Missing = the clean matte.
+const SIDE_NAMES: Array[String] = ["side_left", "side_right"]
+## Optional per-look sky backdrop (batch2): stage/<mood key>/sky_backdrop.png.
+const SKY_BACKDROP_NAME := "sky_backdrop.png"
+
 ## Per-look light on the shared set (fence, porch, heap, lawn ground). Index
-## aligned with NAMES; Golden Hour has its own below.
+## aligned with NAMES; Golden Hour has its own below. A look's own plates
+## (painted for that look) take BACKDROP_TINTS instead, like its sky.
 const SET_TINTS: Array[Color] = [
 	Color(1.0, 1.0, 1.0),
 	Color(1.0, 1.0, 1.0),
 	Color(0.84, 0.87, 0.92),
-	Color(0.62, 0.59, 0.78),
+	Color(0.7, 0.66, 0.84),
+	Color(0.5, 0.54, 0.78),
+]
+## Light on the look's own art (sky backdrop and its own plates). Moonlit is
+## the Dusk art in night light.
+const BACKDROP_TINTS: Array[Color] = [
+	Color(1.0, 1.0, 1.0),
+	Color(1.0, 1.0, 1.0),
+	Color(1.0, 1.0, 1.0),
+	Color(1.0, 1.0, 1.0),
+	Color(0.5, 0.56, 0.86),
 ]
 const GOLDEN_HOUR_SET_TINT := Color(1.0, 0.86, 0.7)
 ## The felt takes half the set tint, so the play surface stays readable.
 const FELT_TINT_SHARE := 0.5
 ## Whether the compost eyes glow on each look (index aligned with NAMES).
 ## The heap is shared, so its eyes show on every look by default.
-const EYES_ON: Array[bool] = [true, true, true, true]
+const EYES_ON: Array[bool] = [true, true, true, true, true]
 const GOLDEN_HOUR_EYES_ON := true
 
 static var _textures: Dictionary = {}
+## Optional slot files (per-mood plates, side plates, tiles): looked up once.
+static var _optional: Dictionary = {}
 
 
 static func count() -> int:
 	return NAMES.size()
 
 
+## A look's sky backdrop: its own stage/<mood key>/sky_backdrop.png (full
+## 1280x720, the batch2 slot) if one is installed, else PATHS.
 static func texture_at(index: int) -> Texture2D:
+	for dir in mood_dirs(index):
+		var own := optional(dir + SKY_BACKDROP_NAME)
+		if own != null:
+			return own
 	return cached(PATHS[posmod(index, PATHS.size())])
 
 
@@ -83,6 +130,98 @@ static func cached(path: String) -> Texture2D:
 	if not _textures.has(path):
 		_textures[path] = load(path) as Texture2D
 	return _textures[path]
+
+
+## An optional slot file: the texture if it exists, else null, without an
+## error for the missing file. Looked up once per path.
+static func optional(path: String) -> Texture2D:
+	if _textures.has(path):
+		return _textures[path]
+	if not _optional.has(path):
+		_optional[path] = ResourceLoader.exists(path)
+	if not bool(_optional[path]):
+		return null
+	return cached(path)
+
+
+## Test hook: forget what optional() learned (a test drops in a slot file).
+static func forget_optional() -> void:
+	_optional.clear()
+
+
+## Test hook: hand a slot path a texture as if the file existed.
+static func inject(path: String, texture: Texture2D) -> void:
+	_textures[path] = texture
+	_optional[path] = texture != null
+	if texture == null:
+		_textures.erase(path)
+
+
+## The folder key for a look ([param index] < 0 is Golden Hour).
+static func mood_key(index: int) -> String:
+	if index < 0:
+		return GOLDEN_HOUR_KEY
+	return MOOD_KEYS[posmod(index, MOOD_KEYS.size())]
+
+
+## Folders a look reads its own plates from, most specific first.
+static func mood_dirs(index: int) -> Array[String]:
+	var key := mood_key(index)
+	var dirs: Array[String] = [STAGE_DIR + key + "/"]
+	for extra in MOOD_FALLBACK_DIRS.get(key, []):
+		dirs.append(STAGE_DIR + String(extra) + "/")
+	return dirs
+
+
+## The plate a look shows in one slot ("fence", "shack", "compost",
+## "lawn_ground"): {texture, offset, own}. own is true when the look has its
+## own art for the slot; otherwise it is the shared plate.
+static func plate_for(index: int, slot: String) -> Dictionary:
+	var shared := _shared_plate(slot)
+	for dir in mood_dirs(index):
+		var texture := optional(dir + "stage_%s.png" % slot)
+		if texture != null:
+			var offset: Vector2 = shared["offset"]
+			if texture.get_size() == Vector2(1280.0, 720.0):
+				offset = Vector2.ZERO
+			return {"texture": texture, "offset": offset, "own": true, "path": dir + "stage_%s.png" % slot}
+	return {"texture": cached(String(shared["path"])), "offset": shared["offset"], "own": false, "path": shared["path"]}
+
+
+static func _shared_plate(slot: String) -> Dictionary:
+	match slot:
+		"fence":
+			return FENCE_PLATE
+		"shack":
+			return SHACK_PLATE
+		"compost":
+			return COMPOST_PLATE
+		_:
+			return LAWN_GROUND_PLATE
+
+
+## A look's string lights over its own fence plate, or null.
+static func fence_lights(index: int) -> Texture2D:
+	var fence := plate_for(index, "fence")
+	if not bool(fence["own"]):
+		return null
+	return optional(String(fence["path"]).get_base_dir() + "/stage_fence_lights.png")
+
+
+## A look's wide-screen side plate ("side_left" / "side_right"), or null.
+static func side_plate(index: int, side: String) -> Texture2D:
+	for dir in mood_dirs(index):
+		var texture := optional(dir + side + ".png")
+		if texture != null:
+			return texture
+	return null
+
+
+## The light on a look's own art (sky backdrop, own plates).
+static func backdrop_tint(index: int) -> Color:
+	if index < 0:
+		return Color.WHITE
+	return BACKDROP_TINTS[posmod(index, BACKDROP_TINTS.size())]
 
 
 ## Records a texture the preload already loaded (no second load).
@@ -111,13 +250,18 @@ static func eyes_on(index: int) -> bool:
 ## Every texture a look can show, for the startup preload.
 static func all_paths() -> Array[String]:
 	var out: Array[String] = []
-	out.append_array(PATHS)
+	for path in PATHS:
+		if not out.has(path):
+			out.append(path)
 	for plate in [FENCE_PLATE, SHACK_PLATE, COMPOST_PLATE, LAWN_GROUND_PLATE, COMPOST_EYES]:
 		out.append(String(plate["path"]))
+	# The Dusk plates cut from the Dusk art (always shipped).
+	for slot in ["fence", "fence_lights", "shack"]:
+		out.append(STAGE_DIR + "dusk/stage_%s.png" % slot)
 	return out
 
 
 ## The look this match opens with. Same seed, same look, always.
 static func pick_index(seed_value: int) -> int:
 	var rng := MatchSeed.with_value(seed_value).rng("backdrop")
-	return rng.randi_range(0, NAMES.size() - 1)
+	return rng.randi_range(0, SEEDED_LOOKS - 1)

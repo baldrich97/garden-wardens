@@ -30,6 +30,16 @@ const BOARD_GRID_SRC := Rect2(153.0, 337.0, 948.0, 348.0)
 ## felt keeps sand and stone readable without mixing in the old tile style.
 const SAND_WASH := Color(0.93, 0.80, 0.52, 0.55)
 const STONE_WASH := Color(0.58, 0.58, 0.62, 0.6)
+## Felt sand / stone tiles (GW-AA pass 5; Asset Gen tiles_portraits kit):
+## opaque square felt tiles per soil kind, a light and a dark one following
+## the felt's checker. When the files exist every sand / stone cell draws
+## its tile, mapped through the board's perspective (a TILE_SUBDIV grid per
+## cell, so the grout and bevel stay straight), instead of the wash.
+const BOARD_DIR := "res://assets/art/environment/board/"
+const SOIL_TILE_NAMES := {SoilMap.Kind.SANDY: "felt_sand", SoilMap.Kind.STONY: "felt_stone"}
+const TILE_SUBDIV := 4
+## Which checker parity is the light felt: (column + row) % 2 == LIGHT_PARITY.
+const LIGHT_PARITY := 0
 ## Board edge: the felt's front lip and the soft shadow it casts on the grass.
 const LIP_PX := 7.0
 const LIP_COLOR := Color8(58, 92, 32)
@@ -132,6 +142,10 @@ func uses_board_art() -> bool:
 func set_felt_tint(tint: Color) -> void:
 	if _board_frame != null:
 		_board_frame.self_modulate = tint
+	# Felt tiles are felt too: they take the same light.
+	for wash in _washes:
+		if wash.has_meta("tile"):
+			wash.color = tint
 
 
 ## The felt's current tint.
@@ -188,11 +202,61 @@ func _build_board() -> void:
 			var wash := Polygon2D.new()
 			wash.polygon = geometry.cell_corners(column, row)
 			wash.color = wash_color
+			var light := (column + row) % 2 == LIGHT_PARITY
+			var tile := soil_tile(SoilMap.kind_at(column, row, COLUMNS), light) if board_texture != null else null
+			if tile != null:
+				_map_tile(wash, tile, column, row)
+				wash.set_meta("light", light)
 			wash.z_index = Z_WASH
 			wash.set_meta("column", column)
 			wash.set_meta("row", row)
 			add_child(wash)
 			_washes.append(wash)
+
+
+## The felt tile for a soil kind and checker shade, or null while the slot
+## is empty.
+static func soil_tile(kind: int, light: bool) -> Texture2D:
+	if not SOIL_TILE_NAMES.has(kind):
+		return null
+	return BackdropCatalog.optional(BOARD_DIR + "%s_%s.png" % [SOIL_TILE_NAMES[kind], "light" if light else "dark"])
+
+
+## Lays a square tile on one cell: a TILE_SUBDIV x TILE_SUBDIV mesh of points
+## on the perspective grid, so the tile follows the homography (the square
+## tile takes the cell's ~79x70 aspect, a slight squash).
+func _map_tile(wash: Polygon2D, tile: Texture2D, column: int, row: int) -> void:
+	var n := TILE_SUBDIV
+	var size_px := Vector2(tile.get_width(), tile.get_height())
+	var points := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for j in n + 1:
+		for i in n + 1:
+			var u := float(i) / n
+			var v := float(j) / n
+			points.append(geometry.point(column + u, row + v))
+			uvs.append(Vector2(u, v) * size_px)
+	var polys: Array = []
+	for j in n:
+		for i in n:
+			var a := j * (n + 1) + i
+			polys.append(PackedInt32Array([a, a + 1, a + n + 2, a + n + 1]))
+	wash.polygon = points
+	wash.uv = uvs
+	wash.polygons = polys
+	wash.texture = tile
+	wash.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	wash.color = Color.WHITE
+	wash.set_meta("tile", true)
+
+
+## How many sand / stone cells draw a felt tile (the rest draw the wash).
+func tiled_cell_count() -> int:
+	var count := 0
+	for wash in _washes:
+		if wash.has_meta("tile"):
+			count += 1
+	return count
 
 
 func _wash_for(column: int, row: int) -> Color:

@@ -199,11 +199,28 @@ func _sky(failures: PackedStringArray) -> void:
 
 
 func _backdrops(failures: PackedStringArray) -> void:
-	if BackdropCatalog.count() != 4 or BackdropCatalog.NAMES.size() != BackdropCatalog.PATHS.size():
-		failures.append("backdrop list was not the main scene plus three moods")
+	if BackdropCatalog.count() != 5 or BackdropCatalog.NAMES.size() != BackdropCatalog.PATHS.size() \
+			or BackdropCatalog.MOOD_KEYS.size() != BackdropCatalog.count() or BackdropCatalog.SET_TINTS.size() != BackdropCatalog.count() \
+			or BackdropCatalog.BACKDROP_TINTS.size() != BackdropCatalog.count() or BackdropCatalog.EYES_ON.size() != BackdropCatalog.count():
+		failures.append("look list was not Main, Sunny, Overcast, Dusk Twilight, Dusk Moonlit (index-aligned)")
+	# The seed never opens on Moonlit (seeded pick stays on the first four).
+	for probe in 200:
+		if BackdropCatalog.pick_index(probe * 7919) >= BackdropCatalog.SEEDED_LOOKS:
+			failures.append("a seed opened on a cycle-only look")
+			break
 	for index in BackdropCatalog.count():
 		if BackdropCatalog.texture_at(index) == null:
 			failures.append("backdrop %s did not load" % BackdropCatalog.NAMES[index])
+	# batch2 slot: a look's own sky_backdrop.png replaces its PATHS backdrop
+	# (Dusk Moonlit falls back to the shared dusk folder).
+	var sky_probe := ImageTexture.create_from_image(Image.create(16, 9, false, Image.FORMAT_RGBA8))
+	var sky_path := BackdropCatalog.STAGE_DIR + "dusk/" + BackdropCatalog.SKY_BACKDROP_NAME
+	BackdropCatalog.inject(sky_path, sky_probe)
+	if BackdropCatalog.texture_at(4) != sky_probe or BackdropCatalog.texture_at(3) != sky_probe or BackdropCatalog.texture_at(0) == sky_probe:
+		failures.append("a mood's sky_backdrop.png slot did not replace only that mood's backdrop")
+	BackdropCatalog.inject(sky_path, null)
+	if BackdropCatalog.texture_at(3) == sky_probe:
+		failures.append("the sky_backdrop slot stuck after its art went away")
 	if BackdropCatalog.pick_index(12345) != BackdropCatalog.pick_index(12345):
 		failures.append("the same seed picked a different backdrop")
 	if BackdropCatalog.pick_index(0) < 0 or BackdropCatalog.pick_index(0) >= BackdropCatalog.count():
@@ -774,8 +791,19 @@ func _mood_clouds(failures: PackedStringArray) -> void:
 	var want := {
 		SkyLook.MOOD_MAIN: "cotton", SkyLook.MOOD_SUNNY: "cotton",
 		SkyLook.MOOD_OVERCAST: "felt", SkyLook.MOOD_DUSK: "cotton",
-		SkyLook.MOOD_GOLDEN_HOUR: "cotton" if SkyLook.GOLDEN_HOUR_CLOUDS == "tinted" else "",
+		SkyLook.MOOD_DUSK_MOONLIT: "",
+		SkyLook.MOOD_GOLDEN_HOUR: ("sunset" if SkyCatalog.has_sunset() else "cotton") if SkyLook.GOLDEN_HOUR_CLOUDS == "tinted" else "",
 	}
+	# Asset Gen batch 1's sunset clouds are installed: Golden Hour uses them.
+	if SkyCatalog.sunset_entries().size() != 24:
+		failures.append("sunset cloud family has %d files, want the 24 batch-1 clouds" % SkyCatalog.sunset_entries().size())
+	for size in 3:
+		for entry in SkyCatalog.family_entries(size, SkyCatalog.FAMILY_COTTON, true):
+			if String(entry["path"]).find("sunset") >= 0:
+				failures.append("a sunset cloud leaked into the white cotton family")
+	for entry in SkyCatalog.sunset_entries():
+		if float(entry["body_h"]) <= 0.0 or (bool(entry["stick"]) and float(entry["body_h"]) > 400.0):
+			failures.append("sunset cloud %s has a bad body height %.0f" % [entry["path"], entry["body_h"]])
 	for mood in want:
 		if SkyLook.cloud_family(mood) != want[mood]:
 			failures.append("mood %d cloud family '%s', want '%s'" % [mood, SkyLook.cloud_family(mood), want[mood]])
@@ -785,11 +813,16 @@ func _mood_clouds(failures: PackedStringArray) -> void:
 		sky.apply_look(4242, mood)
 		for path in sky.cloud_paths():
 			var file := path.get_file()
-			if file.begins_with("torn_") or (want[mood] != "" and not file.begins_with(want[mood] + "_")):
+			var family_ok := file.find("sunset_") >= 0 if want[mood] == "sunset" else file.begins_with(want[mood] + "_")
+			if file.begins_with("torn_") or (want[mood] != "" and not family_ok):
 				failures.append("mood %d showed off-family cloud %s" % [mood, file])
 				break
-		if want[mood] == "" and sky.cloud_count() > 0:
-			failures.append("Golden Hour 'none' still drew %d clouds" % sky.cloud_count())
+		if want[mood] == "" and not sky.cloud_paths().is_empty():
+			failures.append("mood %d should be clear but drew %d clouds" % [mood, sky.cloud_paths().size()])
+		if SkyLook.mood_shows_moon(mood) != (sky.moon_height() > 0.0):
+			failures.append("mood %d moon shown %s" % [mood, sky.moon_height() > 0.0])
+		if (mood == SkyLook.MOOD_DUSK_MOONLIT) != (sky.star_count() > 0):
+			failures.append("mood %d stars %d (only Moonlit twinkles)" % [mood, sky.star_count()])
 		if sky.cloud_tint() != SkyLook.cloud_tint(mood):
 			failures.append("mood %d cloud tint not applied" % mood)
 		if mood == SkyLook.MOOD_MAIN:
@@ -802,7 +835,11 @@ func _mood_clouds(failures: PackedStringArray) -> void:
 	if not (dusk.b > dusk.r and dusk.b > dusk.g):
 		failures.append("Dusk clouds should lean lavender/slate")
 	var gold := SkyLook.cloud_tint(SkyLook.MOOD_GOLDEN_HOUR)
-	if not (gold.r > gold.g and gold.g > gold.b):
+	if SkyCatalog.has_sunset():
+		# The painted peach/gold sunset clouds carry their own colour.
+		if gold != Color.WHITE:
+			failures.append("Golden Hour tints the already-painted sunset clouds")
+	elif not (gold.r > gold.g and gold.g > gold.b):
 		failures.append("Golden Hour clouds should lean warm")
 
 
@@ -810,16 +847,17 @@ func _mood_clouds(failures: PackedStringArray) -> void:
 ## of time (deterministic: the same t always gives the same pose).
 func _paper_pop(failures: PackedStringArray) -> void:
 	var ranges := [
-		["vermin slide time", PaperPop.SLIDE_TIME, 0.40, 0.55],
+		# GW-AA pass 5: much slower vermin entrance, sticker placement.
+		["vermin slide time", PaperPop.SLIDE_TIME, 1.4, 1.8],
 		["vermin flat scale.y", PaperPop.FLAT_SCALE, 0.12, 0.18],
-		["vermin flip time", PaperPop.FLIP_TIME, 0.28, 0.38],
+		["vermin flip time", PaperPop.FLIP_TIME, 0.8, 1.0],
 		["vermin flip overshoot", PaperPop.FLIP_OVERSHOOT, 1.08, 1.08],
-		["warden press time", PaperPop.PRESS_TIME, 0.18, 0.24],
-		["warden pop time", PaperPop.POP_TIME, 0.22, 0.28],
-		["warden pressed scale.y", PaperPop.PRESS_SCALE, 0.12, 0.12],
+		["warden sticker total", PaperPop.placement_time(), 1.2, 1.6],
+		["warden pop time", PaperPop.POP_TIME, 0.22, 0.35],
+		["warden pop starts flat", PaperPop.POP_FROM, 0.12, 0.12],
 		["warden pop overshoot", PaperPop.POP_OVERSHOOT, 1.12, 1.12],
-		["tooltip grace", GameTooltip.GRACE, 0.25, 0.30],
-		["tooltip ring fill", GameTooltip.CHARGE, 0.55, 0.65],
+		["tooltip grace", GameTooltip.GRACE, 0.4, 0.5],
+		["tooltip ring fill", GameTooltip.CHARGE, 1.1, 1.3],
 		["dew buildup", WardenActor.DEW_BUILDUP, 1.5, 2.5],
 	]
 	for r in ranges:
@@ -827,10 +865,37 @@ func _paper_pop(failures: PackedStringArray) -> void:
 			failures.append("%s %.3f outside %.2f-%.2f" % r)
 	if not is_equal_approx(PaperPop.entrance(0.0)["scale"].y, PaperPop.FLAT_SCALE) or PaperPop.entrance(0.0)["offset_cells"] <= 0.0:
 		failures.append("vermin entrance does not start flat, right of its spot")
-	if PaperPop.entrance(PaperPop.entrance_time())["phase"] != PaperPop.Phase.DONE:
+	if PaperPop.entrance(PaperPop.entrance_time() + 0.001)["phase"] != PaperPop.Phase.DONE:
 		failures.append("vermin entrance never finishes")
 	if PaperPop.entrance(0.3) != PaperPop.entrance(0.3) or PaperPop.placement(0.3) != PaperPop.placement(0.3):
 		failures.append("paper beats are not deterministic")
+	# Sticker order: descend (standing, lifted) -> curl (pressed 0..1) ->
+	# flat -> sink -> pop; the decal shows until the pop.
+	var order := []
+	var last_press := -1.0
+	for i in 160:
+		var t := i * PaperPop.placement_time() / 160.0
+		var beat := PaperPop.placement(t)
+		if order.is_empty() or order[-1] != beat["phase"]:
+			order.append(beat["phase"])
+		if beat["phase"] == PaperPop.Phase.CURL:
+			if float(beat["press"]) < last_press - 0.0001:
+				failures.append("sticker press went backwards at %.2f s" % t)
+			last_press = float(beat["press"])
+		if bool(beat["decal"]) != (t < PaperPop.pop_start()):
+			failures.append("sticker decal shows at the wrong time (%.2f s)" % t)
+	var want := [PaperPop.Phase.DESCEND, PaperPop.Phase.CURL, PaperPop.Phase.FLAT, PaperPop.Phase.SINK, PaperPop.Phase.POP]
+	if order != want:
+		failures.append("sticker phases %s, want %s" % [order, want])
+	# A curl, not a scale: mid-press the sticker has a flat part, a bent part
+	# and a standing part.
+	var flat_at := PaperPop.curl_point(10.0, 30.0, 12.0)
+	var bend_at := PaperPop.curl_point(36.0, 30.0, 12.0)
+	var stand_at := PaperPop.curl_point(80.0, 30.0, 12.0)
+	if float(flat_at["angle"]) != 0.0 or not (float(bend_at["angle"]) > 0.0 and float(bend_at["angle"]) < PI * 0.5) or not is_equal_approx(float(stand_at["angle"]), PI * 0.5):
+		failures.append("curl_point does not bend flat -> roll -> standing")
+	if PaperPop.entrance(PaperPop.SLIDE_TIME + PaperPop.FLIP_TIME + 0.1)["phase"] != PaperPop.Phase.SETTLE:
+		failures.append("vermin entrance has no settle after the flip")
 	var peak := 0.0
 	for i in 200:
 		peak = maxf(peak, PaperPop.placement(i * PaperPop.placement_time() / 200.0)["scale"].y)

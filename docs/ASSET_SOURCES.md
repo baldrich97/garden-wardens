@@ -142,8 +142,79 @@ New pass 4 files (all **status: approved**, referenced from `src/`):
 Sky families by mood (pass 4): Main/Sunny `sky/clouds/<small|medium|large>/cotton_*` (white), Overcast
 `felt_*` (grey) + rain cloud `sky/rain/rain_01_felt_cloud_3_strands.png` /
 `rain_03_felt_cloud_dense.png` on a stick, Dusk cotton tinted lavender, Golden Hour cotton
-tinted warm (or none). The flat orange `torn_*` clouds stay listed in `SkyCatalog`
+tinted warm (or none). Pass 5: Dusk Twilight keeps lavender cotton, Dusk Moonlit is a
+clear night (moon + stars), Golden Hour uses the `cotton_sunset_*` family. The flat orange `torn_*` clouds stay listed in `SkyCatalog`
 but no mood picks them since pass 4 (kept for a possible Golden Hour art pass).
+
+## Pass 5 slots and files (GW-AA pass 5, 2026-11-24) — contract for Asset Gen
+
+### Looks and mood keys
+
+The look cycle is Main, Sunny, Overcast, Dusk Twilight, Dusk Moonlit (+ Golden Hour as
+its own toggle). The seeded opening look still picks from the first four only
+(`BackdropCatalog.SEEDED_LOOKS = 4`), so seeds, the Overcast rain and the combat hash
+are unchanged. Each look reads its own files from
+`assets/art/environment/stage/<mood key>/`:
+
+| Look | Mood key (folder) | Fallback folder(s) | Tint on shared plates (`SET_TINTS`) | Tint on own art (`BACKDROP_TINTS`) |
+| --- | --- | --- | --- | --- |
+| Main | `main` | - | none | none |
+| Sunny | `sunny` | - | none | none |
+| Overcast | `overcast` | - | 0.84,0.87,0.92 | none |
+| Dusk Twilight | `dusk_twilight` | `dusk` | 0.70,0.66,0.84 | none |
+| Dusk Moonlit | `dusk_moonlit` | `dusk` | 0.50,0.54,0.78 | 0.50,0.56,0.86 |
+| Golden Hour | `golden_hour` | - | `GOLDEN_HOUR_SET_TINT` | none |
+
+Lookup order for every slot: `stage/<mood key>/`, then the fallback folder, then the
+shared file. A missing file is never an error (`BackdropCatalog.optional`).
+
+### Expected file names per slot (drop-in, no code change)
+
+| Slot | Exact file name | Size / placement | Status now |
+| --- | --- | --- | --- |
+| Fence plate | `stage/<mood key>/stage_fence.png` | 1135x137 at 145,166 (shared plate size), or a full 1280x720 canvas drawn at 0,0 | `dusk/` installed (Asset Gen batch1); others use the shared plate + tint |
+| Fence lights | `stage/<mood key>/stage_fence_lights.png` (beside an own fence plate) | same size/offset as that fence plate; drawn additive with a gentle shimmer (`StageLayers.lights_level`, 0.42 ± 0.16) | `dusk/` installed (batch1) |
+| Shack plate | `stage/<mood key>/stage_shack.png` | 173x372 at 0,0, or 1280x720 | `dusk/` installed (my cut, see below) |
+| Compost plate | `stage/<mood key>/stage_compost.png` | 211x213 at 1069,221, or 1280x720 | none (shared + tint) |
+| Lawn-ground plate | `stage/<mood key>/stage_lawn_ground.png` | 1280x423 at 0,297, or 1280x720 | none (shared + tint) |
+| Sky backdrop (batch2) | `stage/<mood key>/sky_backdrop.png` | 1280x720, replaces the look's `BackdropCatalog.PATHS` backdrop | none yet |
+| Side panels (batch3) | `stage/<mood key>/side_left.png`, `side_right.png` | height 720 (stage pixels), any width; drawn just outside the stage's left/right edge at the stage's scale | none yet: the clean matte shows |
+| Sunset clouds | `sky/clouds/<small\|medium\|large>/cotton_sunset_<code>.png` + `_stick.png` | listed explicitly in `SkyCatalog.SUNSET_CLOUDS` with `body_h` | installed (batch1), Golden Hour's family |
+| Soil tiles | `environment/board/felt_<sand\|stone>_<light\|dark>.png` | square (160 px used); mapped per cell through the felt's perspective; light/dark follow the felt checker (light = even col+row) | installed |
+| Roster portraits | `ui/roster/roster_<fly\|bee\|ladybug\|snail\|grub>.png` | square (128 px plain cutout) | installed, all 5 |
+| Matte paper | `ui/matte/matte_paper_tile.png` | seamless tile behind the stage | installed |
+
+Own plates take the look's own light (`BACKDROP_TINTS`); shared plates take `SET_TINTS`,
+so Dusk keeps its tint on the shared lawn ground and compost heap.
+
+### Newly installed files (pass 5) and status
+
+| File(s) | Source | Status |
+| --- | --- | --- |
+| `environment/stage/dusk/stage_fence.png` | Asset Gen batch1 `fence/stage_fence_dusk.png` (sha verified) | **approved**, wired for both Dusks. Softer than the shared fence (cut from the 640x360 source); a sharper version may replace it with the same name. |
+| `environment/stage/dusk/stage_fence_lights.png` | batch1 `stage_fence_dusk_lights.png` | **approved**, wired (additive + shimmer) |
+| `environment/stage/dusk/stage_shack.png` | cut by `tools/art/cut_dusk_stage.py` from the Dusk backdrop | **approved (agent cut)**, replace with an Asset Gen plate of the same name when one exists |
+| `environment/backdrops/mood_4_dusk_stage.png` | `tools/art/cut_dusk_stage.py`: Dusk backdrop lifted 141 px (Asset Gen's fence line), moon painted out | **approved**, both Dusk looks |
+| `sky/moon/dusk_moon.png` (128x132) | cut from the Dusk backdrop by the same script | **approved**, Dusk Moonlit only (with 24 code-drawn stars) |
+| `sky/clouds/{small,medium,large}/cotton_sunset_{s1..s4,m1..m4,L1,L3,L4,L5}[_stick].png` (24) | batch1 | **approved**, Golden Hour family; body_h s1 165, s2 135, s3 138, s4 135, m1 194, m2 188, m3 202, m4 184, L1 201, L3 213, L4 253, L5 265 |
+| `environment/board/felt_{sand,stone}_{light,dark}.png` (4) | tiles_portraits kit (`_2x`, 160 px), sha verified | **approved**, replace the translucent sand/stone washes |
+| `environment/board/felt_lawn_{light,dark}.png` (2) | tiles_portraits kit | **unwired (compared)**: side-by-side in game the cleaned felt (`felt_board_clean.png`) keeps its plush bevel and reads richer; the flat lawn tiles were kept as an alternative |
+| `ui/roster/roster_{fly,bee,ladybug,snail,grub}.png` (5) | tiles_portraits kit, plain 128 | **approved**. The `_card` variants were compared and not installed (cream tile inside the dark roster slot reads as a frame in a frame) |
+| `environment/props/prop_{grass_tuft_1,2,3,flower_white,flower_yellow,pebble_grey,pebble_slate,pebble_tan}.png` (8) | kit `extras/` | **approved**, subtle decor on the lawn ground beside the felt (never on cells; `StageLayers.DECOR`) |
+| `ui/matte/matte_paper_tile.png` | kit `extras/` | **approved**, tiled over the matte colour (the side borders) |
+| `fx/confetti/confetti_01_red_square.png` … `confetti_12_leaf_right.png` (12) | cut from `ui/win_banner_A.png` by `tools/art/cut_confetti.py` | **approved**, placement confetti (`ConfettiBurst`) |
+
+Reviewed, not installed: the kit's cream hover tile (the current hover ring stays),
+blocked-cell overlay, vignette, matte frame (insets ~36 px and would sit under the HUD),
+the roster `_card` variants, and batch1's `stage_fence_dusk_nolights.png` (the lit plate
+plus the additive lights layer covers it).
+
+### Still to come
+
+- batch2: per-scene plates (`stage_<slot>.png`) and skies (`sky_backdrop.png`) in each
+  mood folder, names above. A full 1280x720 canvas is fine for any plate.
+- batch3: `side_left.png` / `side_right.png` per mood folder (or in `dusk/` for both Dusks).
+- A sharper `dusk/stage_fence.png` (same name, same 1135x137 at 145,166).
 
 ## Unwired inventory (definitive)
 
@@ -155,7 +226,8 @@ spin (8) + burst (20), `A3`, `A4`, `B3`, the leaf ring, three origami water drop
 `win_banner_B` (52 files) and unwired the Kenney `sprites/board/water.png` (1), so the
 count became **342**. GW-AA pass 3 (2026-11-23, Option B) parked the two board-end
 cutouts (`player_end_porch.png`, `vermin_end_compost_eyes.png`), so the count is now
-**344** (rows below updated):
+**344**. GW-AA pass 5 (2026-11-24) added two compared-but-unwired lawn tiles, so the
+count is now **346** (rows below updated):
 
 | Count | Path | Note |
 | --- | --- | --- |
@@ -168,6 +240,7 @@ cutouts (`player_end_porch.png`, `vermin_end_compost_eyes.png`), so the count is
 | 4 | `assets/sprites/board/backdrops/` | non-ship draft gardens, superseded |
 | 1 | `assets/art/ui/summon_bell.png` | optional, for later |
 | 2 | `assets/sprites/board/dirt.png`, `water.png` | unreferenced soil tile; old Kenney droplet |
+| 2 | `assets/art/environment/board/felt_lawn_light.png`, `felt_lawn_dark.png` | pass 5: compared, cleaned felt kept |
 | 2 | `assets/art/environment/board/player_end_porch.png`, `vermin_end_compost_eyes.png` | parked by Option B (painted ends in the backdrop) |
 
 ## Not included

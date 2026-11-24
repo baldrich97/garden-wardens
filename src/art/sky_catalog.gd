@@ -139,11 +139,50 @@ const RAIN_CLOUD_BODY_H := {
 ## small flat sticker suns.
 const MAIN_SUN := "res://assets/art/environment/golden_hour/golden_hour_sun_sprite.png"
 const MAIN_SUN_SHADOW := "res://assets/art/sky/suns/main_sun_shadow.png"
+## The paper crescent moon cut from the Dusk art (tools/art/cut_dusk_stage.py),
+## hung on both Dusk looks.
+const MOON := "res://assets/art/sky/moon/dusk_moon.png"
 ## Cloud families by file-name prefix: cotton is the white puffy set, felt the
 ## grey set, torn the flat streaky orange set.
 const FAMILY_COTTON := "cotton"
 const FAMILY_FELT := "felt"
 const FAMILY_TORN := "torn"
+## Golden Hour's puffy peach/gold sunset clouds (Asset Gen batch 1): the
+## approved cotton canvases and white sticks, regraded. body_h is measured
+## the cotton way (the plain cloud's height; the stick twin shares it). They
+## live beside the cotton set as cotton_sunset_*; the cotton family filter
+## skips them (FAMILY_SUNSET owns them). If the files go missing, Golden Hour
+## falls back to the warm-tinted cotton clouds.
+const FAMILY_SUNSET := "sunset"
+const SUNSET_CLOUDS: Array[Dictionary] = [
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s1_stick.png", "body_h": 165, "size": 0, "stick": true},
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s1.png", "body_h": 165, "size": 0, "stick": false},
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s2_stick.png", "body_h": 135, "size": 0, "stick": true},
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s2.png", "body_h": 135, "size": 0, "stick": false},
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s3_stick.png", "body_h": 138, "size": 0, "stick": true},
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s3.png", "body_h": 138, "size": 0, "stick": false},
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s4_stick.png", "body_h": 135, "size": 0, "stick": true},
+	{"path": "res://assets/art/sky/clouds/small/cotton_sunset_s4.png", "body_h": 135, "size": 0, "stick": false},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m1_stick.png", "body_h": 194, "size": 1, "stick": true},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m1.png", "body_h": 194, "size": 1, "stick": false},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m2_stick.png", "body_h": 188, "size": 1, "stick": true},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m2.png", "body_h": 188, "size": 1, "stick": false},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m3_stick.png", "body_h": 202, "size": 1, "stick": true},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m3.png", "body_h": 202, "size": 1, "stick": false},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m4_stick.png", "body_h": 184, "size": 1, "stick": true},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_sunset_m4.png", "body_h": 184, "size": 1, "stick": false},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L1_stick.png", "body_h": 201, "size": 2, "stick": true},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L1.png", "body_h": 201, "size": 2, "stick": false},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L3_stick.png", "body_h": 213, "size": 2, "stick": true},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L3.png", "body_h": 213, "size": 2, "stick": false},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L4_stick.png", "body_h": 253, "size": 2, "stick": true},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L4.png", "body_h": 253, "size": 2, "stick": false},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L5_stick.png", "body_h": 265, "size": 2, "stick": true},
+	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L5.png", "body_h": 265, "size": 2, "stick": false},
+]
+
+static var _sunset: Array[Dictionary] = []
+static var _sunset_scanned := false
 const RAIN_CLOUDS: Array[String] = [
 	"res://assets/art/sky/rain/rain_01_felt_cloud_3_strands.png",
 	"res://assets/art/sky/rain/rain_03_felt_cloud_dense.png",
@@ -195,11 +234,60 @@ static func plain_at(size: int, index: int) -> Dictionary:
 ## The entries of one size class that belong to one cloud family (cotton,
 ## felt, torn), stick or plain.
 static func family_entries(size: int, family: String, stick: bool) -> Array[Dictionary]:
+	if family == FAMILY_SUNSET:
+		return _sunset_entries(size, stick)
 	var out: Array[Dictionary] = []
 	for index in class_count(size):
 		var entry := stick_at(size, index) if stick else plain_at(size, index)
 		var path: String = entry.get("path", "")
-		if path.get_file().begins_with(family + "_"):
+		if path.get_file().begins_with(family + "_") and not path.get_file().begins_with("cotton_sunset_"):
+			out.append(entry)
+	return out
+
+
+## Whether Asset Gen's sunset clouds are installed.
+static func has_sunset() -> bool:
+	return not sunset_entries().is_empty()
+
+
+## Every sunset cloud: {path, body_h, size, stick}.
+static func sunset_entries() -> Array[Dictionary]:
+	if not _sunset_scanned:
+		_sunset_scanned = true
+		_sunset = _scan_sunset()
+	return _sunset
+
+
+## Test hook: pretend these sunset entries are on disk ([] = none); null
+## rescans the folder.
+static func inject_sunset(entries: Variant) -> void:
+	if entries == null:
+		_sunset_scanned = false
+		_sunset = []
+		return
+	_sunset_scanned = true
+	_sunset.clear()
+	for entry in entries:
+		_sunset.append(entry)
+
+
+static func _sunset_entries(size: int, stick: bool) -> Array[Dictionary]:
+	var all := sunset_entries()
+	var out: Array[Dictionary] = []
+	for want_size in [true, false]:
+		for want_stick in [true, false]:
+			for entry in all:
+				if (not want_size or int(entry["size"]) == size) and (not want_stick or bool(entry["stick"]) == stick):
+					out.append(entry)
+			if not out.is_empty():
+				return out
+	return out
+
+
+static func _scan_sunset() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for entry in SUNSET_CLOUDS:
+		if ResourceLoader.exists(String(entry["path"])):
 			out.append(entry)
 	return out
 
@@ -217,4 +305,7 @@ static func all_paths() -> Array[String]:
 	out.append_array(RAIN_CLOUDS)
 	out.append(RAIN_DROP)
 	out.append(RAIN_SPLASH)
+	out.append(MOON)
+	for entry in SUNSET_CLOUDS:
+		out.append(String(entry["path"]))
 	return out

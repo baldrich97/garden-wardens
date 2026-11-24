@@ -12,7 +12,8 @@ const PORTRAIT_SIZE := Vector2(54, 50)
 
 signal start_requested
 
-var _clips: Array[ClipView] = []
+var _portraits: Array[TextureRect] = []
+var _time := 0.0
 var _cards: Array[Control] = []
 var _hosts: Array[Control] = []
 var _list: GridContainer
@@ -104,14 +105,21 @@ func fill(tip: GameTooltip, wave: Array[Vector3]) -> void:
 		host.custom_minimum_size = PORTRAIT_SIZE
 		host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		host.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		var clip := ClipView.new()
-		clip.setup(UnitClips.vermin(kind))
-		clip.set_idle_bob(true)
-		clip.play("idle")
-		host.add_child(clip)
+		# GW-AA pass 5: the paper-cutout portrait slot (RosterPortraits), not
+		# the old cartoon sprites.
+		var face := TextureRect.new()
+		face.name = "Portrait"
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		face.set_anchors_preset(Control.PRESET_FULL_RECT)
+		var art := RosterPortraits.portrait(kind)
+		face.texture = art["texture"]
+		face.set_meta("from_slot", art["from_slot"])
+		host.add_child(face)
 		card.add_child(host)
 		_list.add_child(card)
-		_clips.append(clip)
+		_portraits.append(face)
 		_cards.append(card)
 		_hosts.append(host)
 		GameTooltip.attach(card, UnitCatalog.vermin_blurb(kind), tip)
@@ -126,7 +134,15 @@ func _kinds() -> Array[int]:
 	return kinds
 
 
-## Keeps the idle bob moving. A paused match passes a delta of 0.
+## Keeps a gentle idle bob on the portraits. A paused match passes 0.
 func tick(delta: float) -> void:
-	for index in _clips.size():
-		_clips[index].tick(delta, _hosts[index].size)
+	_time += delta
+	for index in _portraits.size():
+		var face := _portraits[index]
+		face.position = Vector2(0.0, sin(_time * 3.0 + index * 1.3) * 1.5)
+		face.size = _hosts[index].size
+
+
+## The portrait textures, in roster order (tests and captures).
+func portraits() -> Array[TextureRect]:
+	return _portraits

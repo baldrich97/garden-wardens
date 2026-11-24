@@ -19,8 +19,9 @@ extends Control
 enum State { IDLE, DWELL, CHARGING, LOCKED }
 
 ## Grace before the ring appears, ring fill time, and pointer slop (px).
-const GRACE := 0.28
-const CHARGE := 0.6
+## GW-AA pass 5: longer, so a glance never locks a tip by accident.
+const GRACE := 0.45
+const CHARGE := 1.2
 const MOVE_SLOP := 7.0
 ## The ring: radius, stroke, and where it sits relative to the pointer.
 const RING_RADIUS := 10.0
@@ -34,6 +35,10 @@ const AVOID_GAP := 8.0
 ## Off-limits rects (global pixels) for the locked panel; the board supplies
 ## them (the hint banner while it shows, the roster).
 var avoid_provider: Callable
+## Returns true while the ring must not start (GW-AA pass 5): a Warden card is
+## held or dragged, or a Warden is selected for placement. While it says so,
+## a pending dwell is dropped; a tip that already locked stays.
+var suppress_provider: Callable
 
 var _state := State.IDLE
 var _t := 0.0
@@ -92,7 +97,7 @@ func _init() -> void:
 ## Re-asking for the same key keeps the dwell running; a new key restarts it.
 ## [param bottom_line] (global y) puts the locked panel's bottom on that line.
 func request(key: String, text: String, bottom_line: float = NAN) -> void:
-	if _state == State.LOCKED:
+	if _state == State.LOCKED or suppressed():
 		return
 	if key == _key and _state != State.IDLE:
 		_text = text
@@ -126,6 +131,11 @@ func hide_tip() -> void:
 ## Old API: request with the text as its own key.
 func show_text(text: String, bottom_line: float = NAN) -> void:
 	request(text, text, bottom_line)
+
+
+## Whether the board says no ring may start right now.
+func suppressed() -> bool:
+	return suppress_provider.is_valid() and bool(suppress_provider.call())
 
 
 func state() -> State:
@@ -174,6 +184,9 @@ func _process(delta: float) -> void:
 ## [param pointer] (global pixels).
 func tick(delta: float, pointer: Vector2) -> void:
 	_pointer = pointer
+	if _state != State.LOCKED and _state != State.IDLE and suppressed():
+		_reset()
+		return
 	match _state:
 		State.DWELL, State.CHARGING:
 			if pointer.distance_to(_anchor) > MOVE_SLOP:

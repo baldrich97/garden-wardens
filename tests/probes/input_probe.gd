@@ -293,9 +293,14 @@ func _sample() -> void:
 			continue
 		_hp_last[v] = v.hp
 		var nm := _anim_name(v)
-		if _spawn_seen < 0.0 and nm.begins_with("spawn"):
+		# GW-AA pass 5: the entrance is the paper slide/flip over the idle
+		# frame (the spawn clips hung fliers on a string); a spawn clip
+		# showing is a regression.
+		if nm.begins_with("spawn") and _watch_abort.is_empty():
+			_watch_abort = "vermin entrance showed the spawn clip %s (stick/string)" % nm
+		if _spawn_seen < 0.0 and v.entrance_phase() == PaperPop.Phase.SLIDE and nm.begins_with("idle"):
 			_spawn_seen = t
-			_spawn_detail = "%s at t=%.2f (clip %s)" % [UnitCatalog.VERMIN_NAMES[v.kind], t, nm]
+			_spawn_detail = "%s at t=%.2f (flat slide, clip %s)" % [UnitCatalog.VERMIN_NAMES[v.kind], t, nm]
 		if _action_seen < 0.0 and nm.begins_with("action"):
 			_action_seen = t
 			_action_detail = "%s row %d at t=%.2f (clip %s)" % [UnitCatalog.VERMIN_NAMES[v.kind], v.row, t, nm]
@@ -378,7 +383,7 @@ func _ghost_live() -> bool:
 
 
 func _step3_click_place() -> bool:
-	var label := "click tile plants, place clip then idle"
+	var label := "click tile plants, sticker then place clip then idle"
 	var before := _water()
 	var center := _tile_center(HOVER_CELL)
 	await _btn_at(center, MOUSE_BUTTON_LEFT, true)
@@ -390,9 +395,13 @@ func _step3_click_place() -> bool:
 		return _step_fail(3, label, "water %d after placing a %d-cost warden" % [_water(), UnitCatalog.WARDEN_COST[DEW]])
 	if _started_at_first_place:
 		return _step_fail(3, label, "board auto-started on the first placement")
-	var place_ok := await _wait_until(0.5, func() -> bool: return _anim_name(actor).begins_with("place"))
+	# GW-AA pass 5: the sticker (descend, curl, sink) comes first; the live
+	# clip's place* starts when the Warden pops up out of the tile.
+	if not actor.sticker_showing():
+		return _step_fail(3, label, "the new Warden did not start as a paper sticker")
+	var place_ok := await _wait_until(PaperPop.placement_time() + 0.5, func() -> bool: return _anim_name(actor).begins_with("place") and not actor.sticker_showing())
 	if not place_ok:
-		return _step_fail(3, label, "clip never showed place* within 0.5 s (showing '%s')" % _anim_name(actor))
+		return _step_fail(3, label, "clip never showed place* after the sticker (showing '%s')" % _anim_name(actor))
 	await _shot("gw_p3_placed.png")
 	var ok_idle := await _wait_until(2.0, func() -> bool: return _anim_name(actor).begins_with("idle"))
 	if not ok_idle:
@@ -624,7 +633,7 @@ func _step9_wave_start() -> bool:
 
 
 func _step10_combat_animations() -> bool:
-	var label := "spawn / chew action / hurt states / Needle kill death->poof->freed, live"
+	var label := "entrance slide / chew action / hurt states / Needle kill death->poof->freed, live"
 	# Chew bait: a second dew dropper in the t=16 row-1 lane, bought with the
 	# income collected in step 6. Click like a human, once the cooldown is off.
 	if not await _wait_until(7.0, func() -> bool: return (_board.get("_cooldowns")[DEW]).is_ready()):

@@ -74,6 +74,16 @@ static func all_paths() -> Array[String]:
 	paths.append_array(GoldenHourBackdrop.all_paths())
 	paths.append_array(SkyCatalog.all_paths())
 	paths.append(SkyLayer.RAIN_STICK_TEXTURE)
+	# GW-AA pass 5: confetti, felt tiles, roster portraits, props, paper matte.
+	paths.append_array(ConfettiBurst.PIECES)
+	for kind in LawnView.SOIL_TILE_NAMES:
+		for shade in ["light", "dark"]:
+			paths.append(LawnView.BOARD_DIR + "%s_%s.png" % [LawnView.SOIL_TILE_NAMES[kind], shade])
+	for kind in UnitCatalog.Vermin.size():
+		paths.append(RosterPortraits.slot_path(kind))
+	for entry in StageLayers.DECOR:
+		paths.append(StageLayers.PROP_DIR + String(entry[0]))
+	paths.append(GardenBoard.MATTE_PAPER_TILE)
 	var out: Array[String] = []
 	var seen := {}
 	for path in paths:
