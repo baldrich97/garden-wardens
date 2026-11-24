@@ -316,6 +316,36 @@ below; all are presentation only (combat_probe identical 5/5 to the p3fix refere
   suppression); input probe step 3 (sticker then place) and step 10 (idle slide, no
   spawn clip).
 
+### GW-AA pass 6 (2026-11-24): Asset Gen batch2 per-scene sets
+
+- All six looks (Main, Sunny, Overcast, Dusk Twilight, Dusk Moonlit, Golden Hour) draw
+  their own `sky_backdrop.png` plus their own fence, shack, compost and lawn-ground plates
+  from `assets/art/environment/stage/<mood key>/`. The Dusks also draw their own fence
+  lights. Painted art is untinted: `backdrop_tint` is white for a look with its own sky,
+  and own plates take `backdrop_tint`. `SET_TINTS` now only light the shared fallback
+  plates and the decor props. The felt keeps half the set tint (Moonlit 0.72, via
+  `FELT_TINT_SHARES`).
+- Golden Hour composition: own sky (in the `sky_base` slot), then the locked sun and ray
+  wheels, then the golden_hour set plates. No `golden_hour_foreground.png`.
+- Dusk Twilight clouds: `SkyCatalog.FAMILY_LAVENDER` (18 painted lavender clouds; painted
+  families are generalised in `SkyCatalog.PAINTED_FAMILIES`). Dusk Moonlit stars: 16
+  paper star sprites (`SkyCatalog.STARS`), with a gentle twinkle, kept off the moon and
+  the porch. The moon is unchanged (batch2's copy is byte-identical).
+- Local art fixes: `tools/art/punch_porch_strip.py` (clears the porch-opening strip on all
+  six shacks and paints out the Dusk post bulb) and `tools/art/clean_golden_porch_sky.py`
+  (removes the porch ghost outline from the Golden Hour sky inside the opening). Both are
+  documented in `docs/ASSET_SOURCES.md` ("Pass 6"), along with the files that are now
+  fallback only.
+- Not wired: `batch3/` (rejected by Asset Gen; wait for `batch3_v2/`).
+- New checks:
+  - rules: every look uses its own 1280x720 sky untinted, Golden Hour has its own sky,
+    and a missing sky falls back to the tinted Dusk art; 18 lavender clouds (not leaking
+    into cotton), Twilight untinted, 4 star sprites;
+  - smoke: each look shows its own four plates on the shared slot rects, untinted, with
+    the compost eyes fixed; Moonlit stars are sprites and its felt is darker than
+    Twilight's; Golden Hour draws its own sky, keeps the sun and rays, has no foreground
+    layer, and shows its own untinted plates.
+
 ## Verification playbook
 
 Binary: the MAIN exe `tools/godot/Godot_v4.6-stable_win64.exe` for every run,

@@ -196,28 +196,48 @@ func _check_slots(board: GardenBoard, failures: PackedStringArray) -> void:
 	board.use_backdrop(0)
 	var fence_before := layers.fence_layer.get_global_rect()
 	var tex_before := layers.fence_layer.texture
-	# A look with no plates of its own keeps the shared set, just relit.
+	# GW-AA pass 6 (Asset Gen batch2): every look paints its own set. Each
+	# plate keeps the shared plate's slot (same rect), shows that look's own
+	# file, and is drawn untinted (the art is already graded).
+	var slot_rects := {}
+	for slot in ["fence", "shack", "compost", "lawn_ground"]:
+		var plate: Control = {"fence": layers.fence_layer, "shack": layers.shack_layer, "compost": layers.compost_pile, "lawn_ground": layers.lawn_layer}[slot]
+		slot_rects[slot] = plate.get_global_rect()
+	var eyes_rect := layers.compost_eyes.get_global_rect() if layers.compost_eyes != null else Rect2()
+	for look_name_i in BackdropCatalog.NAMES:
+		board.use_backdrop(BackdropCatalog.NAMES.find(look_name_i))
+		var own := layers.own_plates()
+		var key := BackdropCatalog.mood_key(BackdropCatalog.NAMES.find(look_name_i))
+		for slot in slot_rects:
+			var plate: Control = {"fence": layers.fence_layer, "shack": layers.shack_layer, "compost": layers.compost_pile, "lawn_ground": layers.lawn_layer}[slot]
+			if String(own.get(slot, "")).find("/stage/%s/" % key) < 0:
+				failures.append("%s does not show its own %s plate (%s)" % [look_name_i, slot, own.get(slot, "")])
+			if plate.get_global_rect() != slot_rects[slot]:
+				failures.append("%s %s plate moved off its slot" % [look_name_i, slot])
+			if plate.self_modulate != Color.WHITE:
+				failures.append("%s tints its own painted %s plate" % [look_name_i, slot])
+		if layers.compost_eyes != null and layers.compost_eyes.get_global_rect() != eyes_rect:
+			failures.append("%s moved the compost eyes" % look_name_i)
 	board.use_backdrop(BackdropCatalog.NAMES.find("Overcast"))
-	if layers.fence_layer.get_global_rect() != fence_before or layers.fence_layer.texture != tex_before:
-		failures.append("switching to Overcast moved or swapped the shared fence plate")
-	if layers.fence_layer.self_modulate == Color.WHITE:
-		failures.append("Overcast did not tint the set plates")
-	# GW-AA pass 5: both Dusks show the Dusk string-light fence (per-mood
-	# plate map), lined up on the fence slot, with its lights over it.
+	if layers.fence_layer.get_global_rect() != fence_before:
+		failures.append("switching to Overcast moved the fence plate")
+	if tex_before == layers.fence_layer.texture:
+		failures.append("Overcast shows Main's fence plate instead of its own")
+	# Both Dusks: their own string-light fence, lights over it, and the moon.
 	for dusk_name in ["Dusk Twilight", "Dusk Moonlit"]:
 		board.use_backdrop(BackdropCatalog.NAMES.find(dusk_name))
-		var own := layers.own_plates()
-		if String(own.get("fence", "")).find("/stage/dusk/") < 0:
-			failures.append("%s does not show the Dusk fence plate (own plates %s)" % [dusk_name, own])
 		if layers.fence_layer.get_global_rect() != fence_before:
 			failures.append("%s fence plate is off the fence slot" % dusk_name)
 		if layers.fence_lights == null or not layers.fence_lights.visible:
 			failures.append("%s fence string lights are not showing" % dusk_name)
 		if board.sky_layer().moon_height() <= 0.0:
 			failures.append("%s has no moon" % dusk_name)
-	var moonlit_tint := (board.find_child("Background", true, false) as TextureRect).self_modulate
-	if not (moonlit_tint.b > moonlit_tint.r and moonlit_tint.r < 0.8):
-		failures.append("Dusk Moonlit sky is not in night light (%s)" % moonlit_tint)
+	# Moonlit's painted night sky carries its own light; the felt takes more
+	# of the night tint than the other looks.
+	if BackdropCatalog.felt_tint(4).r >= BackdropCatalog.felt_tint(3).r:
+		failures.append("Moonlit felt is not darker than Twilight's")
+	if not board.sky_layer().stars_are_sprites():
+		failures.append("Moonlit stars are not Asset Gen's paper star sprites")
 	if not board.sky_layer().cloud_paths().is_empty() or board.sky_layer().star_count() == 0:
 		failures.append("Dusk Moonlit should be clear with stars")
 	var look_name := (board.find_child("BackdropButton", true, false) as Button)
@@ -245,6 +265,21 @@ func _check_slots(board: GardenBoard, failures: PackedStringArray) -> void:
 	var look_button := board.find_child("BackdropButton", true, false) as Button
 	if look_button == null or look_button.text != GardenBoard.GOLDEN_HOUR_NAME:
 		failures.append("look button reads '%s' on Golden Hour" % (look_button.text if look_button else "?"))
+	# GW-AA pass 6: Golden Hour is its own sky, then the locked sun and ray
+	# wheels, then its own set plates; never the old foreground plate.
+	var gh := board.find_child("GoldenHour", true, false)
+	if gh == null:
+		failures.append("Golden Hour composition missing")
+	else:
+		var base := gh.get_node_or_null("sky_base") as TextureRect
+		if base == null or base.texture != BackdropCatalog.own_sky(-1):
+			failures.append("Golden Hour does not draw its own batch2 sky")
+		if gh.get_node_or_null("foreground") != null:
+			failures.append("Golden Hour stacks the old foreground plate over the set plates")
+		if gh.get_node_or_null("rays_wheel") == null or gh.get_node_or_null("sun_sprite") == null:
+			failures.append("Golden Hour lost its locked sun or ray wheel")
+	if String(layers.own_plates().get("fence", "")).find("/stage/golden_hour/") < 0 or layers.fence_layer.self_modulate != Color.WHITE:
+		failures.append("Golden Hour does not show its own untinted set plates")
 	board.use_golden_hour(false)
 	board.use_backdrop(0)
 	# Framing: flat dark matte, clipped stage, no smear shader.

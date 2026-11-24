@@ -181,8 +181,42 @@ const SUNSET_CLOUDS: Array[Dictionary] = [
 	{"path": "res://assets/art/sky/clouds/large/cotton_sunset_L5.png", "body_h": 265, "size": 2, "stick": false},
 ]
 
-static var _sunset: Array[Dictionary] = []
-static var _sunset_scanned := false
+## Dusk Twilight's lavender/slate puffy clouds (Asset Gen batch2): the cotton
+## canvases regraded, so body_h is the cotton twin's. They live beside the
+## cotton set as cotton_lavender_*; FAMILY_LAVENDER owns them. Missing files
+## fall back to the lavender-tinted cotton.
+const FAMILY_LAVENDER := "lavender"
+const LAVENDER_CLOUDS: Array[Dictionary] = [
+	{"path": "res://assets/art/sky/clouds/small/cotton_lavender_s1_stick.png", "body_h": 165, "size": 0, "stick": true},
+	{"path": "res://assets/art/sky/clouds/small/cotton_lavender_s1.png", "body_h": 165, "size": 0, "stick": false},
+	{"path": "res://assets/art/sky/clouds/small/cotton_lavender_s2_stick.png", "body_h": 135, "size": 0, "stick": true},
+	{"path": "res://assets/art/sky/clouds/small/cotton_lavender_s2.png", "body_h": 135, "size": 0, "stick": false},
+	{"path": "res://assets/art/sky/clouds/small/cotton_lavender_s3_stick.png", "body_h": 138, "size": 0, "stick": true},
+	{"path": "res://assets/art/sky/clouds/small/cotton_lavender_s3.png", "body_h": 138, "size": 0, "stick": false},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_lavender_m1_stick.png", "body_h": 194, "size": 1, "stick": true},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_lavender_m1.png", "body_h": 194, "size": 1, "stick": false},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_lavender_m2_stick.png", "body_h": 188, "size": 1, "stick": true},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_lavender_m2.png", "body_h": 188, "size": 1, "stick": false},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_lavender_m3_stick.png", "body_h": 202, "size": 1, "stick": true},
+	{"path": "res://assets/art/sky/clouds/medium/cotton_lavender_m3.png", "body_h": 202, "size": 1, "stick": false},
+	{"path": "res://assets/art/sky/clouds/large/cotton_lavender_L1_stick.png", "body_h": 201, "size": 2, "stick": true},
+	{"path": "res://assets/art/sky/clouds/large/cotton_lavender_L1.png", "body_h": 201, "size": 2, "stick": false},
+	{"path": "res://assets/art/sky/clouds/large/cotton_lavender_L4_stick.png", "body_h": 253, "size": 2, "stick": true},
+	{"path": "res://assets/art/sky/clouds/large/cotton_lavender_L4.png", "body_h": 253, "size": 2, "stick": false},
+	{"path": "res://assets/art/sky/clouds/large/cotton_lavender_L5_stick.png", "body_h": 265, "size": 2, "stick": true},
+	{"path": "res://assets/art/sky/clouds/large/cotton_lavender_L5.png", "body_h": 265, "size": 2, "stick": false},
+]
+## Painted families (prefix cotton_<family>_) and their explicit lists.
+const PAINTED_FAMILIES := {FAMILY_SUNSET: SUNSET_CLOUDS, FAMILY_LAVENDER: LAVENDER_CLOUDS}
+## Moonlit's paper stars (Asset Gen batch2).
+const STARS: Array[String] = [
+	"res://assets/art/sky/stars/star_4pt_cream.png",
+	"res://assets/art/sky/stars/star_4pt_gold.png",
+	"res://assets/art/sky/stars/star_5pt_cream.png",
+	"res://assets/art/sky/stars/star_6pt_slate.png",
+]
+
+static var _painted: Dictionary = {}
 const RAIN_CLOUDS: Array[String] = [
 	"res://assets/art/sky/rain/rain_01_felt_cloud_3_strands.png",
 	"res://assets/art/sky/rain/rain_03_felt_cloud_dense.png",
@@ -234,45 +268,79 @@ static func plain_at(size: int, index: int) -> Dictionary:
 ## The entries of one size class that belong to one cloud family (cotton,
 ## felt, torn), stick or plain.
 static func family_entries(size: int, family: String, stick: bool) -> Array[Dictionary]:
-	if family == FAMILY_SUNSET:
-		return _sunset_entries(size, stick)
+	if PAINTED_FAMILIES.has(family):
+		return _painted_entries(family, size, stick)
 	var out: Array[Dictionary] = []
 	for index in class_count(size):
 		var entry := stick_at(size, index) if stick else plain_at(size, index)
 		var path: String = entry.get("path", "")
-		if path.get_file().begins_with(family + "_") and not path.get_file().begins_with("cotton_sunset_"):
+		if path.get_file().begins_with(family + "_") and not _is_painted_file(path):
 			out.append(entry)
 	return out
 
 
 ## Whether Asset Gen's sunset clouds are installed.
 static func has_sunset() -> bool:
-	return not sunset_entries().is_empty()
+	return has_painted(FAMILY_SUNSET)
 
 
 ## Every sunset cloud: {path, body_h, size, stick}.
 static func sunset_entries() -> Array[Dictionary]:
-	if not _sunset_scanned:
-		_sunset_scanned = true
-		_sunset = _scan_sunset()
-	return _sunset
+	return painted_entries(FAMILY_SUNSET)
 
 
 ## Test hook: pretend these sunset entries are on disk ([] = none); null
 ## rescans the folder.
 static func inject_sunset(entries: Variant) -> void:
+	inject_painted(FAMILY_SUNSET, entries)
+
+
+## Whether a painted family's files are installed.
+static func has_painted(family: String) -> bool:
+	return not painted_entries(family).is_empty()
+
+
+## The installed entries of a painted family: {path, body_h, size, stick}.
+static func painted_entries(family: String) -> Array[Dictionary]:
+	if not _painted.has(family):
+		var found: Array[Dictionary] = []
+		for entry in PAINTED_FAMILIES.get(family, []):
+			if ResourceLoader.exists(String(entry["path"])):
+				found.append(entry)
+		_painted[family] = found
+	return _painted[family]
+
+
+## Test hook: pretend these entries of a painted family are on disk ([] =
+## none); null rescans.
+static func inject_painted(family: String, entries: Variant) -> void:
 	if entries == null:
-		_sunset_scanned = false
-		_sunset = []
+		_painted.erase(family)
 		return
-	_sunset_scanned = true
-	_sunset.clear()
+	var list: Array[Dictionary] = []
 	for entry in entries:
-		_sunset.append(entry)
+		list.append(entry)
+	_painted[family] = list
 
 
-static func _sunset_entries(size: int, stick: bool) -> Array[Dictionary]:
-	var all := sunset_entries()
+static func _is_painted_file(path: String) -> bool:
+	for family in PAINTED_FAMILIES:
+		if path.get_file().begins_with("cotton_%s_" % family):
+			return true
+	return false
+
+
+## Moonlit's installed paper star textures.
+static func star_paths() -> Array[String]:
+	var out: Array[String] = []
+	for path in STARS:
+		if ResourceLoader.exists(path):
+			out.append(path)
+	return out
+
+
+static func _painted_entries(family: String, size: int, stick: bool) -> Array[Dictionary]:
+	var all := painted_entries(family)
 	var out: Array[Dictionary] = []
 	for want_size in [true, false]:
 		for want_stick in [true, false]:
@@ -281,14 +349,6 @@ static func _sunset_entries(size: int, stick: bool) -> Array[Dictionary]:
 					out.append(entry)
 			if not out.is_empty():
 				return out
-	return out
-
-
-static func _scan_sunset() -> Array[Dictionary]:
-	var out: Array[Dictionary] = []
-	for entry in SUNSET_CLOUDS:
-		if ResourceLoader.exists(String(entry["path"])):
-			out.append(entry)
 	return out
 
 
@@ -306,6 +366,8 @@ static func all_paths() -> Array[String]:
 	out.append(RAIN_DROP)
 	out.append(RAIN_SPLASH)
 	out.append(MOON)
-	for entry in SUNSET_CLOUDS:
-		out.append(String(entry["path"]))
+	for family in PAINTED_FAMILIES:
+		for entry in painted_entries(family):
+			out.append(String(entry["path"]))
+	out.append_array(star_paths())
 	return out

@@ -24,6 +24,16 @@ const STAR_BAND_SHARE := 0.62
 const STAR_SIZE_MIN := 1.6
 const STAR_SIZE_MAX := 3.4
 const STAR_COLOR := Color(1.0, 0.96, 0.8)
+## Asset Gen's paper star sprites (batch2), used when installed: fewer and
+## larger than the drawn ones, with a slow, gentle twinkle (alpha and a
+## slight scale breath), kept clear of the moon.
+const STAR_SPRITE_COUNT := 16
+const STAR_SPRITE_H_MIN := 9.0
+const STAR_SPRITE_H_MAX := 17.0
+const STAR_TWINKLE_SPEED := 1.1
+const STAR_MOON_CLEARANCE := 26.0
+## No sprite stars over the porch (they would show through its opening).
+const STAR_KEEP_OUT := Rect2(0.0, 0.0, 185.0, 380.0)
 const SUN_CENTER_DROP := 40.0
 const SUN_SHADOW_OFFSET := Vector2(7.0, 9.0)
 ## The rain cloud's body is sized like a large drifting cloud (same family);
@@ -88,6 +98,8 @@ var _moon_rest := Vector2.ZERO
 var _stars: Node2D
 var _star_points: Array[Vector3] = []
 var _star_phase: Array[float] = []
+var _star_textures: Array[Texture2D] = []
+var _star_kind: Array[int] = []
 var _family := ""
 var _tint := Color.WHITE
 var _rain_cloud_path := ""
@@ -368,15 +380,46 @@ func _layout_stars() -> void:
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("stars_%d" % _seed)
-	for _i in STAR_COUNT:
+	_star_textures.clear()
+	_star_kind.clear()
+	for path in SkyCatalog.star_paths():
+		var texture := BackdropCatalog.cached(path)
+		if texture != null:
+			_star_textures.append(texture)
+	var sprites := not _star_textures.is_empty()
+	var moon_rect := Rect2(_moon.position, _moon.size).grow(STAR_MOON_CLEARANCE) if _moon.visible else Rect2()
+	var want := STAR_SPRITE_COUNT if sprites else STAR_COUNT
+	var tries := 0
+	while _star_points.size() < want and tries < want * 20:
+		tries += 1
 		var x := _band.position.x + rng.randf() * _band.size.x
 		var y := _band.position.y + rng.randf() * _band.size.y * STAR_BAND_SHARE
-		_star_points.append(Vector3(x, y, rng.randf_range(STAR_SIZE_MIN, STAR_SIZE_MAX)))
-		_star_phase.append(rng.randf() * TAU)
+		var size := rng.randf_range(STAR_SPRITE_H_MIN, STAR_SPRITE_H_MAX) if sprites else rng.randf_range(STAR_SIZE_MIN, STAR_SIZE_MAX)
+		var phase := rng.randf() * TAU
+		var kind := rng.randi_range(0, maxi(_star_textures.size(), 1) - 1)
+		if sprites and (moon_rect.has_point(Vector2(x, y)) or STAR_KEEP_OUT.has_point(Vector2(x, y))):
+			continue
+		_star_points.append(Vector3(x, y, size))
+		_star_phase.append(phase)
+		_star_kind.append(kind)
 	_stars.queue_redraw()
 
 
+## Whether Moonlit's stars are Asset Gen's paper sprites (else drawn).
+func stars_are_sprites() -> bool:
+	return _stars.visible and not _star_textures.is_empty()
+
+
 func _draw_stars() -> void:
+	if not _star_textures.is_empty():
+		for i in _star_points.size():
+			var p := _star_points[i]
+			var texture := _star_textures[_star_kind[i] % _star_textures.size()]
+			var wave := sin(_time * STAR_TWINKLE_SPEED + _star_phase[i])
+			var h := p.z * (1.0 + 0.06 * wave)
+			var w := h * texture.get_width() / maxf(texture.get_height(), 1.0)
+			_stars.draw_texture_rect(texture, Rect2(p.x - w * 0.5, p.y - h * 0.5, w, h), false, Color(1, 1, 1, 0.72 + 0.28 * wave))
+		return
 	for i in _star_points.size():
 		var p := _star_points[i]
 		var twinkle := 0.55 + 0.45 * sin(_time * 1.7 + _star_phase[i])

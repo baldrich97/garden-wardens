@@ -211,16 +211,24 @@ func _backdrops(failures: PackedStringArray) -> void:
 	for index in BackdropCatalog.count():
 		if BackdropCatalog.texture_at(index) == null:
 			failures.append("backdrop %s did not load" % BackdropCatalog.NAMES[index])
-	# batch2 slot: a look's own sky_backdrop.png replaces its PATHS backdrop
-	# (Dusk Moonlit falls back to the shared dusk folder).
-	var sky_probe := ImageTexture.create_from_image(Image.create(16, 9, false, Image.FORMAT_RGBA8))
-	var sky_path := BackdropCatalog.STAGE_DIR + "dusk/" + BackdropCatalog.SKY_BACKDROP_NAME
-	BackdropCatalog.inject(sky_path, sky_probe)
-	if BackdropCatalog.texture_at(4) != sky_probe or BackdropCatalog.texture_at(3) != sky_probe or BackdropCatalog.texture_at(0) == sky_probe:
-		failures.append("a mood's sky_backdrop.png slot did not replace only that mood's backdrop")
+	# batch2: every look has its own sky_backdrop.png (1280x720), which
+	# replaces its PATHS backdrop and leaves it untinted.
+	for index in BackdropCatalog.count():
+		var own := BackdropCatalog.own_sky(index)
+		if own == null or own.get_size() != Vector2(1280.0, 720.0) or BackdropCatalog.texture_at(index) != own:
+			failures.append("%s does not use its own 1280x720 sky_backdrop.png" % BackdropCatalog.NAMES[index])
+		elif BackdropCatalog.backdrop_tint(index) != Color.WHITE:
+			failures.append("%s tints its own painted sky" % BackdropCatalog.NAMES[index])
+	if BackdropCatalog.own_sky(-1) == null:
+		failures.append("Golden Hour has no sky_backdrop.png of its own")
+	# A missing slot falls back to the old backdrop (and its tint) again.
+	var sky_path := BackdropCatalog.STAGE_DIR + "dusk_moonlit/" + BackdropCatalog.SKY_BACKDROP_NAME
 	BackdropCatalog.inject(sky_path, null)
-	if BackdropCatalog.texture_at(3) == sky_probe:
-		failures.append("the sky_backdrop slot stuck after its art went away")
+	if BackdropCatalog.texture_at(4) != BackdropCatalog.cached(BackdropCatalog.PATHS[4]) or BackdropCatalog.backdrop_tint(4) == Color.WHITE:
+		failures.append("without its sky_backdrop.png Moonlit did not fall back to the tinted Dusk art")
+	BackdropCatalog.forget_optional()
+	if BackdropCatalog.own_sky(4) == null:
+		failures.append("the Moonlit sky slot did not come back after forget_optional")
 	if BackdropCatalog.pick_index(12345) != BackdropCatalog.pick_index(12345):
 		failures.append("the same seed picked a different backdrop")
 	if BackdropCatalog.pick_index(0) < 0 or BackdropCatalog.pick_index(0) >= BackdropCatalog.count():
@@ -790,7 +798,8 @@ func _responsive(failures: PackedStringArray) -> void:
 func _mood_clouds(failures: PackedStringArray) -> void:
 	var want := {
 		SkyLook.MOOD_MAIN: "cotton", SkyLook.MOOD_SUNNY: "cotton",
-		SkyLook.MOOD_OVERCAST: "felt", SkyLook.MOOD_DUSK: "cotton",
+		SkyLook.MOOD_OVERCAST: "felt",
+		SkyLook.MOOD_DUSK: "lavender" if SkyCatalog.has_painted(SkyCatalog.FAMILY_LAVENDER) else "cotton",
 		SkyLook.MOOD_DUSK_MOONLIT: "",
 		SkyLook.MOOD_GOLDEN_HOUR: ("sunset" if SkyCatalog.has_sunset() else "cotton") if SkyLook.GOLDEN_HOUR_CLOUDS == "tinted" else "",
 	}
@@ -813,7 +822,9 @@ func _mood_clouds(failures: PackedStringArray) -> void:
 		sky.apply_look(4242, mood)
 		for path in sky.cloud_paths():
 			var file := path.get_file()
-			var family_ok := file.find("sunset_") >= 0 if want[mood] == "sunset" else file.begins_with(want[mood] + "_")
+			var family_ok := file.begins_with(want[mood] + "_")
+			if want[mood] in ["sunset", "lavender"]:
+				family_ok = file.find(want[mood] + "_") >= 0
 			if file.begins_with("torn_") or (want[mood] != "" and not family_ok):
 				failures.append("mood %d showed off-family cloud %s" % [mood, file])
 				break
@@ -832,8 +843,21 @@ func _mood_clouds(failures: PackedStringArray) -> void:
 	if SkyLook.cloud_tint(SkyLook.MOOD_MAIN) != Color.WHITE:
 		failures.append("Main clouds should stay white")
 	var dusk := SkyLook.cloud_tint(SkyLook.MOOD_DUSK)
-	if not (dusk.b > dusk.r and dusk.b > dusk.g):
+	if SkyCatalog.has_painted(SkyCatalog.FAMILY_LAVENDER):
+		# Asset Gen batch2: 18 painted lavender clouds, untinted, kept out of
+		# the white cotton family.
+		if dusk != Color.WHITE:
+			failures.append("Dusk Twilight tints the already-painted lavender clouds")
+		if SkyCatalog.painted_entries(SkyCatalog.FAMILY_LAVENDER).size() != 18:
+			failures.append("lavender cloud family has %d files, want 18" % SkyCatalog.painted_entries(SkyCatalog.FAMILY_LAVENDER).size())
+		for size in 3:
+			for entry in SkyCatalog.family_entries(size, SkyCatalog.FAMILY_COTTON, true):
+				if String(entry["path"]).find("lavender") >= 0:
+					failures.append("a lavender cloud leaked into the white cotton family")
+	elif not (dusk.b > dusk.r and dusk.b > dusk.g):
 		failures.append("Dusk clouds should lean lavender/slate")
+	if SkyCatalog.star_paths().size() != 4:
+		failures.append("Moonlit has %d paper star sprites, want 4" % SkyCatalog.star_paths().size())
 	var gold := SkyLook.cloud_tint(SkyLook.MOOD_GOLDEN_HOUR)
 	if SkyCatalog.has_sunset():
 		# The painted peach/gold sunset clouds carry their own colour.

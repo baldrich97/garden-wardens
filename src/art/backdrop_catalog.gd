@@ -100,6 +100,9 @@ const BACKDROP_TINTS: Array[Color] = [
 const GOLDEN_HOUR_SET_TINT := Color(1.0, 0.86, 0.7)
 ## The felt takes half the set tint, so the play surface stays readable.
 const FELT_TINT_SHARE := 0.5
+## Per-look override (GW-AA pass 6): the painted Moonlit set is a deep night,
+## so the felt takes more of the night light to sit in it (still readable).
+const FELT_TINT_SHARES := {"dusk_moonlit": 0.72}
 ## Whether the compost eyes glow on each look (index aligned with NAMES).
 ## The heap is shared, so its eyes show on every look by default.
 const EYES_ON: Array[bool] = [true, true, true, true, true]
@@ -117,10 +120,9 @@ static func count() -> int:
 ## A look's sky backdrop: its own stage/<mood key>/sky_backdrop.png (full
 ## 1280x720, the batch2 slot) if one is installed, else PATHS.
 static func texture_at(index: int) -> Texture2D:
-	for dir in mood_dirs(index):
-		var own := optional(dir + SKY_BACKDROP_NAME)
-		if own != null:
-			return own
+	var own := own_sky(index)
+	if own != null:
+		return own
 	return cached(PATHS[posmod(index, PATHS.size())])
 
 
@@ -217,11 +219,21 @@ static func side_plate(index: int, side: String) -> Texture2D:
 	return null
 
 
-## The light on a look's own art (sky backdrop, own plates).
+## The light on a look's own art (sky backdrop, own plates). A look with its
+## own painted sky (batch2) is already graded, so it takes no tint.
 static func backdrop_tint(index: int) -> Color:
-	if index < 0:
+	if index < 0 or own_sky(index) != null:
 		return Color.WHITE
 	return BACKDROP_TINTS[posmod(index, BACKDROP_TINTS.size())]
+
+
+## A look's own sky_backdrop.png ([param index] < 0 is Golden Hour), or null.
+static func own_sky(index: int) -> Texture2D:
+	for dir in mood_dirs(index):
+		var own := optional(dir + SKY_BACKDROP_NAME)
+		if own != null:
+			return own
+	return null
 
 
 ## Records a texture the preload already loaded (no second load).
@@ -238,7 +250,10 @@ static func set_tint(index: int) -> Color:
 
 
 static func felt_tint(index: int) -> Color:
-	return Color.WHITE.lerp(set_tint(index), FELT_TINT_SHARE)
+	var share := FELT_TINT_SHARE
+	if index >= 0:
+		share = float(FELT_TINT_SHARES.get(MOOD_KEYS[posmod(index, MOOD_KEYS.size())], FELT_TINT_SHARE))
+	return Color.WHITE.lerp(set_tint(index), share)
 
 
 static func eyes_on(index: int) -> bool:
@@ -258,6 +273,17 @@ static func all_paths() -> Array[String]:
 	# The Dusk plates cut from the Dusk art (always shipped).
 	for slot in ["fence", "fence_lights", "shack"]:
 		out.append(STAGE_DIR + "dusk/stage_%s.png" % slot)
+	# Each look's own set and sky (Asset Gen batch2), where installed.
+	var keys: Array[String] = MOOD_KEYS.duplicate()
+	keys.append(GOLDEN_HOUR_KEY)
+	for key in keys:
+		var names: Array[String] = [SKY_BACKDROP_NAME, "stage_fence_lights.png"]
+		for slot in PLATE_SLOTS:
+			names.append("stage_%s.png" % slot)
+		for file in names:
+			var path := STAGE_DIR + key + "/" + file
+			if ResourceLoader.exists(path):
+				out.append(path)
 	return out
 
 

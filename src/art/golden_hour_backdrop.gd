@@ -123,6 +123,13 @@ func _read_spec() -> bool:
 
 func _add_fullframe(key: String) -> void:
 	var texture := BackdropCatalog.cached(LAYER_PATHS[key])
+	# Asset Gen batch2: Golden Hour's own sky (no sun, no rays) replaces the
+	# old sky base; the locked sun and ray wheels still draw on top of it,
+	# and the stage's golden_hour set plates stand in front.
+	if key == "sky_base":
+		var own := BackdropCatalog.own_sky(-1)
+		if own != null:
+			texture = own
 	if texture == null:
 		push_error("Golden Hour is missing layer %s." % key)
 		return

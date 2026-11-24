@@ -112,6 +112,9 @@ static func cloud_family(mood_index: int) -> String:
 		return SkyCatalog.FAMILY_FELT
 	if mood_index == MOOD_DUSK_MOONLIT:
 		return ""
+	if mood_index == MOOD_DUSK and SkyCatalog.has_painted(SkyCatalog.FAMILY_LAVENDER):
+		# Asset Gen's painted lavender clouds (batch2) replace the tinted cotton.
+		return SkyCatalog.FAMILY_LAVENDER
 	if mood_index == MOOD_GOLDEN_HOUR:
 		if GOLDEN_HOUR_CLOUDS == "none":
 			return ""
@@ -130,7 +133,7 @@ static func mood_shows_moon(mood_index: int) -> bool:
 static func cloud_tint(mood_index: int) -> Color:
 	match mood_index:
 		MOOD_DUSK:
-			return DUSK_CLOUD_TINT
+			return Color.WHITE if cloud_family(mood_index) == SkyCatalog.FAMILY_LAVENDER else DUSK_CLOUD_TINT
 		MOOD_GOLDEN_HOUR:
 			# Painted sunset clouds already carry their colour.
 			return Color.WHITE if cloud_family(mood_index) == SkyCatalog.FAMILY_SUNSET else GOLDEN_HOUR_CLOUD_TINT

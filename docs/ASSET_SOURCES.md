@@ -172,12 +172,12 @@ shared file. A missing file is never an error (`BackdropCatalog.optional`).
 
 | Slot | Exact file name | Size / placement | Status now |
 | --- | --- | --- | --- |
-| Fence plate | `stage/<mood key>/stage_fence.png` | 1135x137 at 145,166 (shared plate size), or a full 1280x720 canvas drawn at 0,0 | `dusk/` installed (Asset Gen batch1); others use the shared plate + tint |
-| Fence lights | `stage/<mood key>/stage_fence_lights.png` (beside an own fence plate) | same size/offset as that fence plate; drawn additive with a gentle shimmer (`StageLayers.lights_level`, 0.42 ± 0.16) | `dusk/` installed (batch1) |
-| Shack plate | `stage/<mood key>/stage_shack.png` | 173x372 at 0,0, or 1280x720 | `dusk/` installed (my cut, see below) |
-| Compost plate | `stage/<mood key>/stage_compost.png` | 211x213 at 1069,221, or 1280x720 | none (shared + tint) |
-| Lawn-ground plate | `stage/<mood key>/stage_lawn_ground.png` | 1280x423 at 0,297, or 1280x720 | none (shared + tint) |
-| Sky backdrop (batch2) | `stage/<mood key>/sky_backdrop.png` | 1280x720, replaces the look's `BackdropCatalog.PATHS` backdrop | none yet |
+| Fence plate | `stage/<mood key>/stage_fence.png` | 1135x137 at 145,166 (shared plate size), or a full 1280x720 canvas drawn at 0,0 | all six mood folders installed (pass 6, batch2); `dusk/` is the fallback |
+| Fence lights | `stage/<mood key>/stage_fence_lights.png` (beside an own fence plate) | same size/offset as that fence plate; drawn additive with a gentle shimmer (`StageLayers.lights_level`, 0.42 ± 0.16) | `dusk_twilight/`, `dusk_moonlit/` installed (batch2); `dusk/` fallback |
+| Shack plate | `stage/<mood key>/stage_shack.png` | 173x372 at 0,0, or 1280x720 | all six installed (batch2, pass 6); `dusk/` (my cut) is the fallback |
+| Compost plate | `stage/<mood key>/stage_compost.png` | 211x213 at 1069,221, or 1280x720 | all six installed (batch2, pass 6) |
+| Lawn-ground plate | `stage/<mood key>/stage_lawn_ground.png` | 1280x423 at 0,297, or 1280x720 | all six installed (batch2, pass 6) |
+| Sky backdrop (batch2) | `stage/<mood key>/sky_backdrop.png` | 1280x720, replaces the look's `BackdropCatalog.PATHS` backdrop | all six installed (pass 6) |
 | Side panels (batch3) | `stage/<mood key>/side_left.png`, `side_right.png` | height 720 (stage pixels), any width; drawn just outside the stage's left/right edge at the stage's scale | none yet: the clean matte shows |
 | Sunset clouds | `sky/clouds/<small\|medium\|large>/cotton_sunset_<code>.png` + `_stick.png` | listed explicitly in `SkyCatalog.SUNSET_CLOUDS` with `body_h` | installed (batch1), Golden Hour's family |
 | Soil tiles | `environment/board/felt_<sand\|stone>_<light\|dark>.png` | square (160 px used); mapped per cell through the felt's perspective; light/dark follow the felt checker (light = even col+row) | installed |
@@ -211,10 +211,77 @@ plus the additive lights layer covers it).
 
 ### Still to come
 
-- batch2: per-scene plates (`stage_<slot>.png`) and skies (`sky_backdrop.png`) in each
-  mood folder, names above. A full 1280x720 canvas is fine for any plate.
+- batch2: landed in pass 6 (see below).
 - batch3: `side_left.png` / `side_right.png` per mood folder (or in `dusk/` for both Dusks).
-- A sharper `dusk/stage_fence.png` (same name, same 1135x137 at 145,166).
+  The first batch3 was rejected by Asset Gen; only `batch3_v2/` should be wired.
+- ~~A sharper `dusk/stage_fence.png`~~: landed (batch1 update, installed in pass 6).
+
+## Pass 6: Asset Gen batch2 per-scene sets (GW-AA pass 6, 2026-11-24)
+
+Source: `stage_kit/batch2/<scene>/` (62 manifest rows, all sha256 verified against
+`manifest.tsv`). Every look now has its own sky and its own four set plates in
+`assets/art/environment/stage/<mood key>/`. The silhouettes match the shared plates
+pixel for pixel (fence, compost and lawn ground are identical; the shack differs only by
+the punched porch opening), so nothing moves when you switch looks: only the art changes.
+The compost hollow sits at the same place in every scene (dark centroid ~1180,337, as
+on the shared plate), so `compost_eyes_overlay.png` stays where it is for all six.
+
+How they are drawn:
+- `sky_backdrop.png` replaces the look's `BackdropCatalog.PATHS` backdrop
+  (`BackdropCatalog.own_sky` / `texture_at`). A look with its own sky takes no tint
+  (`backdrop_tint` is white), and its own plates are drawn untinted. `SET_TINTS` now
+  only applies to the shared fallback plates and the lawn-ground decor props.
+- The felt keeps half of the look's set tint so it sits in each scene's light;
+  Moonlit uses a 0.72 share instead (`FELT_TINT_SHARES`), because its painted night set
+  made the felt look like daylight.
+- Golden Hour: its own sky, then the locked sun shadow, sun sprite and ray wheels
+  (`GoldenHourBackdrop`, the `sky_base` layer now reads `stage/golden_hour/sky_backdrop.png`),
+  then its own set plates. `golden_hour_foreground.png` is never drawn (smoke-tested).
+- Dusk Twilight draws the 18 painted lavender clouds (`SkyCatalog.FAMILY_LAVENDER`,
+  untinted) instead of tinted cotton. Dusk Moonlit draws 16 of Asset Gen's paper star
+  sprites (`SkyCatalog.STARS`, a gentle alpha/scale twinkle, kept clear of the moon and
+  the porch) instead of the drawn stars. `dusk_moon.png` in batch2 is byte-identical to
+  the installed `sky/moon/dusk_moon.png`, so no new file was needed for it.
+- The Dusk fence lights draw additive over each Dusk fence plate (which also has the
+  lights baked in), as in pass 5.
+
+| File(s) | Status |
+| --- | --- |
+| `stage/{main,sunny,overcast,dusk_twilight,dusk_moonlit,golden_hour}/sky_backdrop.png` (6) | **approved**, wired. `golden_hour/` was locally cleaned behind the porch opening (`tools/art/clean_golden_porch_sky.py`, see below) |
+| `stage/<same six>/stage_fence.png` (6) | **approved**, wired (1135x137 at 145,166) |
+| `stage/<same six>/stage_shack.png` (6) | **approved, locally touched**: `tools/art/punch_porch_strip.py` clears the 26 px strip the batch2 punch left in the porch opening, and on both Dusk plates paints out a baked string-light bulb on the porch post |
+| `stage/<same six>/stage_compost.png` (6) | **approved**, wired (211x213 at 1069,221) |
+| `stage/<same six>/stage_lawn_ground.png` (6) | **approved**, wired (1280x423 at 0,297) |
+| `stage/{dusk_twilight,dusk_moonlit}/stage_fence_lights.png` (2) | **approved**, wired (additive + shimmer) |
+| `sky/clouds/{small,medium,large}/cotton_lavender_{s1,s2,s3,m1,m2,m3,L1,L4,L5}[_stick].png` (18) | **approved**, Dusk Twilight's clouds; body_h = the cotton twin's (s1 165, s2 135, s3 138, m1 194, m2 188, m3 202, L1 201, L4 253, L5 265) |
+| `sky/stars/star_{4pt_cream,4pt_gold,5pt_cream,6pt_slate}.png` (4) | **approved**, Dusk Moonlit's stars |
+| `stage/dusk/stage_fence.png`, `stage/dusk/stage_fence_lights.png` | **replaced** with batch1's updated sharp 1280 files (`stage_fence_dusk.png` = `dusk_twilight/stage_fence.png`, same sha256 `301b233f…`). Fallback only now |
+
+Not wired: anything from `batch3/` (Asset Gen rejected those side panels; `batch3_v2/`
+will replace them), the kit's `_work/` and `previews/`.
+
+Old files that are now **fallback only** (still referenced, but not shown while the
+batch2 files are installed):
+- `environment/backdrops/main_noclouds_nosun.png`, `mood_1_sunny_noclouds.png`,
+  `mood_3_overcast_noclouds.png`, `mood_4_dusk_stage.png` (the `PATHS` backdrops).
+- `environment/stage/stage_fence.png`, `stage_shack.png`, `stage_compost.png`,
+  `stage_lawn_ground.png` (shared plates) and the whole `stage/dusk/` folder
+  (`stage_fence.png`, `stage_fence_lights.png`, `stage_shack.png`).
+- `environment/golden_hour/golden_hour_sky_base.png` (Golden Hour's sky base).
+- Dusk's lavender tint over the white cotton (`SkyLook.DUSK_CLOUD_TINT`) and the drawn
+  Moonlit stars stay as code fallbacks.
+
+Local fixes to Asset Gen's art (before/after in the pass 6 captures):
+1. **All six `stage_shack.png`**: the porch-opening punch left an opaque strip at
+   about x 90-118, y 148-176 (baked hill/trees between the upper and lower punched
+   areas). It is cleared so the sky shows through the whole opening.
+2. **`dusk_twilight` and `dusk_moonlit` `stage_shack.png`**: a glowing string-light bulb
+   is baked onto the porch post at about (118,168), with no wire to the fence. It is
+   painted out from the post above and below it (radius 12 on Twilight, 22 on Moonlit).
+3. **`golden_hour/sky_backdrop.png`**: behind the porch the sky still holds a ghost of
+   the porch opening (a peach patch with a dark teal outline, about x 88-120,
+   y 100-132), which showed through the opening. Inside the opening, that area is
+   repainted with the row's peach sky colour.
 
 ## Unwired inventory (definitive)
 
