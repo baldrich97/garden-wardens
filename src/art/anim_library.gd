@@ -112,6 +112,14 @@ static func ground_point_px(folder: String) -> Vector2:
 	return Vector2.INF
 
 
+## Hover pivot from `anchor.body_center_px` (fliers), Vector2.INF when absent.
+static func body_center_px(folder: String) -> Vector2:
+	var anchor: Variant = manifest_for_folder(folder).get("anchor")
+	if anchor is Dictionary:
+		return _vec2_from(anchor.get("body_center_px"))
+	return Vector2.INF
+
+
 ## Drawing canvas size in pixels from `canvas_px`. Vector2.INF when absent.
 static func canvas_px(folder: String) -> Vector2:
 	return _vec2_from(manifest_for_folder(folder).get("canvas_px"))

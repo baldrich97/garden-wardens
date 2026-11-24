@@ -20,11 +20,32 @@ var _anchor_canvas := Vector2.INF
 ## Extra motion (idle bob, chew lean, squash, flash) is on by default. The
 ## anim preview turns it off so the drawings show exactly as authored.
 var _motion := true
+## The idle bob (GW-AA pass 3): off by default, because ground units stand
+## still on their rail; fliers and the wave roster portraits turn it on.
+var _idle_bob := false
 ## Optional per-frame overlay (the Needle Spitter's smoke): one texture per
 ## frame of `_overlay_base` animations, drawn on the same canvas as the clip.
 var _overlay: Sprite2D
 var _overlay_base := ""
 var _overlay_frames: Array[Texture2D] = []
+## Overlay boost (GW-AA pass 3): scale about a canvas pivot, alpha gain, and
+## a lift toward white, so the Needle smoke reads at the bigger unit size.
+var _overlay_scale := 1.0
+var _overlay_pivot := Vector2.INF
+var _overlay_gain := 1.0
+var _overlay_lift := 0.0
+
+const _OVERLAY_SHADER_CODE := """
+shader_type canvas_item;
+uniform float gain = 1.0;
+uniform float lift = 0.0;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	c.rgb = mix(c.rgb, vec3(1.0), lift);
+	c.a = clamp(c.a * gain, 0.0, 1.0);
+	COLOR = c * COLOR;
+}
+"""
 
 
 ## Replaces the current clip. Safe to call more than once.
@@ -71,7 +92,47 @@ func set_overlay(anim_base: String, frames: Array[Texture2D]) -> void:
 		# Follow the clip's own frame clock so smoke never lags a frame behind.
 		_sprite.frame_changed.connect(_refresh_overlay)
 		_sprite.animation_changed.connect(_refresh_overlay)
+	_apply_overlay_boost()
 	_refresh_overlay()
+
+
+## Enlarges the overlay about [param pivot_px] (canvas pixels, e.g. the
+## Needle Spitter's mouth), multiplies its alpha by [param gain] and lifts its
+## colour [param lift] of the way to white.
+func set_overlay_boost(scale_factor: float, pivot_px: Vector2, gain: float, lift: float) -> void:
+	_overlay_scale = scale_factor
+	_overlay_pivot = pivot_px
+	_overlay_gain = gain
+	_overlay_lift = lift
+	_apply_overlay_boost()
+
+
+func overlay_boost() -> float:
+	return _overlay_scale
+
+
+func _apply_overlay_boost() -> void:
+	if _overlay == null or _sprite == null:
+		return
+	var canvas := Vector2.ZERO
+	if _overlay_frames.size() > 0 and _overlay_frames[0] != null:
+		canvas = _overlay_frames[0].get_size()
+	_overlay.scale = Vector2(_overlay_scale, _overlay_scale)
+	if _overlay_pivot != Vector2.INF and canvas != Vector2.ZERO:
+		var pivot := _overlay_pivot - canvas * 0.5
+		_overlay.position = pivot * (1.0 - _overlay_scale)
+	else:
+		_overlay.position = Vector2.ZERO
+	if _overlay_gain != 1.0 or _overlay_lift != 0.0:
+		var boost := _overlay.material as ShaderMaterial
+		if boost == null:
+			var shader := Shader.new()
+			shader.code = _OVERLAY_SHADER_CODE
+			boost = ShaderMaterial.new()
+			boost.shader = shader
+			_overlay.material = boost
+		boost.set_shader_parameter("gain", _overlay_gain)
+		boost.set_shader_parameter("lift", _overlay_lift)
 
 
 ## The overlay texture showing right now, or null when none is drawn.
@@ -106,6 +167,15 @@ func clear() -> void:
 	_anim = ""
 	_squash = 0.0
 	_flash = 0.0
+
+
+## Turns the idle hover bob on (fliers, roster portraits) or off (ground units).
+func set_idle_bob(enabled: bool) -> void:
+	_idle_bob = enabled
+
+
+func idle_bob_enabled() -> bool:
+	return _idle_bob
 
 
 ## Toggles the temporary motion (idle bob, chew lean) on or off.
@@ -192,7 +262,11 @@ func _anim_base() -> String:
 func _fit(bounds: Vector2) -> void:
 	if _sprite == null or bounds.x <= 1.0 or bounds.y <= 1.0 or _anim.is_empty():
 		return
-	var anchor_fit := _anchor_canvas.x > 1.0 and _anchor_canvas.y > 1.0
+	# Fliers carry no ground point (INF): they keep the centred fit. INF > 1.0
+	# is true, so test for a finite anchor explicitly (an INF anchor made the
+	# fit NaN and hid every bee and fly).
+	var anchor_fit := _anchor_ground.is_finite() and _anchor_canvas.is_finite() \
+			and _anchor_canvas.x > 1.0 and _anchor_canvas.y > 1.0
 	var texture: Texture2D = null
 	if not anchor_fit:
 		texture = _sprite.sprite_frames.get_frame_texture(_anim, 0)
@@ -205,7 +279,7 @@ func _fit(bounds: Vector2) -> void:
 	var stretch_x := 1.0
 	var stretch_y := 1.0
 	var base := _anim_base()
-	if _motion and base == "idle":
+	if _motion and _idle_bob and base == "idle":
 		bob = sin(_time * 5.0) * bounds.y * 0.06
 	elif _motion and base == "chew":
 		lean = -0.28

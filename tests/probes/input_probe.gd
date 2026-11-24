@@ -88,12 +88,19 @@ func _run() -> void:
 		_finish("lawn never laid out")
 		return
 	print("PROBE lawn=%s cell=%.1f" % [_lawn().size, _lawn().cell_size_px()])
+	# The Option B lawn is laid out from the first frame, before the HUD
+	# containers settle; wait for the card tray too, then a few frames.
+	if not await _wait_until(3.0, func() -> bool: return _cards().size() > 0 and (_cards()[0] as Control).size.x > 8.0):
+		_finish("card tray never laid out")
+		return
+	await _wait_until(0.3, func() -> bool: return false)
 	var results: Array[bool] = []
 	results.append(await _step1_select_card())
 	results.append(await _step2_ghost())
 	results.append(await _step3_click_place())
 	results.append(await _step4_remove())
 	results.append(await _step5_right_click())
+	results.append(await _step11_hover_every_cell())
 	results.append(await _step6_start_and_drops())
 	results.append(await _step7_keyboard())
 	results.append(await _step8_pause())
@@ -204,8 +211,10 @@ func _time() -> float:
 
 
 func _tile_center(cell: Vector2i) -> Vector2:
-	var lawn := _lawn()
-	return lawn.global_position + lawn.grid_origin() + (Vector2(cell) + Vector2(0.5, 0.5)) * lawn.cell_size_px()
+	# Option B perspective lawn (GW-AA pass 3): the cell's projected centre,
+	# through the stage's responsive scale.
+	var lawn := _lawn() as LawnView
+	return lawn.get_global_transform() * lawn.cell_center(cell)
 
 
 func _center_of(node: Node) -> Vector2:
@@ -427,6 +436,35 @@ func _step5_right_click() -> bool:
 	return true
 
 
+## GW-AA pass 3 (Option B): the pointer lands on the right tile everywhere on
+## the perspective lawn, through the stage scale: hover all 60 cell centres
+## and the inner corners of the four corner cells.
+func _step11_hover_every_cell() -> bool:
+	var label := "pointer maps to every perspective cell (hover all cells)"
+	var lawn := _lawn() as LawnView
+	var misses: PackedStringArray = []
+	var probes := 0
+	for row in LawnView.ROWS:
+		for column in LawnView.COLUMNS:
+			var cell := Vector2i(column, row)
+			var spots: Array[Vector2] = [lawn.cell_center(cell)]
+			if (column == 0 or column == LawnView.COLUMNS - 1) and (row == 0 or row == LawnView.ROWS - 1):
+				for corner in lawn.geometry.cell_corners(column, row):
+					spots.append(lawn.cell_center(cell).lerp(corner, 0.8))
+			for spot in spots:
+				probes += 1
+				await _move(lawn.get_global_transform() * spot)
+				await get_tree().process_frame
+				var hover: Vector2i = _board.get("_hover")
+				if hover != cell:
+					misses.append("%s->%s" % [cell, hover])
+	await _move(PARK)
+	if not misses.is_empty():
+		return _step_fail(11, label, "%d of %d probes missed: %s" % [misses.size(), probes, ", ".join(misses.slice(0, 8))])
+	_step_pass(11, label, "%d probes (60 centres + 16 corner-cell corners) all hovered the right cell" % probes)
+	return true
+
+
 func _step6_start_and_drops() -> bool:
 	var label := "Start button runs the wave; dew hover-collects and click-collects"
 	_watching = true
@@ -547,9 +585,10 @@ func _step9_wave_start() -> bool:
 	var roster := _by_name("WaveRoster")
 	if roster.visible:
 		return _step_fail(9, label, "roster still visible after the wave started")
-	if absf(_lawn().offset_right) > 0.01:
-		return _step_fail(9, label, "lawn did not reclaim the roster strip (offset_right=%s)" % _lawn().offset_right)
-	_step_pass(9, label, "no auto-start on placement (checked at step 3); StartButton click (step 6) set _started, hid the roster, reset the lawn offset")
+	var frame := (_lawn() as LawnView).geometry.frame_quad()
+	if frame[0].distance_to(LawnGeometry.FAR_LEFT) > 0.5 or frame[2].distance_to(LawnGeometry.NEAR_RIGHT) > 0.5:
+		return _step_fail(9, label, "lawn trapezoid moved when the wave started (%s)" % [frame])
+	_step_pass(9, label, "no auto-start on placement (checked at step 3); StartButton click (step 6) set _started, hid the roster; the lawn trapezoid stayed put")
 	return true
 
 

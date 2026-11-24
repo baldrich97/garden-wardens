@@ -21,6 +21,8 @@ func _init() -> void:
 	_golden_hour(failures)
 	_sky_look(failures)
 	_fx_art(failures)
+	_lawn_geometry(failures)
+	_responsive(failures)
 	if failures.is_empty():
 		print("RULES_OK")
 		quit(0)
@@ -684,3 +686,65 @@ func _fx_art(failures: PackedStringArray) -> void:
 	if dew.art() != FxArt.WATER_DROP_MEDIUM:
 		failures.append("a dew drop did not use the medium drop")
 	dew.free()
+
+
+## GW-AA pass 3, Option B: the perspective lawn's homography round-trips every
+## cell, the frame lands on the locked trapezoid, and the rails stack back to
+## front (rail y, scale, and z all grow toward the viewer).
+func _lawn_geometry(failures: PackedStringArray) -> void:
+	var geometry := LawnGeometry.new(LawnView.BOARD_FRAME_SRC, LawnView.BOARD_GRID_SRC, LawnView.COLUMNS, LawnView.ROWS)
+	var misses := 0
+	for row in LawnView.ROWS:
+		for column in LawnView.COLUMNS:
+			var cell := Vector2i(column, row)
+			if geometry.cell_at(geometry.cell_to_screen(cell)) != cell:
+				misses += 1
+			# Points near each corner (inside the cell) must still map back.
+			var corners := geometry.cell_corners(column, row)
+			var middle := geometry.cell_to_screen(cell)
+			for corner in corners:
+				if geometry.cell_at(middle.lerp(corner, 0.9)) != cell:
+					misses += 1
+	if misses > 0:
+		failures.append("lawn homography round trip missed %d cell probes of %d" % [misses, LawnView.COLUMNS * LawnView.ROWS * 5])
+	var quad := geometry.frame_quad()
+	var want := [LawnGeometry.FAR_LEFT, LawnGeometry.FAR_RIGHT, LawnGeometry.NEAR_RIGHT, LawnGeometry.NEAR_LEFT]
+	for index in 4:
+		if quad[index].distance_to(want[index]) > 0.5:
+			failures.append("lawn frame corner %d at %s, expected %s" % [index, quad[index], want[index]])
+	if geometry.cell_at(Vector2(640.0, 300.0)) != Vector2i(-1, -1) or geometry.cell_at(Vector2(20.0, 500.0)) != Vector2i(-1, -1):
+		failures.append("lawn cell_at accepted a point off the trapezoid")
+	var round_trip := geometry.stage_to_source(geometry.source_to_stage(Vector2(500.0, 500.0)))
+	if round_trip.distance_to(Vector2(500.0, 500.0)) > 0.01:
+		failures.append("lawn homography inverse drifted (%s)" % round_trip)
+	for row in range(1, LawnView.ROWS):
+		if geometry.rail_y(row) <= geometry.rail_y(row - 1):
+			failures.append("rail %d is not in front of rail %d" % [row, row - 1])
+		if geometry.rail_scale(row) <= geometry.rail_scale(row - 1):
+			failures.append("rail %d does not scale up from rail %d" % [row, row - 1])
+		if LawnGeometry.z_for_row(row) - LawnGeometry.z_for_row(row - 1) < 3:
+			failures.append("rail %d z does not clear rail %d's units, shots, and fx" % [row, row - 1])
+	if absf(geometry.rail_scale(LawnView.ROWS - 1) - 1.0) > 0.001 or geometry.rail_scale(0) < 0.78 or geometry.rail_scale(0) > 0.86:
+		failures.append("rail scales are not about 0.82 to 1.00 (%.3f..%.3f)" % [geometry.rail_scale(0), geometry.rail_scale(LawnView.ROWS - 1)])
+	for row in LawnView.ROWS:
+		var top := geometry.point(0.5, float(row)).y
+		var bottom := geometry.point(0.5, float(row + 1)).y
+		var expected := lerpf(top, bottom, LawnGeometry.RAIL_DEPTH)
+		if absf(geometry.rail_y(row) - expected) > 1.0:
+			failures.append("rail %d is not 0.72 into its row" % row)
+
+
+## GW-AA pass 3: the card selector snaps to the side bar on small real windows.
+func _responsive(failures: PackedStringArray) -> void:
+	var cases := {
+		Vector2i(960, 540): GardenBoard.LAYOUT_VERTICAL,
+		Vector2i(1099, 800): GardenBoard.LAYOUT_VERTICAL,
+		Vector2i(1280, 639): GardenBoard.LAYOUT_VERTICAL,
+		Vector2i(1280, 720): GardenBoard.LAYOUT_HORIZONTAL,
+		Vector2i(1100, 640): GardenBoard.LAYOUT_HORIZONTAL,
+		Vector2i(1920, 1080): GardenBoard.LAYOUT_HORIZONTAL,
+		Vector2i(2560, 1440): GardenBoard.LAYOUT_HORIZONTAL,
+	}
+	for window: Vector2i in cases:
+		if GardenBoard.layout_for_window(window) != cases[window]:
+			failures.append("window %s picked the %s layout" % [window, GardenBoard.layout_for_window(window)])

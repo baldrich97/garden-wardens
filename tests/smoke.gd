@@ -37,8 +37,8 @@ func _check(board: Node) -> PackedStringArray:
 	if roster == null or not roster.visible or roster.card_count() != _wave_types():
 		failures.append("wave roster did not show one card per vermin type")
 	var grid := board.find_child("RosterGrid", true, false) as GridContainer
-	if grid == null or grid.columns != 2:
-		failures.append("wave roster was not two columns")
+	if grid == null or grid.columns != _wave_types():
+		failures.append("wave roster was not a single row strip")
 	var start := board.find_child("StartButton", true, false) as Button
 	if start == null or start.text != "Start":
 		failures.append("Start button missing before the wave")
@@ -62,12 +62,16 @@ func _check(board: Node) -> PackedStringArray:
 	var board_script := board as GardenBoard
 	if board_script == null:
 		failures.append("board was not a GardenBoard")
-	var porch := board.find_child("PlayerEnd", true, false) as TextureRect
-	if porch == null or porch.texture == null:
-		failures.append("porch missing from the player end")
-	var eyes := board.find_child("VerminEnd", true, false) as TextureRect
-	if eyes == null or eyes.texture == null:
-		failures.append("compost eyes missing from the vermin end")
+	# Option B (GW-AA pass 3): the painted porch and compost in the backdrop
+	# frame the lawn; the separate cutouts are parked and never drawn.
+	if board.find_child("PlayerEnd", true, false) != null or board.find_child("VerminEnd", true, false) != null:
+		failures.append("parked porch/compost cutouts are still on the board")
+	_check_no_texture(board, "player_end_porch", failures)
+	_check_no_texture(board, "vermin_end_compost_eyes", failures)
+	if frame != null and not (frame.material is ShaderMaterial):
+		failures.append("felt board frame lost its perspective shader")
+	if board_script != null:
+		_check_layouts(board_script, failures)
 	var seed_text := ""
 	var seed_panel := board.find_child("SeedLabel", true, false)
 	if seed_panel != null:
@@ -80,6 +84,35 @@ func _check(board: Node) -> PackedStringArray:
 	if ability == null or not ability.disabled:
 		failures.append("Ability button should stay disabled")
 	return failures
+
+
+## Live switch between the bottom tray and the side bar, and back.
+func _check_layouts(board: GardenBoard, failures: PackedStringArray) -> void:
+	var bottom := board.find_child("BottomBar", true, false) as BottomBar
+	var cards := bottom.cards() if bottom != null else []
+	if board.layout_mode() != GardenBoard.LAYOUT_HORIZONTAL:
+		failures.append("headless board did not start with the bottom tray")
+	board.apply_layout(GardenBoard.LAYOUT_VERTICAL)
+	if board.layout_mode() != GardenBoard.LAYOUT_VERTICAL or bottom == null or not bottom.is_vertical():
+		failures.append("side bar layout did not apply")
+	elif bottom.get_parent().name != "Body":
+		failures.append("side bar did not move beside the stage")
+	for card: WardenCard in cards:
+		if not card.is_large():
+			failures.append("side bar cards were not enlarged")
+			break
+	board.apply_layout(GardenBoard.LAYOUT_HORIZONTAL)
+	if board.layout_mode() != GardenBoard.LAYOUT_HORIZONTAL or bottom.is_vertical() or bottom.get_parent().name != "Layout":
+		failures.append("bottom tray layout did not come back")
+
+
+func _check_no_texture(node: Node, fragment: String, failures: PackedStringArray) -> void:
+	if node is TextureRect:
+		var texture := (node as TextureRect).texture
+		if texture != null and texture.resource_path.contains(fragment):
+			failures.append("parked art is drawn: %s" % texture.resource_path)
+	for child in node.get_children():
+		_check_no_texture(child, fragment, failures)
 
 
 func _wave_types() -> int:

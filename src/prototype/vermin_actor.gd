@@ -45,6 +45,10 @@ var hop_lift_tiles := 0.0
 var _clip: ClipView
 var _bar: ColorRect
 var _bar_back: ColorRect
+## Rail stand (GW-AA pass 3): contact shadow, actor-local foot, rail cell width.
+var _shadow: TextureRect
+var _foot := Vector2.INF
+var _rail_cell := 0.0
 var _folder := ""
 var _frames: SpriteFrames
 var _pose := Pose.MOVE
@@ -85,16 +89,19 @@ func setup(p_kind: UnitCatalog.Vermin, p_row: int, p_column_pos: float) -> void:
 	var canvas := AnimLibrary.canvas_px(_folder)
 	if ground != Vector2.INF and canvas != Vector2.INF:
 		_clip.set_anchor_fit(ground, canvas)
+	_shadow = RailStand.make_shadow()
+	add_child(_shadow)
 	add_child(_clip)
+	_clip.set_idle_bob(is_flying())
 	_bar_back = ColorRect.new()
 	_bar_back.color = Color(0.08, 0.1, 0.08, 0.85)
 	_bar_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bar_back.z_index = 1
+	RailStand.style_bar(_bar_back)
 	add_child(_bar_back)
 	_bar = ColorRect.new()
 	_bar.color = Color("e0704a")
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bar.z_index = 1
+	RailStand.style_bar(_bar)
 	add_child(_bar)
 	_start_pose(Pose.SPAWN)
 
@@ -189,18 +196,61 @@ func take_damage(amount: int) -> bool:
 	return false
 
 
+## Fliers (bee, fly) carry no ground point: they hover over their rail.
+func is_flying() -> bool:
+	return AnimLibrary.ground_point_px(_folder) == Vector2.INF
+
+
+func canvas_px() -> Vector2:
+	return AnimLibrary.canvas_px(_folder)
+
+
+## Hover pivot for fliers (frames.json anchor.body_center_px); canvas center otherwise.
+func body_center_px() -> Vector2:
+	var center := AnimLibrary.body_center_px(_folder)
+	if center == Vector2.INF:
+		var canvas := canvas_px()
+		return canvas * 0.5 if canvas != Vector2.INF else Vector2.INF
+	return center
+
+
+func clip() -> ClipView:
+	return _clip
+
+
 func refresh_bar() -> void:
 	if _clip != null:
 		_clip.tick(0.0, size)
 	if _bar == null:
 		return
-	var width := size.x
-	var height := maxf(5.0, size.y * 0.08)
-	_bar_back.position = Vector2(0.0, size.y - height)
-	_bar_back.size = Vector2(width, height)
 	var fraction := 0.0 if max_hp <= 0 else clampf(float(hp) / float(max_hp), 0.0, 1.0)
-	_bar.position = _bar_back.position
-	_bar.size = Vector2(width * fraction, height)
+	if _foot != Vector2.INF:
+		RailStand.layout(_shadow, _bar_back, _bar, _foot, _rail_cell, is_flying(), fraction)
+	else:
+		var width := size.x
+		var height := maxf(5.0, size.y * 0.08)
+		_bar_back.position = Vector2(0.0, size.y - height)
+		_bar_back.size = Vector2(width, height)
+		_bar.position = _bar_back.position
+		_bar.size = Vector2(width * fraction, height)
+
+
+## Where the feet stand (actor-local pixels) and the cell width on this rail;
+## the board sets this every layout so the shadow and bar sit on the ground.
+func set_rail_stand(foot_local: Vector2, rail_cell: float) -> void:
+	_foot = foot_local
+	_rail_cell = rail_cell
+	refresh_bar()
+
+
+## The ground point (actor-local), or Vector2.INF before the first layout.
+func rail_foot() -> Vector2:
+	return _foot
+
+
+## The contact shadow node under the feet.
+func contact_shadow() -> TextureRect:
+	return _shadow
 
 
 ## Debug view (GW-AW-7): show one damage state's art ("100", "66", "33") no

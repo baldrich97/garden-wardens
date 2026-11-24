@@ -27,6 +27,10 @@ var _bundle: TextureRect
 var _seeds: Array[TextureRect] = []
 var _spin: Array[Texture2D] = []
 var _burst_pending := false
+## Ground track under the ball (grid rows) and the arc height (0..1), so the
+## perspective lawn can lift the ball off its rail point (GW-AA pass 3).
+var ground_row := 0.0
+var arc := 0.0
 
 
 func _init() -> void:
@@ -40,6 +44,7 @@ func setup(from_pos: Vector2, target: Vector2i, seed_cells: Array[Vector2i]) -> 
 	cells = seed_cells
 	column_pos = from_pos.x
 	row_pos = from_pos.y
+	ground_row = from_pos.y
 	_spin = FxArt.lobber_spin()
 	_bundle = _make_puff(FLUFF if _spin.is_empty() else _spin[0])
 	_bundle.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -67,7 +72,9 @@ func tick(delta: float) -> bool:
 		_travel += delta
 		var t := clampf(_travel / TRAVEL_TIME, 0.0, 1.0)
 		column_pos = lerpf(_from.x, float(_target.x) + 0.5, t)
-		row_pos = lerpf(_from.y, float(_target.y), t) + sin(t * PI) * -0.8
+		ground_row = lerpf(_from.y, float(_target.y), t)
+		arc = sin(t * PI)
+		row_pos = ground_row + arc * -0.8
 		if not _spin.is_empty():
 			_bundle.texture = _spin[int(_travel * SPIN_FPS) % _spin.size()]
 		if t < 1.0:
@@ -76,6 +83,8 @@ func tick(delta: float) -> bool:
 		_burst_pending = true
 		column_pos = float(_target.x) + 0.5
 		row_pos = float(_target.y)
+		ground_row = row_pos
+		arc = 0.0
 		_bundle.visible = false
 		delta = _travel - TRAVEL_TIME
 	_seed_time += delta
@@ -101,10 +110,14 @@ func target_cell() -> Vector2i:
 	return _target
 
 
-## Places the bundle, and the seeds while they fly out from the burst.
-func place_on_lawn(origin: Vector2, cell: float) -> void:
-	var center := origin + Vector2(column_pos * cell, (row_pos + 0.5) * cell)
-	var box := cell * 0.34
+## Places the bundle, and the seeds while they fly out from the burst, on the
+## perspective lawn: the ball rides an arc above its ground track (launched
+## from about mid-height of the Lobber), the seeds fan out to their tiles.
+func place_on_lawn(geometry: LawnGeometry) -> void:
+	var cw := geometry.rail_cell_width(ground_row)
+	var lift := cw * (0.55 * (1.0 - _landed_share()) + 1.3 * arc)
+	var center := geometry.rail_point(column_pos, ground_row) - Vector2(0.0, lift)
+	var box := cw * 0.42
 	size = Vector2(box, box)
 	position = center - size * 0.5
 	var flying := _phase == 1
@@ -115,8 +128,14 @@ func place_on_lawn(origin: Vector2, cell: float) -> void:
 		if not flying:
 			continue
 		var goal := Vector2(float(cells[index].x) + 0.5, float(cells[index].y))
-		var spot := Vector2(column_pos, row_pos).lerp(goal, t)
-		var seed_box := cell * 0.22
+		var spot := Vector2(column_pos, ground_row).lerp(goal, t)
+		var seed_cw := geometry.rail_cell_width(spot.y)
+		var seed_box := seed_cw * 0.26
 		seed.size = Vector2(seed_box, seed_box)
-		var world := origin + Vector2(spot.x * cell, (spot.y + 0.5) * cell)
+		var world := geometry.rail_point(spot.x, spot.y) - Vector2(0.0, seed_cw * 0.35 * (1.0 - t) + seed_box * 0.3)
 		seed.position = world - position - seed.size * 0.5
+
+
+## How far along the flight the ball is (0 at launch, 1 at landing).
+func _landed_share() -> float:
+	return 1.0 if _phase == 1 else clampf(_travel / TRAVEL_TIME, 0.0, 1.0)

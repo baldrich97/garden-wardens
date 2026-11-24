@@ -51,11 +51,15 @@ edited or renamed by the docs close-out).
     **Status: approved** (layered composition in `src/art/golden_hour_backdrop.gd`;
     last stop of the backdrop tour). Three helper stills (`backdrop_no_rays`,
     `sun_layer_fullframe`, `with_rays_still`) — **status: unwired**.
-  - `board/`: vermin end 4 (compost eyes) and player end 1 (porch) —
-    **status: approved** (board end pieces). `board_v1_compost_eyes.png` (the locked
-    Round 3b felt board, delivered only as a 1280x720 composite) — **status: approved**
-    (GW-AA 2026-11-23): `src/prototype/lawn_view.gd` draws the board frame and the
-    5x12 felt cells straight from it through atlas regions; the file is untouched.
+  - `board/`: vermin end 4 (`vermin_end_compost_eyes.png`) and player end 1
+    (`player_end_porch.png`) — **status: parked (unwired)** since GW-AA pass 3
+    (2026-11-23): Option B frames the lawn with the porch and compost heap painted
+    into the Main backdrop, so the separate cutouts are no longer drawn (kept,
+    approved art, for a later board or mood that needs them). `board_v1_compost_eyes.png`
+    (the locked Round 3b felt board, delivered only as a 1280x720 composite) —
+    **status: approved**: since GW-AA pass 3 `src/prototype/felt_perspective.gdshader`
+    warps its frame (source rect 149,334 to 1104,688) onto the Option B trapezoid with
+    the exact inverse homography (`src/rules/lawn_geometry.gd`); the file is untouched.
 - `assets/art/sky/`
   - `clouds/{small,medium,large}/`: each cloud comes as `<name>.png` and
     `<name>_stick.png` (with its white stick).
@@ -107,7 +111,9 @@ Verified 2026-11-22 at baseline `86efd22`: 2,417 asset files (excluding `.import
 so the count became **393**. GW-AA pass 2 (2026-11-23) wired needle smoke (16), lobber
 spin (8) + burst (20), `A3`, `A4`, `B3`, the leaf ring, three origami water drops and
 `win_banner_B` (52 files) and unwired the Kenney `sprites/board/water.png` (1), so the
-count is now **342** (rows below updated):
+count became **342**. GW-AA pass 3 (2026-11-23, Option B) parked the two board-end
+cutouts (`player_end_porch.png`, `vermin_end_compost_eyes.png`), so the count is now
+**344** (rows below updated):
 
 | Count | Path | Note |
 | --- | --- | --- |
@@ -120,6 +126,7 @@ count is now **342** (rows below updated):
 | 4 | `assets/sprites/board/backdrops/` | non-ship draft gardens, superseded |
 | 1 | `assets/art/ui/summon_bell.png` | optional, for later |
 | 2 | `assets/sprites/board/dirt.png`, `water.png` | unreferenced soil tile; old Kenney droplet |
+| 2 | `assets/art/environment/board/player_end_porch.png`, `vermin_end_compost_eyes.png` | parked by Option B (painted ends in the backdrop) |
 
 ## Not included
 

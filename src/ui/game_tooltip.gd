@@ -4,11 +4,16 @@ extends PanelContainer
 
 var _label: Label
 var _shown := false
+## When set (board pixels), the tip's bottom edge sits on this line instead of
+## under the pointer: lawn tips ride in the sky just above the board's far
+## edge, so they never cover the tiles being aimed at.
+var _bottom_line := NAN
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	z_index = 40
+	# Over the HUD (z 60) and the drag ghost (z 110).
+	z_index = 120
 	visible = false
 	add_theme_stylebox_override("panel", FlatStyle.panel(FlatStyle.PANEL, FlatStyle.INK, 10, 3))
 	_label = Label.new()
@@ -28,13 +33,21 @@ func _process(_delta: float) -> void:
 		reset_size()
 		tip_size = get_combined_minimum_size()
 	var viewport := get_viewport_rect().size
-	var pos := get_global_mouse_position() + Vector2(16, 22)
+	var mouse := get_global_mouse_position()
+	var pos := mouse + Vector2(16, 22)
+	if not is_nan(_bottom_line):
+		pos = Vector2(mouse.x - tip_size.x * 0.5, _bottom_line - tip_size.y)
+	elif pos.y + tip_size.y > viewport.y - 8.0:
+		# Near the bottom (the card tray): flip above the pointer instead of
+		# clamping down over the cards.
+		pos.y = mouse.y - tip_size.y - 14.0
 	pos.x = clampf(pos.x, 8.0, maxf(8.0, viewport.x - tip_size.x - 8.0))
 	pos.y = clampf(pos.y, 8.0, maxf(8.0, viewport.y - tip_size.y - 8.0))
 	global_position = pos
 
 
-func show_text(text: String) -> void:
+func show_text(text: String, bottom_line: float = NAN) -> void:
+	_bottom_line = bottom_line
 	_label.text = text
 	_shown = true
 	visible = true

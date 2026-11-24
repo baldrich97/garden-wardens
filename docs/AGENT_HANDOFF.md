@@ -26,8 +26,7 @@ Read this first when picking up the project. Process rules are in
   - Golden Hour: layered boss backdrop (`src/art/golden_hour_backdrop.gd`), the last
     stop of the backdrop tour; forcing it suppresses the seeded sky (which resolves
     the parked double-celestial note for as long as it is active).
-  - Board end pieces (player porch, vermin compost eyes), win/loss banners, logo in
-    the top bar, wave flag in the wave roster, seed-packet card faces + placement ghost.
+  - Win/loss banners, logo in the top bar, wave flag in the wave roster, seed-packet card faces + placement ghost.
 - Browsing anims: run scene `res://src/prototype/anim_preview.tscn` (Godot editor, or
   headless with the scene path as the last argument). 11 slots in catalog order:
   5 Wardens (0-4), 5 Vermin (5-9), poof (10). Data-driven unit/anim/state rows,
@@ -42,11 +41,13 @@ Read this first when picking up the project. Process rules are in
     (Golden Hour also hides the seeded sky). `--golden-hour` forces Golden Hour.
   - `--level N` picks the level for a debug run (the showcase is `--level 8`).
   - `--seed N` reproducible sky/backdrop.
+  - `--layout horizontal|vertical` forces the HUD layout (GW-AA pass 3); tests can
+    set `GardenBoard.forced_layout` instead.
   - Screenshot helpers: `--result-shot win|loss`, `--fall-shot <path>`,
     `--play-shot <path>`.
 - Art status: docs/ASSET_SOURCES.md now carries per-asset approved/unwired statuses
-  and the definitive unwired inventory (342 files after GW-AA pass 2, including
-  `summon_bell.png`).
+  and the definitive unwired inventory (344 files after GW-AA pass 3, including
+  `summon_bell.png` and the two parked board-end cutouts).
 - Checks: the full gate is the 3 suites + 3 probes — see the Verification playbook
   below (it supersedes the suites-only commands in ../AGENTS.md).
 
@@ -82,9 +83,58 @@ mood art, duplicate porch/compost ends, soil look on felt, unwired fx/water sets
   the top-right corner is gone.
 - Probes: Bee lane changes and lobber volleys are seeded (combat probe 5/5 identical
   runs); the input probe is time-based and runs at native refresh.
-- Deferred by the creator: the perspective (trapezoid) lawn — mockups only, nothing in
-  Godot yet; mood backdrops; sand/stone felt tiles; cloud/sun tuning (bring back to
-  the creator).
+- Deferred by the creator: the perspective (trapezoid) lawn (done in pass 3, below);
+  mood backdrops; sand/stone felt tiles; cloud/sun tuning (bring back to the creator).
+
+### GW-AA pass 3 (2026-11-23): Option B live, responsive HUD
+
+- **Perspective lawn (Option B).** `src/rules/lawn_geometry.gd` (`LawnGeometry`) owns a
+  projective homography from the felt composite's frame (`BOARD_FRAME_SRC`) onto the
+  trapezoid far (168,334)-(1104,334), near (40,584)-(1240,584) in 1280x720 stage
+  space, plus its exact inverse. `src/prototype/felt_perspective.gdshader` draws the
+  felt by mapping each stage pixel back through the inverse (4 rotated-grid taps),
+  so lines stay straight and crisp with no per-triangle affine warp. Sand/stone washes,
+  the aim cursor and the leaf ring are true perspective quads. `LawnView.cell_at` /
+  `cell_center` and every rail helper go through the same homography.
+- **Rails.** Units stand on 5 rails (row 0 back to row 4 front) at depth 0.72 into
+  each row: rail y 364/407/454/506/564, scale 0.82 to 1.00 (cell width at the rail),
+  z = 10 + 4*row (wardens +0, vermin +1, shots/landed drops +2, impact fx/poofs +3;
+  lobbed balls and the seed burst at absolute z 40/41). A front-rail unit's top covers
+  a back-rail unit's base; health bars draw with their unit so they occlude the same way.
+- **Unit size.** Every unit's art canvas is 1.62 rail cell widths tall (vermin x0.74), as
+  in the approved Option B mockup; ground units pin `ground_point_px` to the rail
+  point, fliers (bee, fly) centre `body_center_px` half a cell above it. Ground units
+  have no idle bob (ClipView `set_idle_bob`, off by default); fliers and the wave
+  roster portraits keep the bob. Soft contact shadows (`src/prototype/rail_stand.gd`).
+- **Stage.** Backdrop, Golden Hour, sky and lawn live in a 1280x720 `Stage` that is
+  uniformly scaled into the area the HUD leaves (whole screen in horizontal mode, right
+  of the side bar in vertical mode), centred and bottom-aligned; `StageFill`
+  (`stage_fill.gdshader`) extends the backdrop softly into any gap. The porch and
+  compost heap painted into the Main backdrop frame the lawn; the cutout end pieces
+  are removed (parked in docs/ASSET_SOURCES.md).
+- **Responsive HUD.** Slim top bar (~60 px) and bottom tray (~122 px) at 1280x720; both
+  grow with the canvas_items stretch on big windows (x1.5 at 1920x1080). A real window
+  narrower than 1100 px or shorter than 640 px snaps the cards into a vertical side
+  bar (2 columns of larger cards, Ability/Remove/backdrop below) and the stage fits to
+  its right; it switches live on resize. `GardenBoard.layout_for_window()` holds the
+  breakpoint; `--layout` / `GardenBoard.forced_layout` override it.
+- **Pre-wave panel / tips.** The wave roster is a one-row strip in the sky's top-right
+  corner under the top bar (never over the lawn); the level hint sits in the sky just
+  above the far edge. Lawn tooltips ride in the sky above the far edge; card tooltips
+  flip above the pointer near the bottom.
+- **Needle smoke.** The muzzle smoke overlay is scaled x1.7 about the mouth, alpha x2.1
+  and lifted 35% toward white (`ClipView.set_overlay_boost`).
+- **Fixed on the way:** fliers (bee, fly) had a NaN clip fit (an INF anchor passed the
+  `> 1.0` test), which hid their art; ClipView now tests for a finite anchor.
+- **Caveats.** The framing is tuned to the Main backdrop. Sunny/overcast/dusk (640x360,
+  horizon lower) and Golden Hour use the same geometry, so the lawn covers part of
+  their fence/porch until the moods are recomposed (parked Asset Gen work). The grid is
+  12x5 (60 cells), not 10x5. Far-rail cells are about 80x40 px at 1280x720 (under the
+  64 px touch guideline in depth); the stretch scale enlarges them on bigger windows.
+  Cloud/sun tuning is still tabled; only the sky band moved (stage y 76 to 334).
+- New checks: rules (homography round trip on all 60 cells plus corner probes, frame
+  corners, rail y/scale/z monotonic, breakpoints), smoke (cutouts absent, felt shader,
+  live layout switch), input probe step 11 (hover all 60 cells plus corner-cell corners).
 
 ## Verification playbook
 
@@ -180,6 +230,9 @@ Before making any claim about the project, a new agent must have:
 
 ## Immediate next actions (in order)
 
+0. **Creator review of the live Option B screenshots (GW-AA pass 3)**, then (only
+   after that review) the parked Asset Gen work: 640x360 mood backdrop upscales
+   recomposed for the Option B framing, sand/stone felt tiles; then cloud/sun tuning.
 1. **Creator playtest of levels 1-8** (8 is the "The Whole Cast" showcase) with
    felt-feedback notes (pacing, difficulty curve, which tools feel dead, whether the
    showcase's cone hop reads). This gates everything below.
@@ -198,8 +251,9 @@ Before making any claim about the project, a new agent must have:
    files. Do this **after** the playtest, so the playtest's numeric feedback lands
    in the new format in one pass instead of two.
 4. **Mobile**: `export_presets.cfg` still does not exist (verified at `86efd22`).
-   The phone claim is layout-only (landscape stretch, square cells, 64px touch
-   targets). Do not echo a "runs on phone" claim beyond that.
+   The phone claim is layout-only (landscape stretch, the Option B perspective lawn,
+   the vertical card side bar on small windows; far-rail cells are under 64 px deep
+   at 1280x720). Do not echo a "runs on phone" claim beyond that.
 5. **Save file**: level progress does not survive restart. A real save file belongs
    in the project before any ship talk.
 

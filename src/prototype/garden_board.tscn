@@ -29,7 +29,24 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.906, 0.957, 0.984, 1)
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="StageFill" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.36, 0.5, 0.3, 1)
+
+[node name="Stage" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="Background" type="TextureRect" parent="Stage"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -40,35 +57,8 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("5_bg")
 expand_mode = 1
-stretch_mode = 6
 
-[node name="SafeMargin" type="MarginContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
-
-[node name="Layout" type="VBoxContainer" parent="SafeMargin"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TopBar" parent="SafeMargin/Layout" instance=ExtResource("3_top")]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="BoardHost" type="Control" parent="SafeMargin/Layout"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="Lawn" type="Control" parent="SafeMargin/Layout/BoardHost"]
+[node name="Lawn" type="Control" parent="Stage"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -81,6 +71,41 @@ grass_texture = ExtResource("6_grass")
 stone_texture = ExtResource("7_stone")
 sand_texture = ExtResource("8_sand")
 board_texture = ExtResource("9_board")
+
+[node name="SafeMargin" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 6
+
+[node name="Layout" type="VBoxContainer" parent="SafeMargin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="TopBar" parent="SafeMargin/Layout" instance=ExtResource("3_top")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Body" type="HBoxContainer" parent="SafeMargin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="BoardHost" type="Control" parent="SafeMargin/Layout/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
 
 [node name="BottomBar" parent="SafeMargin/Layout" instance=ExtResource("4_bottom")]
 unique_name_in_owner = true

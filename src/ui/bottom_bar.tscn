@@ -5,32 +5,44 @@
 [node name="BottomBar" type="PanelContainer"]
 script = ExtResource("1_script")
 
-[node name="Row" type="HBoxContainer" parent="."]
+[node name="Row" type="BoxContainer" parent="."]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="CardRow" type="HBoxContainer" parent="Row"]
+[node name="CardRow" type="GridContainer" parent="Row"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 8
+mouse_filter = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 6
 
-[node name="AbilityButton" type="Button" parent="Row"]
+[node name="Buttons" type="GridContainer" parent="Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(148, 72)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 3
+
+[node name="AbilityButton" type="Button" parent="Row/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 64)
 layout_mode = 2
 disabled = true
 text = "Ability"
 
-[node name="RemoveButton" type="Button" parent="Row"]
+[node name="RemoveButton" type="Button" parent="Row/Buttons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(148, 72)
+custom_minimum_size = Vector2(88, 64)
 layout_mode = 2
 toggle_mode = true
 text = "Remove"
 
-[node name="BackdropButton" type="Button" parent="Row"]
+[node name="BackdropButton" type="Button" parent="Row/Buttons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(188, 72)
+custom_minimum_size = Vector2(120, 64)
 layout_mode = 2
 text = "Hills"

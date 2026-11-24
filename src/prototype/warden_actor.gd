@@ -25,6 +25,15 @@ var produce_wait: float = UnitCatalog.DEW_INTERVAL
 var _clip: ClipView
 var _bar: ColorRect
 var _bar_back: ColorRect
+## Needle smoke boost: scale about the mouth (canvas px), alpha gain, whiten.
+const SMOKE_BOOST_SCALE := 1.7
+const SMOKE_MOUTH_PX := Vector2(312.0, 286.0)
+const SMOKE_BOOST_GAIN := 2.1
+const SMOKE_BOOST_LIFT := 0.35
+## Rail stand (GW-AA pass 3): contact shadow, actor-local foot, rail cell width.
+var _shadow: TextureRect
+var _foot := Vector2.INF
+var _rail_cell := 0.0
 var _label: Label
 var _folder := ""
 var _frames: SpriteFrames
@@ -59,19 +68,24 @@ func setup(p_kind: UnitCatalog.Warden, p_column: int, p_row: int, p_id: int) -> 
 	var canvas := AnimLibrary.canvas_px(_folder)
 	if ground != Vector2.INF and canvas != Vector2.INF:
 		_clip.set_anchor_fit(ground, canvas)
+	_shadow = RailStand.make_shadow()
+	add_child(_shadow)
 	add_child(_clip)
 	if kind == UnitCatalog.Warden.NEEDLE and not _legacy:
 		# The spit's smoke ships as a per-frame overlay on the action canvas.
 		_clip.set_overlay("action", FxArt.needle_smoke())
+		# GW-AA pass 3: the puff is small and pale against the felt at the
+		# bigger Option B size, so grow it from the mouth and firm it up.
+		_clip.set_overlay_boost(SMOKE_BOOST_SCALE, SMOKE_MOUTH_PX, SMOKE_BOOST_GAIN, SMOKE_BOOST_LIFT)
 	_bar_back = ColorRect.new()
 	_bar_back.color = Color(0.08, 0.1, 0.08, 0.85)
 	_bar_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bar_back.z_index = 1
+	RailStand.style_bar(_bar_back)
 	add_child(_bar_back)
 	_bar = ColorRect.new()
 	_bar.color = Color("7dce4a")
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bar.z_index = 1
+	RailStand.style_bar(_bar)
 	add_child(_bar)
 	# The text label only stands in while a role has no drawings (legacy clip
 	# fallback); on the new art the drawings carry the identity.
@@ -174,6 +188,15 @@ func is_dying() -> bool:
 
 
 ## The clip view, for probes and screenshots that inspect what is drawn.
+func is_flying() -> bool:
+	return false
+
+
+## The art canvas in pixels (frames.json canvas_px), Vector2.INF for legacy clips.
+func canvas_px() -> Vector2:
+	return AnimLibrary.canvas_px(_folder)
+
+
 func clip() -> ClipView:
 	return _clip
 
@@ -213,14 +236,35 @@ func refresh_bar() -> void:
 		_clip.tick(0.0, size)
 	if _bar == null:
 		return
-	var width := size.x
-	var height := maxf(5.0, size.y * 0.08)
-	_bar_back.position = Vector2(0.0, size.y - height)
-	_bar_back.size = Vector2(width, height)
 	var fraction := 0.0 if max_hp <= 0 else clampf(float(hp) / float(max_hp), 0.0, 1.0)
-	_bar.position = _bar_back.position
-	_bar.size = Vector2(width * fraction, height)
+	if _foot != Vector2.INF:
+		RailStand.layout(_shadow, _bar_back, _bar, _foot, _rail_cell, is_flying(), fraction)
+	else:
+		var width := size.x
+		var height := maxf(5.0, size.y * 0.08)
+		_bar_back.position = Vector2(0.0, size.y - height)
+		_bar_back.size = Vector2(width, height)
+		_bar.position = _bar_back.position
+		_bar.size = Vector2(width * fraction, height)
 	_bar.color = FlatStyle.CLAY if fraction < 0.35 else Color("7dce4a")
+
+
+## Where the feet stand (actor-local pixels) and the cell width on this rail;
+## the board sets this every layout so the shadow and bar sit on the ground.
+func set_rail_stand(foot_local: Vector2, rail_cell: float) -> void:
+	_foot = foot_local
+	_rail_cell = rail_cell
+	refresh_bar()
+
+
+## The ground point (actor-local), or Vector2.INF before the first layout.
+func rail_foot() -> Vector2:
+	return _foot
+
+
+## The contact shadow node under the feet.
+func contact_shadow() -> TextureRect:
+	return _shadow
 
 
 ## Debug view (GW-AW-7): show one damage state's art ("100", "66", "33") no

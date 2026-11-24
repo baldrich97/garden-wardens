@@ -14,10 +14,12 @@ var _base_cost := 0
 var _cooldown_left := 0.0
 var _selected := false
 var _unaffordable := false
+## Tray cards (horizontal HUD) are compact; side bar cards are bigger.
+var _large := false
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(112, 108)
+	_apply_size()
 	focus_mode = Control.FOCUS_NONE
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_pass_clicks_to_self(self)
@@ -47,13 +49,33 @@ func present(
 	_base_cost = water_cost
 	_name_label.text = warden_name
 	_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_name_label.add_theme_font_size_override("font_size", 14)
-	_name_label.custom_minimum_size = Vector2(96, 34)
+	_apply_size()
 	_portrait.texture = portrait
 	_portrait.visible = portrait != null
 	_placeholder.visible = portrait == null
 	_placeholder.text = gap
 	set_state(selected, unaffordable, 0.0)
+
+
+## Large cards for the vertical side bar (small windows); compact cards for
+## the bottom tray, which the stretch scale enlarges on big windows.
+func set_large(large: bool) -> void:
+	_large = large
+	_apply_size()
+
+
+func is_large() -> bool:
+	return _large
+
+
+func _apply_size() -> void:
+	if not is_node_ready():
+		return
+	custom_minimum_size = Vector2(132, 150) if _large else Vector2(92, 104)
+	(%Portrait.get_parent() as Control).custom_minimum_size = Vector2(0, 72 if _large else 44)
+	_name_label.add_theme_font_size_override("font_size", 15 if _large else 12)
+	_name_label.custom_minimum_size = Vector2(112 if _large else 80, 36 if _large else 30)
+	_cost_label.add_theme_font_size_override("font_size", 16 if _large else 13)
 
 
 ## Updates the border, the price color, and an optional cooldown.

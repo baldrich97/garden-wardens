@@ -13,8 +13,7 @@ const SEED_PACKETS := [
 	preload("res://assets/art/ui/seed_packets/seed_packet_rain_catcher.png"),
 	preload("res://assets/art/ui/seed_packets/seed_packet_seed_lobber.png"),
 ]
-const _PORCH_TEXTURE: Texture2D = preload("res://assets/art/environment/board/player_end_porch.png")
-const _VERMIN_END_TEXTURE: Texture2D = preload("res://assets/art/environment/board/vermin_end_compost_eyes.png")
+const STAGE_FILL_SHADER := preload("res://src/prototype/stage_fill.gdshader")
 const _WIN_BANNER_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_A.png")
 ## Brandon liked both win banners "interchangeably"; the match seed picks one.
 const _WIN_BANNER_B_TEXTURE: Texture2D = preload("res://assets/art/ui/win_banner_B.png")
@@ -41,12 +40,47 @@ const LEAF_RING_SIZE := 0.98
 ## Headless probes pin the match seed here (>= 0) so every gameplay roll (bee
 ## wander, seed volleys, sky drops, grubs) replays exactly. -1 = --seed or a roll.
 static var forced_match_seed := -1
+## Responsive HUD (GW-AA pass 3). Horizontal: slim top bar plus the bottom
+## card tray. Vertical: the cards become a side bar with bigger cards, for
+## small windows where the tray cards get too small to tap.
+const LAYOUT_HORIZONTAL := "horizontal"
+const LAYOUT_VERTICAL := "vertical"
+## Real-window breakpoint in physical pixels: narrower or shorter snaps to
+## the vertical side bar.
+const COMPACT_MAX_WIDTH := 1100
+const COMPACT_MAX_HEIGHT := 640
+## Gap between the side bar and the stage, in logical pixels.
+const SIDEBAR_GAP := 8.0
+## Unit sizing on the perspective rails (Option B): a unit's art canvas is
+## this many rail cell widths tall, so the drawn body fills most of its square.
+const UNIT_HEIGHT_CELLS := 1.62
+const VERMIN_SIZE := 0.74
+## Fliers hover this many rail cell widths above their rail point.
+const FLYER_HOVER_CELLS := 0.5
+## Where the needle leaves the Needle Spitter's mouth, as a share of the art
+## canvas height above the ground point.
+const NEEDLE_MOUTH_HEIGHT := 0.34
+## Sky band in stage pixels: under the top bar, down to the lawn's far edge.
+const SKY_BAND := Rect2(0.0, 76.0, 1280.0, 258.0)
+## Falling sky drops start here (stage y) and fall to their landing spot.
+const SKY_DROP_TOP := 120.0
+## HUD and overlay z (absolute): over every unit, bar and lob.
+const Z_HUD := 60
+const Z_HINT := 50
+const Z_LOB := 40
+const Z_RESULT := 100
+const Z_DRAG := 110
+## Forces the layout ("horizontal" / "vertical"); tests and --layout set it.
+static var forced_layout := ""
 
 @onready var _margin: MarginContainer = %SafeMargin
 @onready var _top: TopBar = %TopBar
 @onready var _lawn: LawnView = %Lawn
 @onready var _bottom: BottomBar = %BottomBar
 @onready var _background: TextureRect = %Background
+@onready var _stage: Control = %Stage
+@onready var _stage_fill: ColorRect = $StageFill
+@onready var _body: HBoxContainer = $SafeMargin/Layout/Body
 
 var _wallet: WaterWallet
 var _level: LevelDef
@@ -82,8 +116,8 @@ var _fall_shot := ""
 var _backdrop := 0
 var _match_seed: MatchSeed
 var _seed_label: Label
-var _end_porch: TextureRect
-var _end_vermin: TextureRect
+var _layout_mode := ""
+var _layout_key := []
 var _golden_hour: GoldenHourBackdrop
 var _sky_layer: SkyLayer
 var _started := false
@@ -118,6 +152,8 @@ var _sky_rng: RandomNumberGenerator
 var _grub_rng: RandomNumberGenerator
 ## The rotating leaf ring under the placement ghost.
 var _leaf_ring: TextureRect
+## Lays the leaf ring flat on the perspective lawn (foreshortened).
+var _leaf_ring_holder: Node2D
 
 
 func _ready() -> void:
@@ -133,7 +169,13 @@ func _ready() -> void:
 	_apply_content_scale()
 	_apply_safe_area()
 	get_viewport().size_changed.connect(_on_viewport_resized)
-	_lawn.resized.connect(_layout_actors)
+	# The root viewport is the window, so its size_changed covers real window
+	# resizes too; connect the window only when it is a different object.
+	var window := get_window()
+	if window != null and window != get_viewport() and not window.size_changed.is_connected(_on_viewport_resized):
+		window.size_changed.connect(_on_viewport_resized)
+	_margin.z_index = Z_HUD
+	_build_stage_fill()
 	_lawn.cell_pressed.connect(_on_cell_pressed)
 	_lawn.cell_hovered.connect(_on_cell_hovered)
 	_top.pause_toggled.connect(_on_pause_toggled)
@@ -152,7 +194,6 @@ func _ready() -> void:
 	_build_hud_extras()
 	_build_trail()
 	_build_ghost()
-	_build_board_ends()
 	_build_sky()
 	_build_seed_label()
 	_schedule_sky()
@@ -161,6 +202,7 @@ func _ready() -> void:
 	_bind_tooltips()
 	_refresh_hud()
 	use_backdrop(BackdropCatalog.pick_index(_match_seed.value))
+	apply_layout(_pick_layout())
 	_read_shot_args()
 
 
@@ -178,6 +220,7 @@ func _process(delta: float) -> void:
 		_roster.tick(visual)
 	_refresh_hud()
 	_refresh_cursor()
+	_relayout_if_needed()
 	if _leaf_ring != null and _leaf_ring.visible:
 		_leaf_ring.rotation = fmod(_leaf_ring.rotation + delta * TAU * LEAF_RING_SPIN, TAU)
 	if not _play_shot.is_empty() and _time >= 1.2:
@@ -369,7 +412,7 @@ func _tick_shots(delta: float) -> void:
 				continue
 			if RowTarget.shot_reaches(previous, shot.column_pos, vermin.column_pos):
 				vermin.take_damage(shot.damage)
-				_spawn_fx_still(FxArt.SMALL_BURST, vermin.position + vermin.size * Vector2(0.3, 0.5), 0.5, 0.3)
+				_spawn_fx_still(FxArt.SMALL_BURST, _hit_point(vermin, -0.18), 0.6, 0.3, 0.0, vermin.row)
 				hit = true
 				break
 		if hit or shot.column_pos > float(_lawn.column_count()) + 0.4:
@@ -497,18 +540,14 @@ func _apply_bee_step(vermin: VerminActor, step: Vector2i) -> void:
 ## Lays a slime puddle behind the snail once it has scooted TRAIL_SPACING
 ## cells since its last puddle; the pool fades and recycles the puddles.
 func _snail_trail_drop(vermin: VerminActor) -> void:
-	var cell := _lawn.cell_size_px()
-	if cell <= 0.0:
-		return
 	var last: float = _snail_last.get(vermin, INF)
 	if last - vermin.column_pos < TRAIL_SPACING:
 		return
 	_snail_last[vermin] = vermin.column_pos
-	var ground := _lawn.grid_origin() + Vector2(
-		vermin.column_pos * cell,
-		(float(vermin.row) + 0.85) * cell,
-	)
-	_trail.drop(ground, cell)
+	var geometry := _lawn.geometry
+	# The puddle lies on the rail just behind the shell.
+	var ground := geometry.rail_point(vermin.column_pos + 0.15, float(vermin.row))
+	_trail.drop(ground, geometry.rail_cell_width(float(vermin.row)))
 
 
 func _add_shot(warden: WardenActor) -> void:
@@ -557,7 +596,7 @@ func _apply_seed_hits(cells: Array[Vector2i], damage: int) -> void:
 				continue
 			if SeedBurst.covers(vermin.column_pos, vermin.row, cell):
 				vermin.take_damage(damage)
-				_spawn_fx_still(FxArt.IMPACT_BURST, vermin.position + vermin.size * 0.5, 0.62, 0.35)
+				_spawn_fx_still(FxArt.IMPACT_BURST, _hit_point(vermin, 0.0), 0.8, 0.35, 0.0, vermin.row)
 				used.append(vermin)
 				break
 	_drop_dead_vermin()
@@ -620,25 +659,39 @@ func _drop_dead_vermin() -> void:
 
 
 ## A papercraft still (impact burst, collect flecks) that pops and fades at
-## [param at] in lawn pixels, [param size_cells] cells across.
-func _spawn_fx_still(texture: Texture2D, at: Vector2, size_cells: float, duration: float, rise_cells: float = 0.0) -> void:
-	var cell := _lawn.cell_size_px()
-	if cell <= 0.0:
-		return
+## [param at] in stage pixels, [param size_cells] rail cells across (the cell
+## width on [param row]'s rail), drawn just over that rail's units.
+func _spawn_fx_still(texture: Texture2D, at: Vector2, size_cells: float, duration: float, rise_cells: float = 0.0, row: float = 2.0) -> void:
+	var cell := _lawn.geometry.rail_cell_width(row)
 	var fx := FxActor.new()
 	_lawn.add_child(fx)
+	fx.z_index = LawnGeometry.z_for_row(roundi(row)) + 3
 	fx.play_still(texture, at, cell * size_cells, duration, cell * rise_cells)
 
 
+## Where an impact lands on a Vermin: its body centre (from the art's anchor),
+## nudged [param toward_cells] rail cells sideways (negative = toward the
+## Wardens, where a needle comes from).
+func _hit_point(vermin: VerminActor, toward_cells: float) -> Vector2:
+	var cell := _lawn.geometry.rail_cell_width(float(vermin.row))
+	var canvas := vermin.canvas_px()
+	var body := vermin.body_center_px()
+	if canvas == Vector2.INF or body == Vector2.INF or canvas.x <= 0.0:
+		return vermin.position + vermin.size * Vector2(0.5, 0.6) + Vector2(cell * toward_cells, 0.0)
+	return vermin.position + body * (vermin.size.x / canvas.x) + Vector2(cell * toward_cells, 0.0)
+
+
 ## The Seed Lobber's landing burst: the fluff ball bursting into seed fluff,
-## centred on the landing tile; the 480 px canvas covers about the 3 by 3.
+## centred on the landing tile's rail; the 480 px canvas covers about the
+## 3 by 3. Drawn over every rail, with the lobbed ball.
 func _spawn_seed_burst(target: Vector2i) -> void:
-	var cell := _lawn.cell_size_px()
-	if cell <= 0.0:
-		return
-	var at := _lawn.grid_origin() + Vector2((float(target.x) + 0.5) * cell, (float(target.y) + 0.5) * cell)
+	var geometry := _lawn.geometry
+	var cell := geometry.rail_cell_width(float(target.y))
+	var at := geometry.rail_point(float(target.x) + 0.5, float(target.y)) - Vector2(0.0, cell * 0.3)
 	var fx := FxActor.new()
 	_lawn.add_child(fx)
+	fx.z_as_relative = false
+	fx.z_index = Z_LOB + 1
 	fx.play_frames(FxArt.lobber_burst(), at, cell * 2.4, 30.0)
 
 
@@ -649,11 +702,10 @@ func _tick_dying_vermin(delta: float) -> void:
 		if not vermin.tick_death(delta):
 			kept.append(vermin)
 			continue
-		var cell := _lawn.cell_size_px()
-		if cell > 0.0:
-			var poof := PoofActor.new()
-			_lawn.add_child(poof)
-			poof.play_at(vermin.position + vermin.size * Vector2(0.5, 0.6), cell * 0.6)
+		var poof := PoofActor.new()
+		_lawn.add_child(poof)
+		poof.z_index = LawnGeometry.z_for_row(vermin.row) + 3
+		poof.play_at(_hit_point(vermin, 0.0), _lawn.geometry.rail_cell_width(float(vermin.row)) * 0.95)
 		vermin.queue_free()
 	_dying_vermin = kept
 
@@ -678,11 +730,11 @@ func _tick_dying_wardens(delta: float) -> void:
 		if not warden.tick_death(delta):
 			kept.append(warden)
 			continue
-		var cell := _lawn.cell_size_px()
-		if cell > 0.0:
-			var poof := PoofActor.new()
-			_lawn.add_child(poof)
-			poof.play_at(warden.position + warden.size * Vector2(0.5, 0.92), cell * 0.7)
+		var cell := _lawn.geometry.rail_cell_width(float(warden.row))
+		var poof := PoofActor.new()
+		_lawn.add_child(poof)
+		poof.z_index = LawnGeometry.z_for_row(warden.row) + 3
+		poof.play_at(_lawn.geometry.rail_point(float(warden.column) + 0.5, float(warden.row)) - Vector2(0.0, cell * 0.45), cell * 1.0)
 		_grid.remove(warden.column, warden.row)
 		warden.queue_free()
 	_dying_wardens = kept
@@ -716,104 +768,96 @@ func _pending_spawns() -> int:
 
 
 func _layout_actors() -> void:
-	var cell := _lawn.cell_size_px()
-	if cell <= 0.0:
-		return
-	var origin := _lawn.grid_origin()
+	var geometry := _lawn.geometry
 	for warden in _wardens:
-		_place_box(warden, origin, cell, float(warden.column) + 0.5, float(warden.row), 1.0)
-		warden.refresh_bar()
+		_stand_unit(warden, float(warden.column) + 0.5, float(warden.row), UNIT_HEIGHT_CELLS, 0.0)
 	for warden in _dying_wardens:
-		_place_box(warden, origin, cell, float(warden.column) + 0.5, float(warden.row), 1.0)
+		_stand_unit(warden, float(warden.column) + 0.5, float(warden.row), UNIT_HEIGHT_CELLS, 0.0)
 	for vermin in _vermin:
-		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row) - vermin.hop_lift_tiles, 0.7)
-		vermin.refresh_bar()
+		var lift := vermin.hop_lift_tiles * geometry.rail_cell_width(float(vermin.row))
+		_stand_unit(vermin, vermin.column_pos, float(vermin.row), UNIT_HEIGHT_CELLS * VERMIN_SIZE, lift)
 	for vermin in _dying_vermin:
-		_place_box(vermin, origin, cell, vermin.column_pos, float(vermin.row), 0.7)
+		_stand_unit(vermin, vermin.column_pos, float(vermin.row), UNIT_HEIGHT_CELLS * VERMIN_SIZE, 0.0)
 	for shot in _shots:
-		_place_box(shot, origin, cell, shot.column_pos, float(shot.row), 0.55)
+		var cell := geometry.rail_cell_width(float(shot.row))
+		var box := cell * 0.55
+		var mouth := geometry.rail_point(shot.column_pos + 0.1, float(shot.row)) - Vector2(0.0, cell * UNIT_HEIGHT_CELLS * NEEDLE_MOUTH_HEIGHT)
+		shot.size = Vector2(box, box)
+		shot.position = mouth - shot.size * 0.5
+		shot.z_index = LawnGeometry.z_for_row(shot.row) + 2
 	for lob in _lobs:
-		lob.place_on_lawn(origin, cell)
+		lob.place_on_lawn(geometry)
+		lob.z_as_relative = false
+		lob.z_index = Z_LOB
 	for drop in _drops:
 		if is_instance_valid(drop):
-			# Bottom-align the parachute box with the landed drop's box so the
-			# drop does not jump when the chute folds away on landing.
-			var lift := (drop.box_scale() - WaterDrop.LANDED_BOX) * 0.5
-			_place_box(drop, origin, cell, drop.column_pos, drop.row_pos - lift, drop.box_scale())
+			_place_drop(drop)
 	_place_hint()
-	_layout_board_ends()
+
+
+## Stands one unit on its rail (Option B): the art canvas is [param height_cells]
+## rail cell widths tall; ground units pin their ground point to the rail point,
+## fliers hover their body centre above it. [param lift] raises the unit (hops).
+## Z follows the rail, so a front-rail unit's top covers a back-rail unit's base.
+func _stand_unit(actor: Control, column_pos: float, row_pos: float, height_cells: float, lift: float) -> void:
+	var geometry := _lawn.geometry
+	var cell := geometry.rail_cell_width(row_pos)
+	var foot := geometry.rail_point(column_pos, row_pos)
+	var canvas: Vector2 = actor.call("canvas_px")
+	var flying: bool = actor.call("is_flying")
+	var z := LawnGeometry.z_for_row(roundi(row_pos))
+	actor.z_index = z + (1 if actor is VerminActor else 0)
+	if canvas == Vector2.INF or canvas.y <= 0.0:
+		# Legacy clip with no manifest: a square box standing on the rail.
+		var box := cell * height_cells * 0.7
+		actor.size = Vector2(box, box)
+		actor.position = foot - Vector2(box * 0.5, box + lift)
+	else:
+		var f := height_cells * cell / canvas.y
+		actor.size = canvas * f
+		if flying:
+			var body: Vector2 = actor.call("body_center_px")
+			var center := foot - Vector2(0.0, FLYER_HOVER_CELLS * cell + lift)
+			actor.position = center - body * f
+		else:
+			actor.position = foot - Vector2(actor.size.x * 0.5, actor.size.y + lift)
+	actor.call("set_rail_stand", foot - actor.position, cell)
+
+
+## A water drop on the perspective lawn: landed drops sit on their rail spot;
+## sky drops fall in screen space from the sky to that spot as they progress.
+func _place_drop(drop: WaterDrop) -> void:
+	var geometry := _lawn.geometry
+	var cell := geometry.rail_cell_width(drop.land_row)
+	var ground := geometry.rail_point(drop.column_pos, drop.land_row)
+	var box := cell * drop.box_scale()
+	drop.size = Vector2(box, box)
+	var bottom := ground.y + cell * WaterDrop.LANDED_BOX * 0.12
+	if drop.falling:
+		var span := drop.land_row - UnitCatalog.SKY_SPAWN_ROW
+		var progress := 1.0 if absf(span) < 0.001 else clampf((drop.row_pos - UnitCatalog.SKY_SPAWN_ROW) / span, 0.0, 1.0)
+		bottom = lerpf(SKY_DROP_TOP, bottom, progress)
+	drop.position = Vector2(ground.x - box * 0.5, bottom - box)
+	drop.z_index = LawnGeometry.z_for_row(roundi(drop.land_row)) + 2
+
+
+## Builds the drifting sky over the lawn (GW-AW-6b): stick clouds, the
+## match's sun, and rain when the seed says so. Sits on the stage over the
+## backdrop and under the lawn, so actors always draw over it.
+func _build_sky() -> void:
+	_sky_layer = SkyLayer.new()
+	_stage.add_child(_sky_layer)
+	_stage.move_child(_sky_layer, _lawn.get_index())
 	_layout_sky()
 
 
-## Builds the porch and the compost eyes that flank the lawn. Drawn under the
-## UI: they sit over the backdrop, behind every actor.
-func _build_board_ends() -> void:
-	_end_porch = _make_board_end("PlayerEnd", _PORCH_TEXTURE)
-	_end_vermin = _make_board_end("VerminEnd", _VERMIN_END_TEXTURE)
-	add_child(_end_porch)
-	add_child(_end_vermin)
-	move_child(_end_porch, 2)
-	move_child(_end_vermin, 3)
-
-
-## Builds the drifting sky over the lawn band (GW-AW-6b): stick clouds, the
-## match's sun, and rain when the seed says so. Sits over the backdrop, under
-## the board ends and the lawn, so actors always draw over it.
-func _build_sky() -> void:
-	_sky_layer = SkyLayer.new()
-	add_child(_sky_layer)
-	move_child(_sky_layer, 2)
-
-
-func _make_board_end(node_name: String, texture: Texture2D) -> TextureRect:
-	var rect := TextureRect.new()
-	rect.name = node_name
-	rect.texture = texture
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return rect
-
-
-## Stands both ends on the bottom row line, tight to the grid edges with a
-## finger's gap. The art is taller-than-wide against the five lanes, but the
-## gutters at 1280x720 cannot host that width, so an end that would run off
-## the screen edge or under the wave panel shrinks to fit and stays complete.
-func _layout_board_ends() -> void:
-	if _end_porch == null or _end_vermin == null:
-		return
-	var cell := _lawn.cell_size_px()
-	if cell <= 0.0:
-		return
-	# The board root covers the viewport from (0,0), so canvas coords are local here.
-	var origin := _lawn.global_position + _lawn.grid_origin()
-	var height := cell * float(LawnView.ROWS)
-	var bottom := origin.y + height
-	var lawn_right := _lawn.global_position.x + _lawn.size.x
-	_size_board_end(_end_porch, height, maxf(origin.x - 10.0, 24.0))
-	_end_porch.position = Vector2(origin.x - 6.0 - _end_porch.size.x, bottom - _end_porch.size.y)
-	_size_board_end(_end_vermin, height, maxf(lawn_right - origin.x - cell * float(_lawn.column_count()) - 10.0, 24.0))
-	_end_vermin.position = Vector2(origin.x + cell * float(_lawn.column_count()) + 6.0, bottom - _end_vermin.size.y)
-
-
-func _size_board_end(rect: TextureRect, lane_height: float, max_width: float) -> void:
-	var aspect := rect.texture.get_size().x / rect.texture.get_size().y
-	var width := minf(lane_height * aspect, max_width)
-	rect.size = Vector2(width, width / aspect)
-
-
-## Puts the sky band in the lawn's reserved sky zone: the strip the lawn
-## keeps above the tiles for sky effects (LawnView.SKY_ROWS), across the
-## full board width. It sits below the UI row, so the sky is always visible.
+## The sky band in stage pixels: under the top bar, down to the lawn's far
+## edge (rain lands on the far edge of the felt). Cloud and sun tuning is
+## untouched; only the band moved with the Option B layout.
 func _layout_sky() -> void:
 	if _sky_layer == null:
 		return
-	var cell := _lawn.cell_size_px()
-	if cell <= 0.0:
-		return
-	var grid_top := _lawn.global_position + _lawn.grid_origin()
-	var sky_h := cell * LawnView.SKY_ROWS
-	_sky_layer.set_band(Rect2(0.0, grid_top.y - sky_h, size.x, sky_h))
+	_sky_layer.set_band(SKY_BAND)
 
 
 ## A small watermark naming the visual seed and look, so a match can be
@@ -824,14 +868,15 @@ func _build_seed_label() -> void:
 	# PASS (not IGNORE) so hovering the watermark can raise its debug tooltip;
 	# clicks still reach the lawn underneath.
 	_seed_panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	_seed_panel.z_index = 7
 	_seed_panel.add_theme_stylebox_override("panel", FlatStyle.panel(Color(FlatStyle.PANEL, 0.55), FlatStyle.INK, 10, 2))
 	_seed_label = Label.new()
 	_seed_label.add_theme_color_override("font_color", FlatStyle.CREAM)
 	_seed_label.add_theme_font_size_override("font_size", 12)
 	_seed_panel.add_child(_seed_label)
 	_lawn.add_child(_seed_panel)
-	_seed_panel.position = Vector2(4.0, 2.0)
+	_seed_panel.z_as_relative = false
+	_seed_panel.z_index = Z_HINT
+	_seed_panel.position = LawnGeometry.FAR_LEFT + Vector2(0.0, -34.0)
 	_refresh_seed_label()
 
 
@@ -850,13 +895,6 @@ func _refresh_seed_label() -> void:
 func _set_debug_overlay(active: bool) -> void:
 	_debug_overlay = active
 	_refresh_seed_label()
-
-
-func _place_box(node: Control, origin: Vector2, cell: float, column_pos: float, row_pos: float, scale: float) -> void:
-	var box := cell * scale
-	var center := origin + Vector2(column_pos * cell, (row_pos + 0.5) * cell)
-	node.size = Vector2(box, box)
-	node.position = center - node.size * 0.5
 
 
 func _present_cards() -> void:
@@ -915,8 +953,8 @@ func _build_trail() -> void:
 ## Builds the translucent hover preview once and parks it on the lawn.
 func _build_ghost() -> void:
 	_ghost = Control.new()
+	_ghost.name = "PlantGhost"
 	_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ghost.z_index = 6
 	_ghost.modulate = Color(1, 1, 1, 0.4)
 	_ghost.visible = false
 	_ghost_clip = ClipView.new()
@@ -928,9 +966,14 @@ func _build_ghost() -> void:
 	_leaf_ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_leaf_ring.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_leaf_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_leaf_ring.z_index = 5
 	_leaf_ring.visible = false
-	_lawn.add_child(_leaf_ring)
+	# The holder lies the ring flat on the tile: it scales the round ring to
+	# the tile's foreshortened depth while the ring turns inside it.
+	_leaf_ring_holder = Node2D.new()
+	_leaf_ring_holder.name = "LeafRingHolder"
+	_leaf_ring_holder.z_index = LawnView.Z_CURSOR + 2
+	_leaf_ring_holder.add_child(_leaf_ring)
+	_lawn.add_child(_leaf_ring_holder)
 	_lawn.add_child(_ghost)
 	_lawn.mouse_entered.connect(_on_lawn_mouse_entered)
 	_lawn.mouse_exited.connect(_on_lawn_mouse_exited)
@@ -948,10 +991,6 @@ func _on_lawn_mouse_exited() -> void:
 ## so a placed Warden and the green or red tile cursor still read on top, on
 ## the slowly turning leaf ring (dimmed red when the plant cannot go there).
 func _refresh_ghost(aim: Vector2i, kind: int, allowed: bool = true) -> void:
-	var cell := _lawn.cell_size_px()
-	if cell <= 0.0:
-		_hide_ghost()
-		return
 	var hovered := _mouse_over_lawn or _aim_from_keys
 	if not hovered or _grid.occupant(aim.x, aim.y) != 0:
 		_hide_ghost()
@@ -959,11 +998,17 @@ func _refresh_ghost(aim: Vector2i, kind: int, allowed: bool = true) -> void:
 	if kind != _ghost_kind:
 		_ghost_kind = kind
 		_build_ghost_clip(kind)
-	_place_box(_ghost, _lawn.grid_origin(), cell, float(aim.x) + 0.5, float(aim.y), 1.0)
+	_stand_ghost(aim)
 	_ghost_clip.tick(0.0, _ghost.size)
 	_ghost.visible = true
-	_place_box(_leaf_ring, _lawn.grid_origin(), cell, float(aim.x) + 0.5, float(aim.y), LEAF_RING_SIZE)
+	var geometry := _lawn.geometry
+	var cell := geometry.cell_width(float(aim.y) + 0.5)
+	var ring := cell * LEAF_RING_SIZE
+	_leaf_ring.size = Vector2(ring, ring)
+	_leaf_ring.position = -_leaf_ring.size * 0.5
 	_leaf_ring.pivot_offset = _leaf_ring.size * 0.5
+	_leaf_ring_holder.position = geometry.point(float(aim.x) + 0.5, float(aim.y) + 0.5)
+	_leaf_ring_holder.scale = Vector2(1.0, geometry.row_height(aim.y) / maxf(cell, 1.0))
 	_leaf_ring.modulate = Color(1, 1, 1, 0.9) if allowed else Color(1.0, 0.55, 0.5, 0.75)
 	_leaf_ring.visible = true
 
@@ -973,6 +1018,21 @@ func _hide_ghost() -> void:
 		_ghost.visible = false
 	if _leaf_ring != null:
 		_leaf_ring.visible = false
+
+
+## The preview stands on the hovered tile's rail exactly like a planted Warden.
+func _stand_ghost(aim: Vector2i) -> void:
+	var geometry := _lawn.geometry
+	var cell := geometry.rail_cell_width(float(aim.y))
+	var foot := geometry.rail_point(float(aim.x) + 0.5, float(aim.y))
+	var canvas := AnimLibrary.canvas_px(AnimLibrary.warden_folder(_ghost_kind))
+	if canvas == Vector2.INF or canvas.y <= 0.0:
+		_ghost.size = Vector2(cell, cell)
+		_ghost.position = foot - Vector2(cell * 0.5, cell)
+	else:
+		_ghost.size = canvas * (UNIT_HEIGHT_CELLS * cell / canvas.y)
+		_ghost.position = foot - Vector2(_ghost.size.x * 0.5, _ghost.size.y)
+	_ghost.z_index = LawnGeometry.z_for_row(aim.y)
 
 
 ## Idle clip for the preview, anchored and scaled the way a planted Warden is.
@@ -1020,7 +1080,6 @@ func start_wave() -> void:
 	_time = 0.0
 	if _roster != null:
 		_roster.visible = false
-	_lawn.offset_right = 0.0
 	if _hint != null:
 		_hint.visible = false
 
@@ -1059,6 +1118,7 @@ func _apply_backdrop() -> void:
 	var texture := BackdropCatalog.texture_at(_backdrop)
 	if texture != null:
 		_background.texture = texture
+	_refresh_stage_fill()
 	_bottom.set_backdrop_name(BackdropCatalog.NAMES[_backdrop])
 	_refresh_seed_label()
 	if _sky_layer != null:
@@ -1076,8 +1136,8 @@ func visual_seed() -> int:
 ## paints its own sky and sun, and two skies would double the celestials.
 func use_golden_hour(enabled: bool) -> void:
 	if enabled and _golden_hour == null:
-		_golden_hour = GoldenHourBackdrop.compose(self)
-		move_child(_golden_hour, 2)
+		_golden_hour = GoldenHourBackdrop.compose(_stage)
+		_stage.move_child(_golden_hour, _background.get_index() + 1)
 		if _sky_layer != null:
 			_sky_layer.visible = false
 	elif not enabled and _golden_hour != null:
@@ -1252,7 +1312,7 @@ func _begin_drag() -> void:
 	add_child(_drag_ghost)
 	_drag_ghost.present(_drag_kind, UnitCatalog.WARDEN_NAMES[_drag_kind], UnitCatalog.WARDEN_COST[_drag_kind], _card_face(_drag_kind), true, false, "")
 	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_ghost.z_index = 30
+	_drag_ghost.z_index = Z_DRAG
 	_set_drops_locked(true)
 	if _tip != null:
 		_tip.hide_tip()
@@ -1320,15 +1380,10 @@ func _build_hud_extras() -> void:
 	_tip = GameTooltip.new()
 	add_child(_tip)
 	_roster = WaveRoster.new()
-	var host := _margin.get_node("Layout/BoardHost") as Control
-	host.add_child(_roster)
-	_roster.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_roster.anchor_left = 1.0
-	_roster.offset_left = -(WaveRoster.WIDTH + 4.0)
-	_roster.offset_right = -4.0
-	_roster.offset_top = 0.0
-	_roster.offset_bottom = 0.0
-	_lawn.offset_right = -(WaveRoster.WIDTH + 12.0)
+	# The pre-wave panel is a slim strip in the sky's top-right corner, under
+	# the top bar: it never covers the lawn (GW-AA pass 3).
+	add_child(_roster)
+	_roster.z_index = Z_HUD
 	_roster.fill(_tip, _level.wave)
 	_roster.start_requested.connect(start_wave)
 	_lawn.mouse_exited.connect(func() -> void: _tip.hide_tip())
@@ -1363,7 +1418,9 @@ func _show_cell_tip(cell: Vector2i) -> void:
 			if vermin.row == cell.y and vermin.column_pos >= float(cell.x) and vermin.column_pos < float(cell.x) + 1.0:
 				text += "\n" + _vermin_blurb(vermin.kind)
 				break
-	_tip.show_text(text)
+	# In the sky just above the felt's far edge (board pixels), never over tiles.
+	var far_edge := (_lawn.get_global_transform() * LawnGeometry.FAR_LEFT).y - global_position.y
+	_tip.show_text(text, maxf(far_edge - 6.0, 80.0))
 
 
 func _warden_blurb(kind: UnitCatalog.Warden) -> String:
@@ -1426,31 +1483,29 @@ func collect_all_drops() -> void:
 func _build_hint() -> void:
 	_hint = PanelContainer.new()
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hint.z_index = 7
+	_hint.z_as_relative = false
+	_hint.z_index = Z_HINT
 	_hint.add_theme_stylebox_override("panel", FlatStyle.panel(Color(FlatStyle.PANEL, 0.92), FlatStyle.INK, 14, 3))
 	var label := Label.new()
 	label.text = "Level %d, %s. Drag a card onto a tile, or select it and tap. Then press Start." % [LevelCatalog.number(), _level.title]
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	label.custom_minimum_size = Vector2(480, 0)
+	label.custom_minimum_size = Vector2(440, 0)
 	label.add_theme_color_override("font_color", FlatStyle.CREAM)
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 16)
 	_hint.add_child(label)
 	_lawn.add_child(_hint)
 	_place_hint()
 
 
-## Keeps the instruction over the sky band. Hiding it must not resize the lawn.
+## Keeps the instruction in the sky just over the lawn's far edge, centred
+## on the felt. Hiding it must not move the lawn.
 func _place_hint() -> void:
-	if _hint == null or not _hint.visible or _lawn.cell_size_px() <= 0.0:
+	if _hint == null or not _hint.visible:
 		return
 	var hint_size := _hint.get_combined_minimum_size()
-	var origin := _lawn.grid_origin()
-	var grid_width := _lawn.cell_size_px() * _lawn.column_count()
 	_hint.size = hint_size
-	var x := origin.x + (grid_width - hint_size.x) * 0.5
-	x = clampf(x, 8.0, maxf(8.0, _lawn.size.x - hint_size.x - 8.0))
-	var y := origin.y - hint_size.y - 4.0
-	_hint.position = Vector2(x, maxf(2.0, y))
+	var far_mid := (LawnGeometry.FAR_LEFT.x + LawnGeometry.FAR_RIGHT.x) * 0.5
+	_hint.position = Vector2(far_mid - hint_size.x * 0.5, LawnGeometry.FAR_LEFT.y - hint_size.y - 10.0)
 
 
 func _build_result() -> void:
@@ -1458,7 +1513,7 @@ func _build_result() -> void:
 	_result_layer.visible = false
 	_result_layer.mouse_filter = Control.MOUSE_FILTER_STOP
 	_result_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_result_layer.z_index = 20
+	_result_layer.z_index = Z_RESULT
 	var dim := ColorRect.new()
 	dim.color = Color(0.05, 0.08, 0.05, 0.55)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1598,6 +1653,118 @@ func _bind_key(action: String, key: Key) -> void:
 func _on_viewport_resized() -> void:
 	_apply_content_scale()
 	_apply_safe_area()
+	var mode := _pick_layout()
+	if mode != _layout_mode:
+		apply_layout(mode)
+	_layout_key = []
+
+
+## Which layout a real window of [param window_px] physical pixels gets:
+## narrower than COMPACT_MAX_WIDTH or shorter than COMPACT_MAX_HEIGHT snaps
+## the cards to the vertical side bar.
+static func layout_for_window(window_px: Vector2i) -> String:
+	if window_px.x < COMPACT_MAX_WIDTH or window_px.y < COMPACT_MAX_HEIGHT:
+		return LAYOUT_VERTICAL
+	return LAYOUT_HORIZONTAL
+
+
+## The layout to use now: forced_layout, then --layout, then the real window.
+func _pick_layout() -> String:
+	if forced_layout == LAYOUT_HORIZONTAL or forced_layout == LAYOUT_VERTICAL:
+		return forced_layout
+	var args := OS.get_cmdline_user_args()
+	var at := args.find("--layout")
+	if at >= 0 and at + 1 < args.size() and args[at + 1] in [LAYOUT_HORIZONTAL, LAYOUT_VERTICAL]:
+		return args[at + 1]
+	var window := get_window()
+	if window == null or DisplayServer.get_name() == "headless":
+		return LAYOUT_HORIZONTAL
+	return layout_for_window(window.size)
+
+
+## The active layout ("horizontal" or "vertical").
+func layout_mode() -> String:
+	return _layout_mode
+
+
+## Switches the card selector between the bottom tray and the side bar, live.
+func apply_layout(mode: String) -> void:
+	_layout_mode = LAYOUT_VERTICAL if mode == LAYOUT_VERTICAL else LAYOUT_HORIZONTAL
+	var vertical := _layout_mode == LAYOUT_VERTICAL
+	var layout := _margin.get_node("Layout") as VBoxContainer
+	if vertical and _bottom.get_parent() != _body:
+		_bottom.reparent(_body, false)
+		_body.move_child(_bottom, 0)
+	elif not vertical and _bottom.get_parent() != layout:
+		_bottom.reparent(layout, false)
+		layout.move_child(_bottom, layout.get_child_count() - 1)
+	_bottom.set_vertical(vertical)
+	_top.set_compact(true)
+	_layout_key = []
+	_layout_stage()
+
+
+## Re-fits the stage when the window, the safe area, or the HUD's sizes
+## change (containers settle a frame after a switch).
+func _relayout_if_needed() -> void:
+	var key := [size, _bottom.get_global_rect(), _top.get_global_rect(), _layout_mode]
+	if key != _layout_key:
+		_layout_key = key
+		_layout_stage()
+
+
+## Fits the 1280x720 stage (backdrop, sky, lawn, units) into the area the HUD
+## leaves: the whole screen in horizontal mode (the tray and top bar float
+## over the painted sky and the porch step, as in Option B), right of the side
+## bar in vertical mode. Uniform scale, centred, bottom-aligned; any gap shows
+## a soft, blurred extension of the backdrop.
+func _layout_stage() -> void:
+	if _stage == null:
+		return
+	var area := Rect2(Vector2.ZERO, size)
+	if _layout_mode == LAYOUT_VERTICAL:
+		var side := _bottom.get_global_rect()
+		var left := side.end.x + SIDEBAR_GAP - global_position.x
+		area = Rect2(left, 0.0, maxf(size.x - left, 1.0), size.y)
+	var s := minf(area.size.x / LawnGeometry.REF_SIZE.x, area.size.y / LawnGeometry.REF_SIZE.y)
+	s = maxf(s, 0.05)
+	var stage_size := LawnGeometry.REF_SIZE * s
+	_stage.size = LawnGeometry.REF_SIZE
+	_stage.scale = Vector2(s, s)
+	_stage.position = Vector2(area.position.x + (area.size.x - stage_size.x) * 0.5, area.end.y - stage_size.y)
+	_refresh_stage_fill()
+	_place_roster()
+
+
+## The stage's rect in board pixels (after the responsive fit).
+func stage_rect() -> Rect2:
+	return Rect2(_stage.position, LawnGeometry.REF_SIZE * _stage.scale)
+
+
+func _build_stage_fill() -> void:
+	var fill_material := ShaderMaterial.new()
+	fill_material.shader = STAGE_FILL_SHADER
+	_stage_fill.material = fill_material
+
+
+func _refresh_stage_fill() -> void:
+	if _stage_fill == null or not (_stage_fill.material is ShaderMaterial):
+		return
+	var fill_material := _stage_fill.material as ShaderMaterial
+	var rect := stage_rect()
+	fill_material.set_shader_parameter("backdrop", _background.texture)
+	fill_material.set_shader_parameter("fill_size", size)
+	fill_material.set_shader_parameter("stage_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
+
+
+## The wave roster sits top-right, just under the top bar.
+func _place_roster() -> void:
+	if _roster == null:
+		return
+	var roster_size := _roster.get_combined_minimum_size()
+	_roster.size = roster_size
+	var top := _top.get_global_rect().end.y - global_position.y + 8.0
+	_roster.position = Vector2(size.x - roster_size.x - 12.0, top)
 
 
 ## Fills the real window. Integer scaling leaves a tiny 1280×720 island when the window is maximized.
@@ -1614,10 +1781,11 @@ func _apply_content_scale() -> void:
 
 func _apply_safe_area() -> void:
 	var pad := 12
+	var pad_y := 6
 	var left := pad
-	var top := pad
+	var top := pad_y
 	var right := pad
-	var bottom := pad
+	var bottom := pad_y
 	var mode := DisplayServer.window_get_mode()
 	var fullscreen := mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
 	if fullscreen and DisplayServer.get_name() != "headless":
@@ -1633,9 +1801,9 @@ func _apply_safe_area() -> void:
 			right = int(maxf(screen.x - safe.end.x, 0.0) * to_viewport.x)
 			bottom = int(maxf(screen.y - safe.end.y, 0.0) * to_viewport.y)
 	_margin.add_theme_constant_override("margin_left", maxi(left, pad))
-	_margin.add_theme_constant_override("margin_top", maxi(top, pad))
+	_margin.add_theme_constant_override("margin_top", maxi(top, pad_y))
 	_margin.add_theme_constant_override("margin_right", maxi(right, pad))
-	_margin.add_theme_constant_override("margin_bottom", maxi(bottom, pad))
+	_margin.add_theme_constant_override("margin_bottom", maxi(bottom, pad_y))
 
 
 func _read_shot_args() -> void:
