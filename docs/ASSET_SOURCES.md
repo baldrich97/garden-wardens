@@ -247,9 +247,9 @@ How they are drawn:
 
 | File(s) | Status |
 | --- | --- |
-| `stage/{main,sunny,overcast,dusk_twilight,dusk_moonlit,golden_hour}/sky_backdrop.png` (6) | **approved**, wired. `golden_hour/` was locally cleaned behind the porch opening (`tools/art/clean_golden_porch_sky.py`, see below) |
+| `stage/{main,sunny,overcast,dusk_twilight,dusk_moonlit,golden_hour}/sky_backdrop.png` (6) | **approved**, wired. `golden_hour/` is Asset Gen's batch2_fix file (pass 6b) |
 | `stage/<same six>/stage_fence.png` (6) | **approved**, wired (1135x137 at 145,166) |
-| `stage/<same six>/stage_shack.png` (6) | **approved, locally touched**: `tools/art/punch_porch_strip.py` clears the 26 px strip the batch2 punch left in the porch opening, and on both Dusk plates paints out a baked string-light bulb on the porch post |
+| `stage/<same six>/stage_shack.png` (6) | **approved**, wired as Asset Gen's batch2_fix files (pass 6b): porch opening clear to the rail, no Dusk post bulb |
 | `stage/<same six>/stage_compost.png` (6) | **approved**, wired (211x213 at 1069,221) |
 | `stage/<same six>/stage_lawn_ground.png` (6) | **approved**, wired (1280x423 at 0,297) |
 | `stage/{dusk_twilight,dusk_moonlit}/stage_fence_lights.png` (2) | **approved**, wired (additive + shimmer) |
@@ -257,8 +257,7 @@ How they are drawn:
 | `sky/stars/star_{4pt_cream,4pt_gold,5pt_cream,6pt_slate}.png` (4) | **approved**, Dusk Moonlit's stars |
 | `stage/dusk/stage_fence.png`, `stage/dusk/stage_fence_lights.png` | **replaced** with batch1's updated sharp 1280 files (`stage_fence_dusk.png` = `dusk_twilight/stage_fence.png`, same sha256 `301b233f…`). Fallback only now |
 
-Not wired: anything from `batch3/` (Asset Gen rejected those side panels; `batch3_v2/`
-will replace them), the kit's `_work/` and `previews/`.
+Not wired: anything from `batch3/` or `batch3_v2/` (Asset Gen rejected the batch3 side panels), the kit's `_work/` and `previews/`.
 
 Old files that are now **fallback only** (still referenced, but not shown while the
 batch2 files are installed):
@@ -271,7 +270,8 @@ batch2 files are installed):
 - Dusk's lavender tint over the white cotton (`SkyLook.DUSK_CLOUD_TINT`) and the drawn
   Moonlit stars stay as code fallbacks.
 
-Local fixes to Asset Gen's art (before/after in the pass 6 captures):
+History: pass 6 patched these locally (scripts retired in pass 6b; the files are now
+Asset Gen's own fixes, see below):
 1. **All six `stage_shack.png`**: the porch-opening punch left an opaque strip at
    about x 90-118, y 148-176 (baked hill/trees between the upper and lower punched
    areas). It is cleared so the sky shows through the whole opening.
@@ -282,6 +282,42 @@ Local fixes to Asset Gen's art (before/after in the pass 6 captures):
    the porch opening (a peach patch with a dark teal outline, about x 88-120,
    y 100-132), which showed through the opening. Inside the opening, that area is
    repainted with the row's peach sky colour.
+
+## Pass 6b: Asset Gen batch2_fix (GW-AA pass 6b, 2026-11-24)
+
+Source: `stage_kit/batch2_fix/<scene>/` (7 files, sha256 verified against its
+`manifest.tsv`; installed bytes are identical to the kit). They replace the pass 6
+locally patched copies, so the game now uses Asset Gen's files directly.
+`tools/art/punch_porch_strip.py` and `tools/art/clean_golden_porch_sky.py` are deleted.
+
+| File | sha256 | Status |
+| --- | --- | --- |
+| `stage/main/stage_shack.png` | `cc9f0772…` | **approved**, wired |
+| `stage/sunny/stage_shack.png` | `1bf4aec9…` | **approved**, wired |
+| `stage/overcast/stage_shack.png` | `9ea43ff7…` | **approved**, wired |
+| `stage/dusk_twilight/stage_shack.png` | `137d604a…` | **approved**, wired (post bulb and glow removed) |
+| `stage/dusk_moonlit/stage_shack.png` | `0148e517…` | **approved**, wired (post bulb and glow removed) |
+| `stage/golden_hour/stage_shack.png` | `97e6cf94…` | **approved**, wired |
+| `stage/golden_hour/sky_backdrop.png` | `815172e0…` | **approved**, wired (porch ghost removed, tree fringes at x 120-200 repainted) |
+
+Checked in game at 1280x720 and 1920x1000 (all six looks): every porch opening is clear
+to the rail, neither Dusk post has a bulb (the only light near the porch is the fence
+string's first bulb at ~243,220, from `stage_fence_lights.png`), and the Golden Hour
+porch area is clean.
+
+Asset Gen's two open questions (stage coordinates, 1280x720 frame):
+- **(a) Soft vertical streaks from the Main sky extract**: present in the
+  `sky_backdrop.png` files of all six looks, but only from about y 235 down (15-34% of
+  pixels in rows 240-300 are vertically smeared), which is entirely behind the fence,
+  shack and compost plates (0 exposed smeared pixels in every scene). The open sky above
+  the hills has no column structure (column high-pass under 1.3 grey levels on Main, under
+  0.3 elsewhere). **Not visible in game** at either size.
+- **(b) Dark sunflower ghost in Golden Hour**: the sky still holds dark, blurred sunflower
+  discs with a dotted orange rim (about x 150-215 y 175-215, x 236-329 y 196-280,
+  x 342-396 y 181-236, and right of centre x 817-1140 y 185-280), but each sits exactly
+  behind a real sunflower on the fence plate (at most a handful of exposed pixels, which
+  are the tree trunk, not the ghost). **Not visible in game** at either size. It would
+  show if the fence plate's sunflowers ever moved or were removed.
 
 ## Unwired inventory (definitive)
 

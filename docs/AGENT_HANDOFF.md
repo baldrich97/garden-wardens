@@ -331,11 +331,11 @@ below; all are presentation only (combat_probe identical 5/5 to the p3fix refere
   families are generalised in `SkyCatalog.PAINTED_FAMILIES`). Dusk Moonlit stars: 16
   paper star sprites (`SkyCatalog.STARS`), with a gentle twinkle, kept off the moon and
   the porch. The moon is unchanged (batch2's copy is byte-identical).
-- Local art fixes: `tools/art/punch_porch_strip.py` (clears the porch-opening strip on all
-  six shacks and paints out the Dusk post bulb) and `tools/art/clean_golden_porch_sky.py`
-  (removes the porch ghost outline from the Golden Hour sky inside the opening). Both are
-  documented in `docs/ASSET_SOURCES.md` ("Pass 6"), along with the files that are now
-  fallback only.
+- Local art fixes from this pass (porch strip, Dusk post bulb, Golden porch ghost) were
+  superseded in pass 6b by Asset Gen's `batch2_fix` files (six shacks + Golden Hour sky);
+  the two `tools/art/` patch scripts are deleted. See `docs/ASSET_SOURCES.md` ("Pass 6b"),
+  which also answers Asset Gen's streak and sunflower-ghost questions (neither visible in
+  game).
 - Not wired: `batch3/` (rejected by Asset Gen; wait for `batch3_v2/`).
 - New checks:
   - rules: every look uses its own 1280x720 sky untinted, Golden Hour has its own sky,
